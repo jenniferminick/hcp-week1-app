@@ -153,7 +153,10 @@ function speak(text) {
 async function callClaude(messages, system) {
   const body = { model: "claude-sonnet-4-20250514", max_tokens: 2000, messages };
   if (system) body.system = system;
-  const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const headers = { "Content-Type": "application/json" };
+  const key = process.env.REACT_APP_ANTHROPIC_KEY;
+  if (key) { headers["x-api-key"] = key; headers["anthropic-version"] = "2023-06-01"; }
+  const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers, body: JSON.stringify(body) });
   const d = await r.json();
   return (d.content || []).filter(b => b.type === "text").map(b => b.text).join("") || "";
 }
