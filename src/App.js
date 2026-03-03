@@ -1065,16 +1065,7 @@ export default function App() {
                 <div style={{ padding: "14px 16px", flex: 1 }}><p style={{ color: GRAY600, fontSize: 12, lineHeight: 1.6, margin: "0 0 12px" }}>Posts are live. Turn every like, comment, and DM into a job.</p><span style={{ color: GREEN, fontWeight: 700, fontSize: 12 }}>~5 min →</span></div>
               </div>
             </div>
-            <div style={{ background: "#FEF9EC", border: "1.5px dashed " + YELLOW, borderRadius: 10, padding: "10px 16px" }}>
-              <div style={{ fontSize: 13, color: GRAY600, marginBottom: 8 }}>🧪 <strong>Dev shortcuts</strong></div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {[
-                  { label: "Fill Sample Answers", fn: () => { devFill(); setAppPhase("ch1"); } },
-                  { label: "Skip to Groups", fn: () => { devFill(); setAppPhase("groups"); saveSubmission(SAMPLE_ANSWERS, "sample post", "Post Generated"); } },
-                  { label: "Skip to Leads", fn: () => { devFill(); setAppPhase("leads"); saveSubmission(SAMPLE_ANSWERS, "sample post", "10 Groups Done"); } },
-                ].map((b, i) => <button key={i} onClick={b.fn} style={{ background: NAVY, color: YELLOW, border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{b.label}</button>)}
-              </div>
-            </div>
+
           </div>
         )}
 
