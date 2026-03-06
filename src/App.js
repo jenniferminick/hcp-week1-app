@@ -288,36 +288,64 @@ function PhaseNav({ current, onNavigate, completedSections }) {
 }
 
 // ── Mic Button ────────────────────────────────────────────────────────────────
-function MicBtn({ onTranscript, size }) {
+function MicBtn({ onTranscript, size, previewValue, onPreviewChange }) {
   const [listening, setListening] = useState(false);
-  const [interim, setInterim] = useState("");
   const [err, setErr] = useState("");
   const recogRef = useRef(null);
   const finalRef = useRef("");
   const sz = Math.max(size||30, 44);
   const iconSz = Math.min(size||30, 22);
+
   useEffect(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return;
-    const r = new SR(); r.continuous = true; r.interimResults = true; r.lang = "en-US";
+    const r = new SR();
+    r.continuous = true; r.interimResults = true; r.lang = "en-US";
     r.onresult = e => {
       let final = ""; let inter = "";
-      for (let i = 0; i < e.results.length; i++) { if (e.results[i].isFinal) final += e.results[i][0].transcript+" "; else inter += e.results[i][0].transcript; }
-      if (final) finalRef.current = final; setInterim(inter);
+      for (let i = 0; i < e.results.length; i++) {
+        if (e.results[i].isFinal) final += e.results[i][0].transcript + " ";
+        else inter += e.results[i][0].transcript;
+      }
+      if (final) finalRef.current = final;
+      // Show live preview in the textarea
+      if (onPreviewChange) {
+        const base = (previewValue || "").replace(/\[🎤.*\]$/, "").trimEnd();
+        if (inter) onPreviewChange(base ? base + " " + inter : inter);
+        else if (final) onPreviewChange(base ? base + " " + final.trim() : final.trim());
+      }
     };
-    r.onerror = e => { if (e.error==="no-speech") return; setErr(e.error==="not-allowed"?"Mic blocked. Allow microphone access.":"Mic error: "+e.error); setListening(false); };
+    r.onerror = e => {
+      if (e.error === "no-speech") return;
+      setErr(e.error === "not-allowed" ? "Mic blocked. Allow microphone access." : "Mic error: " + e.error);
+      setListening(false);
+    };
     r.onend = () => { if (recogRef._keepAlive) { try { r.start(); } catch(e) {} } };
     recogRef.current = r;
     return () => { recogRef._keepAlive = false; try { r.stop(); } catch(e) {} };
   }, []);
-  function startListening() { if (!recogRef.current) return; finalRef.current = ""; setInterim(""); setErr(""); recogRef._keepAlive = true; try { recogRef.current.start(); setListening(true); } catch(e) {} }
-  function commitAndStop() {
-    recogRef._keepAlive = false; try { recogRef.current.stop(); } catch(e) {}
-    setListening(false);
-    const result = (finalRef.current+" "+interim).trim();
-    if (result) onTranscript(result);
-    finalRef.current = ""; setInterim("");
+
+  function startListening() {
+    if (!recogRef.current) return;
+    finalRef.current = ""; setErr("");
+    recogRef._keepAlive = true;
+    try { recogRef.current.start(); setListening(true); } catch(e) {}
   }
+
+  function commitAndStop() {
+    recogRef._keepAlive = false;
+    try { recogRef.current.stop(); } catch(e) {}
+    setListening(false);
+    const result = finalRef.current.trim();
+    if (result) onTranscript(result);
+    finalRef.current = "";
+    // Clear any interim preview
+    if (onPreviewChange && previewValue) {
+      const base = previewValue.replace(/\s*\[🎤.*\]$/, "").trimEnd();
+      onPreviewChange(base);
+    }
+  }
+
   if (!listening) {
     return (
       <span style={{ display:"inline-flex", flexDirection:"column", alignItems:"center", gap:3 }}>
@@ -329,15 +357,16 @@ function MicBtn({ onTranscript, size }) {
       </span>
     );
   }
+
   return (
     <span style={{ display:"inline-flex", alignItems:"center", gap:6 }}>
       <span style={{ display:"inline-flex", flexDirection:"column", alignItems:"center", gap:2 }}>
-        <button type="button" disabled style={{ background:RED, border:"none", borderRadius:"50%", width:sz, height:sz, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 0 0 6px rgba(239,68,68,0.18)", flexShrink:0, cursor:"default" }}>
+        <button type="button" disabled
+          style={{ background:RED, border:"none", borderRadius:"50%", width:sz, height:sz, display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 0 0 6px rgba(239,68,68,0.18)", flexShrink:0, cursor:"default" }}>
           <svg width={iconSz} height={iconSz} viewBox="0 0 24 24" fill={WHITE}><path d="M12 1a4 4 0 0 1 4 4v7a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-6 10a6 6 0 0 0 12 0h2a8 8 0 0 1-7 7.93V21h-2v-2.07A8 8 0 0 1 4 11h2z"/></svg>
         </button>
         <span style={{ fontSize:10, color:RED, fontWeight:600 }}>Listening...</span>
       </span>
-      {interim && <span style={{ fontSize:12, color:GRAY600, fontStyle:"italic", maxWidth:160, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{interim}</span>}
       <button type="button" onClick={commitAndStop} aria-label="Done"
         style={{ background:GREEN, border:"none", borderRadius:"50%", width:sz, height:sz, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexShrink:0, boxShadow:"0 2px 8px rgba(16,185,129,0.35)", transition:"all 0.2s" }}>
         <svg width={iconSz} height={iconSz} viewBox="0 0 24 24" fill="none" stroke={WHITE} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -857,7 +886,11 @@ function ProgressiveForm({ answers, onAnswer, onExit, onComplete, validationFeed
   }
   function handleNext() { if (!met) return; if (isLastQ) { onComplete(); return; } navigate(idx+1, 1); }
   function handleBack() { if (isFirstQ) { onExit(); return; } navigate(idx-1, -1); }
-  const handleMic = text => { const current = answers[q.id]||""; onAnswer(q.id, current.trim() ? current.trimEnd()+" "+text : text); };
+  const handleMic = text => {
+    const current = answers[q.id] || "";
+    onAnswer(q.id, current.trim() ? current.trimEnd() + " " + text : text);
+  };
+  const handleMicPreview = (liveText) => { onAnswer(q.id, liveText); };
   const slideStyle = { transition:visible?"opacity 0.25s ease, transform 0.25s ease":"opacity 0.2s ease, transform 0.2s ease", opacity:visible?1:0, transform:visible?"translateX(0)":dir===1?"translateX(-40px)":"translateX(40px)" };
   const borderColor = wc===0?GRAY200:met?GREEN:RED;
   const bgColor = wc===0?WHITE:met?"#F0FDF4":"#FFF5F5";
@@ -879,7 +912,7 @@ function ProgressiveForm({ answers, onAnswer, onExit, onComplete, validationFeed
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
             <span style={{ background:validationFeedback[q.id]?RED:NAVY, color:validationFeedback[q.id]?WHITE:YELLOW, borderRadius:6, padding:"2px 8px", fontSize:12, fontWeight:700 }}>Q{q.num}</span>
             <span style={{ fontWeight:800, color:validationFeedback[q.id]?RED:NAVY, fontSize:17 }}>{q.label}</span>
-            <MicBtn onTranscript={handleMic} size={28} />
+            <MicBtn onTranscript={handleMic} size={28} previewValue={answers[q.id]||""} onPreviewChange={handleMicPreview} />
           </div>
           <p style={{ fontSize:13, color:GRAY600, margin:"0 0 4px" }}>{q.hint}</p>
           <p style={{ fontSize:12, color:GRAY600, fontStyle:"italic", margin:"0 0 10px" }}>{q.placeholder}</p>
@@ -1234,10 +1267,22 @@ export default function App() {
     const key = "submission:"+name.replace(/\s+/g,"_").toLowerCase()+"_"+(data.business||"biz").replace(/\s+/g,"_").toLowerCase();
     try {
       let prev = {};
-      try { const ex = await window.storage.get(key,true); if (ex&&ex.value) prev = JSON.parse(ex.value); } catch(e) {}
-      const rec = { name, business:data.business||"", city:(data.area||manualCity||"").split(/[,\-]/)[0].replace(/[^a-zA-Z\s]/g,"").trim(), answers:data, post:generatedPost!==undefined?generatedPost:(prev.post||""), status:status||prev.status||"Post Generated", postGenerated:true, evidenceUrl:evidence?.url||prev.evidenceUrl||null, timestamp:prev.timestamp||Date.now(), updatedAt:Date.now() };
+      try { const ex = await window.storage.get(key, true); if (ex && ex.value) prev = JSON.parse(ex.value); } catch(e) {}
+      const rec = {
+        name,
+        business: data.business || "",
+        city: (data.area || manualCity || "").split(/[,\-]/)[0].replace(/[^a-zA-Z\s]/g,"").trim(),
+        answers: data,
+        post: generatedPost !== undefined ? generatedPost : (prev.post || ""),
+        status: status || prev.status || "Post Generated",
+        postGenerated: true,
+        evidenceUrl: evidence?.url || prev.evidenceUrl || null,
+        evidenceNote: evidence?.screenshot ? "Screenshot uploaded by Pro" : (prev.evidenceNote || null),
+        timestamp: prev.timestamp || Date.now(),
+        updatedAt: Date.now(),
+      };
       await window.storage.set(key, JSON.stringify(rec), true);
-    } catch(e) {}
+    } catch(e) { console.error("saveSubmission failed:", e); }
   }
 
   async function handleGeneratePost(ans) {
@@ -1461,16 +1506,26 @@ export default function App() {
               {!postLoading && ch3Met && !post && (
                 <><p style={{ color:GRAY600, fontSize:14, lineHeight:1.7, marginBottom:20 }}>Your story answers are ready. Tap below and we'll write your post.</p><Btn onClick={() => handleGeneratePost()}>Generate My Post →</Btn></>
               )}
+              {/* Already have a generated post — show it with copy + always-visible next */}
               {!postLoading && ch3Met && post && (
                 <>
                   <textarea value={post} onChange={e => setPost(e.target.value)} rows={14}
                     style={{ width:"100%", boxSizing:"border-box", border:"2px solid "+NAVY, borderRadius:12, padding:16, fontSize:14, lineHeight:1.8, color:GRAY800, fontFamily:"inherit", resize:"vertical", background:GRAY50, marginBottom:14 }} />
                   <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-                    <Btn onClick={() => { try { const el=document.createElement("textarea"); el.value=post; el.style.position="fixed"; el.style.opacity="0"; document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el); setCopiedGetpost(true); } catch(e) { navigator.clipboard&&navigator.clipboard.writeText(post).then(()=>setCopiedGetpost(true)).catch(()=>setCopiedGetpost(true)); } }} variant={copiedGetpost?"success":"primary"} style={{ alignSelf:"flex-start" }}>{copiedGetpost?"✓ Copied!":"📋 Copy Post"}</Btn>
+                    <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+                      <Btn onClick={() => { try { const el=document.createElement("textarea"); el.value=post; el.style.position="fixed"; el.style.opacity="0"; document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el); setCopiedGetpost(true); } catch(e) { navigator.clipboard&&navigator.clipboard.writeText(post).then(()=>setCopiedGetpost(true)).catch(()=>setCopiedGetpost(true)); } }} variant={copiedGetpost?"success":"primary"}>{copiedGetpost?"✓ Copied!":"📋 Copy Post"}</Btn>
+                      <Btn variant="ghost" onClick={() => handleGeneratePost()} disabled={postLoading}>↺ Regenerate</Btn>
+                    </div>
                     {copiedGetpost && (
-                      <div style={{ background:"#EFF6FF", border:"1.5px solid #93C5FD", borderRadius:12, padding:"16px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, flexWrap:"wrap" }}>
-                        <div><div style={{ fontWeight:700, color:NAVY, fontSize:14, marginBottom:2 }}>Post copied! 🎉</div><div style={{ fontSize:13, color:GRAY600 }}>Next up: pick a photo to post with it.</div></div>
+                      <div style={{ background:"#EFF6FF", border:"1.5px solid #93C5FD", borderRadius:12, padding:"14px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, flexWrap:"wrap" }}>
+                        <div><div style={{ fontWeight:700, color:NAVY, fontSize:14, marginBottom:2 }}>Post copied! 🎉</div><div style={{ fontSize:13, color:GRAY600 }}>Next up: pick a photo.</div></div>
                         <Btn onClick={() => setAppPhase("photo")}>📸 Choose My Photo →</Btn>
+                      </div>
+                    )}
+                    {/* Always-visible next button so they're never stuck */}
+                    {!copiedGetpost && (
+                      <div style={{ borderTop:"1px solid "+GRAY200, paddingTop:14, marginTop:4 }}>
+                        <Btn variant="secondary" onClick={() => setAppPhase("photo")} style={{ fontSize:13 }}>Skip to Photo Step →</Btn>
                       </div>
                     )}
                   </div>
