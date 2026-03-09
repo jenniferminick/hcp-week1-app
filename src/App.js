@@ -1322,11 +1322,11 @@ export default function App() {
   async function handleGeneratePost() {
     setPostLoading(true); setPostError(""); setPost(""); setPostEs("");
     try {
-      const [enPost, esPost] = await Promise.all([
-        generateAIPost(answers, "en"),
-        generateAIPost(answers, "es"),
-      ]);
+      // Generate English post first, then Spanish in parallel
+      const enPost = await generateAIPost(answers, "en");
       setPost(enPost);
+      // Now generate Spanish fresh from answers
+      const esPost = await generateAIPost(answers, "es");
       setPostEs(esPost);
       setFlag("completedSections", completedSections.includes("write") ? completedSections : [...completedSections,"write"]);
       await saveSubmission(answers, enPost, "Post Generated");
@@ -1504,7 +1504,12 @@ export default function App() {
                     <div>
                       <div style={{ fontWeight:700, color:NAVY, fontSize:13, marginBottom:8 }}>{t.spanishPost}</div>
                       <div style={{ background:"#F8F0FF", border:"2px solid #D8B4FE", borderRadius:12, padding:14, fontSize:13, lineHeight:1.8, color:GRAY800, whiteSpace:"pre-wrap", minHeight:200, userSelect:"none", WebkitUserSelect:"none" }}>
-                        {postEs || "—"}
+                        {postEs
+                          ? postEs
+                          : post && !postEs
+                            ? <span style={{ color:GRAY400, fontStyle:"italic", display:"flex", alignItems:"center", gap:8 }}><span style={{ display:"inline-block", width:14, height:14, border:"2px solid #D8B4FE", borderTopColor:"#9333EA", borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />Generando versión en español...</span>
+                            : "—"
+                        }
                       </div>
                       <p style={{ fontSize:11, color:GRAY400, marginTop:6, fontStyle:"italic" }}>{t.spanishNote}</p>
                     </div>
