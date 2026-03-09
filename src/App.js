@@ -862,6 +862,7 @@ function ProgressiveForm({ answers, onAnswer, onExit, onComplete, validationFeed
   const [dir, setDir] = useState(1);
   const [animating, setAnimating] = useState(false);
   const [visible, setVisible] = useState(true);
+  const [showInspo, setShowInspo] = useState(false);
   const textareaRef = useRef(null);
   const q = ALL_QUESTIONS[idx];
   const meta = CHAPTER_META[q.chapter];
@@ -906,24 +907,36 @@ function ProgressiveForm({ answers, onAnswer, onExit, onComplete, validationFeed
           <p style={{ fontSize:13, color:GRAY600, margin:"0 0 10px" }}>{q.hint}</p>
           {validationFeedback[q.id] && <div style={{ background:"#FEE2E2", border:"1px solid #FCA5A5", borderRadius:8, padding:"10px 14px", marginBottom:10, fontSize:13, color:"#7F1D1D", lineHeight:1.7 }}>💬 {validationFeedback[q.id]}</div>}
 
-          {inspoExamples.length > 0 && (
-            <div style={{ background:"#FEF9EC", border:"1.5px solid "+YELLOW, borderRadius:10, padding:"12px 14px", marginBottom:12 }}>
-              <div style={{ fontSize:11, fontWeight:700, color:NAVY, marginBottom:8, textTransform:"uppercase", letterSpacing:"0.05em" }}>Examples from other Pros:</div>
-              {[q.placeholder, ...inspoExamples].map((ex, i) => (
-                <div key={i} style={{ fontSize:13, color:GRAY800, lineHeight:1.6, marginBottom:i < inspoExamples.length ? 8 : 0, paddingBottom:i < inspoExamples.length ? 8 : 0, borderBottom:i < inspoExamples.length ? "1px solid #FDE68A" : "none" }}>
-                  {ex}
-                </div>
-              ))}
-            </div>
-          )}
+          {/* One example always visible above textarea */}
+          <p style={{ fontSize:12, color:GRAY600, fontStyle:"italic", margin:"0 0 10px" }}>{q.placeholder}</p>
 
           <textarea ref={textareaRef} value={answers[q.id]||""} onChange={e => onAnswer(q.id, e.target.value)} placeholder="Type your answer here..." rows={3}
             style={{ width:"100%", boxSizing:"border-box", border:"2px solid "+borderColor, borderRadius:10, padding:"10px 14px", fontSize:14, color:GRAY800, fontFamily:"inherit", resize:"vertical", outline:"none", background:bgColor, marginBottom:6 }} />
-          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:20, minHeight:18 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, minHeight:18 }}>
             {wc > 0 ? (
               <><div style={{ flex:1, background:GRAY200, borderRadius:99, height:4, overflow:"hidden" }}><div style={{ background:met?GREEN:RED, height:4, borderRadius:99, width:Math.min((wc/q.minWords)*100,100)+"%", transition:"width 0.2s" }} /></div><span style={{ fontSize:11, fontWeight:700, color:met?GREEN:RED, whiteSpace:"nowrap" }}>{met?"✓ ":""}{wc} / {q.minWords} words{met?"":" min"}</span></>
             ) : <span style={{ fontSize:11, color:GRAY400 }}>Minimum {q.minWords} word{q.minWords!==1?"s":""}</span>}
           </div>
+
+          {/* More examples toggle below textarea */}
+          {inspoExamples.length > 0 && (
+            <div style={{ marginBottom:16 }}>
+              <button type="button" onClick={() => setShowInspo(v => !v)}
+                style={{ background:"transparent", border:"2px solid "+NAVY, borderRadius:8, color:NAVY, fontSize:13, fontWeight:700, cursor:"pointer", padding:"8px 16px", display:"inline-flex", alignItems:"center", gap:6, marginBottom:showInspo?8:0 }}>
+                💡 {showInspo ? "Hide examples ▲" : "Need inspiration? →"}
+              </button>
+              {showInspo && (
+                <div style={{ background:"#FEF9EC", border:"1.5px solid "+YELLOW, borderRadius:10, padding:"12px 14px" }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:NAVY, marginBottom:8, textTransform:"uppercase", letterSpacing:"0.05em" }}>Examples from other Pros:</div>
+                  {inspoExamples.map((ex, i) => (
+                    <div key={i} style={{ fontSize:13, color:GRAY800, lineHeight:1.6, marginBottom:i < inspoExamples.length-1 ? 8 : 0, paddingBottom:i < inspoExamples.length-1 ? 8 : 0, borderBottom:i < inspoExamples.length-1 ? "1px solid #FDE68A" : "none" }}>
+                      {ex}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <div style={{ display:"flex", gap:12, alignItems:"center", justifyContent:"space-between" }}>
             <Btn variant="ghost" onClick={handleBack} style={{ fontSize:13, padding:"8px 14px" }}>← {isFirstQ?"Back":"Previous"}</Btn>
             <div style={{ display:"flex", alignItems:"center", gap:10 }}>
