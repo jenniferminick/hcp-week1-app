@@ -380,7 +380,7 @@ function GroupActionRow({ group, onConfirmed }) {
       <div style={{ background:"#F0FDF4", border:"1.5px solid #86EFAC", borderRadius:12, padding:"12px 16px", display:"flex", alignItems:"center", gap:12 }}>
         <span style={{ fontSize:20 }}>✅</span>
         <div style={{ flex:1 }}><div style={{ fontWeight:700, color:"#065F46", fontSize:14 }}>{group.name}</div><div style={{ fontSize:12, color:"#065F46", opacity:0.8 }}>Joined — you're ready to post</div></div>
-        <Btn onClick={onConfirmed} style={{ fontSize:13, padding:"8px 16px" }}>Continue →</Btn>
+                      <Btn onClick={onConfirmed} style={{ fontSize:13, padding:"8px 16px" }}>Continue →</Btn>
       </div>
     );
   }
@@ -393,7 +393,7 @@ function GroupActionRow({ group, onConfirmed }) {
       {opened && !confirmed && (
         <div style={{ marginTop:12, paddingTop:12, borderTop:"1px solid "+GRAY200, display:"flex", alignItems:"center", gap:12 }}>
           <span style={{ fontSize:13, color:GRAY600 }}>Did you join the group?</span>
-          <button onClick={() => setConfirmed(true)} style={{ background:GREEN, color:WHITE, border:"none", borderRadius:8, padding:"8px 18px", fontSize:13, fontWeight:700, cursor:"pointer" }}>✓ I'm back — I joined it</button>
+          <button onClick={() => setConfirmed(true)} style={{ background:YELLOW, color:NAVY, border:"none", borderRadius:8, padding:"8px 18px", fontSize:13, fontWeight:700, cursor:"pointer" }}>I joined it →</button>
         </div>
       )}
     </div>
@@ -1248,7 +1248,7 @@ export default function App() {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
               Saved
             </div>
-            <button onClick={() => setAppPhase("lane")} style={{ background:"transparent", border:"1px solid rgba(255,255,255,0.3)", borderRadius:8, padding:"6px 14px", color:WHITE, fontSize:12, fontWeight:600, cursor:"pointer" }}>Save &amp; Exit</button>
+            <button onClick={() => setAppPhase("lane")} style={{ background:YELLOW, border:"none", borderRadius:8, padding:"8px 18px", color:NAVY, fontSize:13, fontWeight:800, cursor:"pointer" }}>Save &amp; Exit</button>
           </div>
         )}
       </div>
@@ -1353,24 +1353,91 @@ export default function App() {
 
         {appPhase==="waitforcoach" && (
           <div>
-            <Card style={{ background:NAVY, textAlign:"center" }}>
-              <div style={{ fontSize:52, marginBottom:12 }}>✋</div>
-              <h2 style={{ color:YELLOW, fontSize:24, fontWeight:900, margin:"0 0 12px" }}>Stop Here!</h2>
-              <p style={{ color:WHITE, fontSize:15, lineHeight:1.8, margin:"0 0 8px" }}>Your answers are saved. You're all set for your coaching session.</p>
-              <p style={{ color:GRAY400, fontSize:13, lineHeight:1.7, margin:"0 0 24px" }}>Don't go further until your Business Coach is with you. You'll generate your post and post it in groups together during the session.</p>
-              <div style={{ background:"rgba(255,255,255,0.06)", borderRadius:12, padding:"16px 20px", marginBottom:24 }}>
-                <p style={{ color:YELLOW, fontWeight:700, fontSize:14, margin:"0 0 4px" }}>What happens next:</p>
-                <p style={{ color:WHITE, fontSize:13, lineHeight:1.8, margin:0 }}>
-                  1. Join your coaching session<br/>
-                  2. Your coach will walk you through your post<br/>
-                  3. You'll post in 10 Facebook groups live
-                </p>
+            {/* Highlighted stop banner */}
+            <div style={{ background:YELLOW, borderRadius:16, padding:"24px 28px", marginBottom:20, display:"flex", alignItems:"center", gap:16, boxShadow:"0 4px 24px rgba(254,183,5,0.4)" }}>
+              <div style={{ fontSize:48, flexShrink:0 }}>✋</div>
+              <div>
+                <h2 style={{ color:NAVY, fontSize:24, fontWeight:900, margin:"0 0 6px" }}>Stop Here — Wait for Your Session</h2>
+                <p style={{ color:NAVY, fontSize:14, lineHeight:1.6, margin:0, opacity:0.8 }}>Your answers are saved. Don't go further until your Business Coach is live with you.</p>
               </div>
+            </div>
+
+            {/* What happens next */}
+            <Card style={{ background:NAVY }}>
+              <h3 style={{ color:YELLOW, fontSize:16, fontWeight:800, margin:"0 0 14px" }}>What happens in your session:</h3>
+              {[
+                { num:1, text:"Your coach reviews your answers with you" },
+                { num:2, text:"AI generates your trust-building Facebook post" },
+                { num:3, text:"You post it live in 10 local Facebook groups together" },
+              ].map(s => (
+                <div key={s.num} style={{ display:"flex", gap:12, marginBottom:10, alignItems:"flex-start" }}>
+                  <div style={{ background:YELLOW, color:NAVY, borderRadius:99, width:26, height:26, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:13, flexShrink:0 }}>{s.num}</div>
+                  <p style={{ margin:0, fontSize:14, color:WHITE, paddingTop:3, lineHeight:1.6 }}>{s.text}</p>
+                </div>
+              ))}
+            </Card>
+
+            {/* Photo prep */}
+            <Card>
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
+                <span style={{ fontSize:28 }}>📸</span>
+                <h3 style={{ color:NAVY, fontSize:18, fontWeight:800, margin:0 }}>Before Your Session — Pick Your Photo</h3>
+              </div>
+              <p style={{ color:GRAY600, fontSize:14, lineHeight:1.7, marginTop:4, marginBottom:20 }}>Your post needs a real photo of YOU attached to it. Find one now so you're ready to go the moment your session starts. Here's what works and what doesn't:</p>
+
+              <div style={{ fontWeight:700, color:GREEN, fontSize:13, marginBottom:10 }}>✅ GOOD — photos like these work great:</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:10, marginBottom:24 }}>
+                {[
+                  { url:"https://drive.google.com/uc?export=view&id=1ChbGQRHYWQxCy0IIyz1JiLJ5XNj7V-JI", label:"You with family outdoors", desc:"Real moment, face visible, natural light." },
+                  { url:"https://drive.google.com/uc?export=view&id=1cFmLArkqPrmMG2fO8GRMAy1Z-Q4RJuOH", label:"You with your partner", desc:"Warm, approachable, human connection." },
+                  { url:"https://drive.google.com/uc?export=view&id=1IvU6IZ82tNl40TKMaHP3bJ0BvygMnLKa", label:"Special life moment", desc:"Shows who you are outside of work." },
+                ].map((g,i) => (
+                  <div key={i} style={{ border:"2.5px solid #86EFAC", borderRadius:12, overflow:"hidden", background:"#F0FDF4" }}>
+                    <div style={{ position:"relative", paddingBottom:"75%", background:GRAY100 }}>
+                      <img src={g.url} alt={g.label} style={{ position:"absolute", top:0, left:0, width:"100%", height:"100%", objectFit:"cover" }} />
+                      <div style={{ position:"absolute", top:6, left:6, background:GREEN, color:WHITE, borderRadius:99, padding:"2px 8px", fontSize:10, fontWeight:800 }}>✓ GOOD</div>
+                    </div>
+                    <div style={{ padding:"10px 12px" }}>
+                      <div style={{ fontWeight:700, color:"#166534", fontSize:12, marginBottom:2 }}>{g.label}</div>
+                      <div style={{ fontSize:11, color:"#166534", lineHeight:1.4 }}>{g.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ fontWeight:700, color:RED, fontSize:13, marginBottom:10 }}>❌ DO NOT use photos like these:</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:10, marginBottom:20 }}>
+                {[
+                  { url:"https://drive.google.com/uc?export=view&id=1TBdHSJZ9Dnznmq_Zih0lx-BjbMopRVff", label:"Working but no face", desc:"No face = no connection. People buy from people." },
+                  { url:"https://drive.google.com/uc?export=view&id=1ku7xDVJZjzJg1ZaXXaM1Q8KbbbgNAfiB", label:"Logo or branding", desc:"Looks like an ad. Kills the neighbor feel instantly." },
+                  { url:"https://drive.google.com/uc?export=view&id=1M4c8M9Nr3792W_-CJ3uOAE08_IGNChmo", label:"No people in the photo", desc:"Nothing to connect with. You need to be in it." },
+                ].map((b,i) => (
+                  <div key={i} style={{ border:"2.5px solid #FCA5A5", borderRadius:12, overflow:"hidden", background:"#FEF2F2" }}>
+                    <div style={{ position:"relative", paddingBottom:"75%", background:GRAY100 }}>
+                      <img src={b.url} alt={b.label} style={{ position:"absolute", top:0, left:0, width:"100%", height:"100%", objectFit:"cover" }} />
+                      <div style={{ position:"absolute", top:6, left:6, background:RED, color:WHITE, borderRadius:99, padding:"2px 8px", fontSize:10, fontWeight:800 }}>✗ NO</div>
+                    </div>
+                    <div style={{ padding:"10px 12px" }}>
+                      <div style={{ fontWeight:700, color:"#991B1B", fontSize:12, marginBottom:2 }}>{b.label}</div>
+                      <div style={{ fontSize:11, color:"#991B1B", lineHeight:1.4 }}>{b.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ background:"#FEF9EC", border:"1.5px solid "+YELLOW, borderRadius:10, padding:"12px 16px", fontSize:13, color:NAVY, lineHeight:1.7 }}>
+                💡 <strong>Pro tip:</strong> Pull up your camera roll right now and find 2-3 options. Pick the one where your face is most visible and you look approachable. Have it ready to upload the moment your session starts.
+              </div>
+            </Card>
+
+            <Card style={{ textAlign:"center", background:GRAY50, border:"2px solid "+YELLOW }}>
+              <p style={{ color:NAVY, fontWeight:700, fontSize:15, margin:"0 0 16px" }}>Ready? Only click this when your coach is with you.</p>
               <Btn onClick={() => handleValidateAndAdvance(ALL_QUESTIONS, "groups")} style={{ margin:"0 auto" }}>
                 I'm in my session — let's continue →
               </Btn>
             </Card>
-            <div style={{ textAlign:"center" }}>
+
+            <div style={{ textAlign:"center", marginTop:8 }}>
               <button onClick={() => setAppPhase("ch1")} style={{ background:"none", border:"none", color:GRAY400, fontSize:13, cursor:"pointer", textDecoration:"underline" }}>← Go back and edit my answers</button>
             </div>
           </div>
@@ -1419,7 +1486,7 @@ export default function App() {
                   <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
                     <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
                       <Btn onClick={() => { try { const el=document.createElement("textarea"); el.value=post; el.style.position="fixed"; el.style.opacity="0"; document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el); setCopiedGetpost(true); } catch(e) { navigator.clipboard&&navigator.clipboard.writeText(post).then(()=>setCopiedGetpost(true)); } }} variant={copiedGetpost?"success":"primary"}>{copiedGetpost?"✓ Copied!":"📋 Copy Post"}</Btn>
-                      <Btn variant="ghost" onClick={() => handleGeneratePost()} disabled={postLoading}>↺ Regenerate</Btn>
+                      <Btn variant="secondary" onClick={() => handleGeneratePost()} disabled={postLoading}>↺ Regenerate</Btn>
                     </div>
                     {copiedGetpost && (
                       <div style={{ background:"#EFF6FF", border:"1.5px solid #93C5FD", borderRadius:12, padding:"14px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, flexWrap:"wrap" }}>
@@ -1517,7 +1584,7 @@ export default function App() {
                 ))}
               </div>
               {postCount>0&&postCount<9 && <div style={{ background:"#FEF9EC", border:"1.5px solid "+YELLOW, borderRadius:10, padding:"12px 16px", marginBottom:16, fontSize:13, color:GRAY800, lineHeight:1.6 }}>You have posted in <strong>{postCount+1} total groups</strong>. You still have <strong>{9-postCount} more to go</strong>. Keep going.</div>}
-              {postCount===9&&!tenDone && <Btn variant="success" onClick={() => { setFlag("tenDone",true); setFlag("completedSections",[...completedSections,"grouppost"]); saveSubmission(answers,post,"10 Groups Done"); }}>10 Groups Done! 🎯</Btn>}
+              {postCount===9&&!tenDone && <Btn onClick={() => { setFlag("tenDone",true); setFlag("completedSections",[...completedSections,"grouppost"]); saveSubmission(answers,post,"10 Groups Done"); }}>10 Groups Done! →</Btn>}
             </Card>
             {tenDone && (
               <Card style={{ background:NAVY, textAlign:"center" }}>
