@@ -594,14 +594,26 @@ function VoiceMode({ onComplete }) {
   useEffect(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { setMicErr("Speech recognition not supported in this browser."); return; }
-    const r = new SR(); r.continuous = false; r.interimResults = true; r.lang = "en-US";
+    const r = new SR(); r.continuous = true; r.interimResults = true; r.lang = "en-US";
+    try { r.maxAlternatives = 1; } catch(e) {}
     r.onresult = e => {
       let interim = "", final = "";
       for (let i = 0; i < e.results.length; i++) { if (e.results[i].isFinal) final += e.results[i][0].transcript; else interim += e.results[i][0].transcript; }
       const combined = final || interim;
       if (mountedRef.current) { setUserTranscript(combined); transcriptRef.current = combined; }
     };
-    r.onend = () => { if (!mountedRef.current) return; listeningRef.current = false; const t = transcriptRef.current.trim(); if (t && !processingRef.current) handleUserSpeech(t); };
+    r.onend = () => {
+      if (!mountedRef.current) return;
+      listeningRef.current = false;
+      const t = transcriptRef.current.trim();
+      if (t && !processingRef.current) {
+        // Wait 1.5s after speech ends before submitting — gives user time to keep talking
+        setTimeout(() => {
+          const latest = transcriptRef.current.trim();
+          if (latest && !processingRef.current) handleUserSpeech(latest);
+        }, 1500);
+      }
+    };
     r.onerror = e => { if (!mountedRef.current) return; listeningRef.current = false; if (e.error==="no-speech") { if (turn==="user") startMic(); return; } if (e.error==="not-allowed") setMicErr("Mic blocked — allow microphone access."); };
     recogRef.current = r;
   }, []);
