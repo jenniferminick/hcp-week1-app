@@ -349,6 +349,9 @@ const CHAPTER_META_I18N = {
   }
 };
 
+function lsGet(key, fallback) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; } }
+function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+
 const NAV_SECTIONS_I18N = {
   en: [
     { id:"write",     label:"Write Post",     phases:["ch1","ch2","ch3","waitforcoach"] },
@@ -1244,12 +1247,19 @@ function Amplify({ city, week1Total }) {
 }
 
 export default function App() {
-  const [lang, setLang] = useState("en");
-  const [appPhase, setAppPhase] = useState("lane");
-  const [answers, setAnswers] = useState({});
-  const [post, setPost] = useState("");
-  const [postEs, setPostEs] = useState("");
-  const [flags, setFlags] = useState({ postCount:0, coachApproved:false, tenDone:false, dmSent:false, stacked:false, completedSections:[] });
+  const [lang, setLang] = useState(() => { try { return localStorage.getItem("hcp_lang") || "en"; } catch { return "en"; } });
+  useEffect(() => { try { localStorage.setItem("hcp_lang", lang); } catch {} }, [lang]);
+  const [appPhase, setAppPhase] = useState(() => lsGet("hcp_phase", "lane"));
+  const [answers, setAnswers] = useState(() => lsGet("hcp_answers", {}));
+  const [post, setPost] = useState(() => lsGet("hcp_post", ""));
+  const [postEs, setPostEs] = useState(() => lsGet("hcp_post_es", ""));
+  const [flags, setFlags] = useState(() => lsGet("hcp_flags", { postCount:0, coachApproved:false, tenDone:false, dmSent:false, stacked:false, completedSections:[] }));
+
+  useEffect(() => { lsSet("hcp_answers", answers); }, [answers]);
+  useEffect(() => { lsSet("hcp_phase", appPhase); }, [appPhase]);
+  useEffect(() => { lsSet("hcp_post", post); }, [post]);
+  useEffect(() => { lsSet("hcp_post_es", postEs); }, [postEs]);
+  useEffect(() => { lsSet("hcp_flags", flags); }, [flags]);
   const [postLoading, setPostLoading] = useState(false);
   const [postError, setPostError] = useState("");
   const [copiedGetpost, setCopiedGetpost] = useState(false);
