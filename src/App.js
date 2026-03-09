@@ -14,22 +14,6 @@ const GREEN     = "#10B981";
 const RED       = "#EF4444";
 const COACH_PASSCODE = "coach123";
 
-const LS_ANSWERS = "hcp_answers";
-const LS_PHASE   = "hcp_phase";
-const LS_POST    = "hcp_post";
-const LS_FLAGS   = "hcp_flags";
-function lsGet(key, fallback) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; } }
-function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
-
-const METRICS_KEY = "hcp_pro_metrics";
-function loadMetrics() {
-  try { const raw = localStorage.getItem(METRICS_KEY); return raw ? JSON.parse(raw) : { totalGroupsPosted:0, totalLeadsWorked:{like:0,comment:0,share:0,dm:0}, totalJobsBooked:0, postGenerated:false, coachApproved:false, lastUpdated:null }; }
-  catch { return { totalGroupsPosted:0, totalLeadsWorked:{like:0,comment:0,share:0,dm:0}, totalJobsBooked:0, postGenerated:false, coachApproved:false, lastUpdated:null }; }
-}
-function saveMetrics(m) { try { localStorage.setItem(METRICS_KEY, JSON.stringify({...m, lastUpdated:Date.now()})); } catch {} }
-
-const IS_INTERNAL = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("dev") === "true";
-
 const NAV_SECTIONS = [
   { id:"write",     label:"Write Post",     phases:["ch1","ch2","ch3","waitforcoach"] },
   { id:"grouppost", label:"Post in Groups", phases:["groups","getpost","photo","dopost","approval","replicate"] },
@@ -81,6 +65,24 @@ const ch1Qs = ALL_QUESTIONS.filter(q => q.chapter === "ch1");
 const ch2Qs = ALL_QUESTIONS.filter(q => q.chapter === "ch2");
 const ch3Qs = ALL_QUESTIONS.filter(q => q.chapter === "ch3");
 
+const INSPIRATION_EXAMPLES = {
+  name:         ["Lisa Tran", "Derek Fowler", "Carlos Reyes"],
+  business:     ["Tran Electrical Services", "Fowler Plumbing", "Reyes Landscaping"],
+  area:         ["Brentwood, Franklin, and Spring Hill — been serving these communities for 8 years now", "North Austin and Round Rock — my family has lived here my whole life, going on 34 years"],
+  knownFor:     ["same-day water heater guy", "the no-mess electrician", "lawn rescue specialist"],
+  topServices:  ["panel upgrades and EV charger installs", "water heater replacement and drain cleaning", "lawn care and seasonal cleanups"],
+  refuses:      ["I will never quote a job over the phone just to lock someone in and then inflate the price once I am on site", "I refuse to recommend a full replacement when a simple repair will solve the problem"],
+  humanDetail:  ["I coach my daughter's soccer team every Saturday morning and we have not missed a game in three seasons rain or shine", "I have been restoring a 1972 Chevelle in my garage for two years and my teenage son has started helping me on weekends"],
+  localPlace:   ["Turnip Truck Organic Market in East Nashville", "Pinewood Social in the Gulch", "Barista Parlor on Gallatin Ave"],
+  localActivity:["always grab the breakfast tacos and eat them on the patio before the rush hits", "take my kids there every Sunday after church and we always split the pancakes"],
+  mission:      ["breakfast burrito in Phoenix", "smash burger in Dallas", "fish tacos in San Diego"],
+  whyStarted:   ["I watched my old boss talk down to customers like they were stupid for not knowing how electricity works and one day I just could not take it anymore and walked out", "After my dad got overcharged by a contractor who took advantage of him not knowing better I decided I was going to be the guy people could actually trust"],
+  whatChanged:  ["I finally stopped missing my kids bedtime every night and I coached little league for the first time this spring", "My wife says I actually smile when I come home now instead of walking in exhausted and defeated"],
+  heroCrisis:   ["A young mom called me on a Friday afternoon her water heater had flooded her basement and she had family coming in for a birthday party the next morning and she was completely panicked", "An elderly man called me in August his AC had been out for four days during a heat advisory and his doctor had told him to stay cool"],
+  heroSacrifice:["I drove out there after my daughter's recital worked until midnight and only charged her for parts because it was the right thing to do", "I cancelled my Saturday plans and spent the whole day getting it fixed at cost"],
+  heroPayoff:   ["She called me the next week just to say thank you and has sent me three referrals since then", "He shook my hand for a long time and said I reminded him of his son I still think about that"],
+};
+
 const BOOKING_SCRIPT = "I've got a few openings this week. Want me to save you a spot? I just need your name, address, email address, and phone number and I will handle the rest.";
 const LEAD_TYPES = [
   { id:"like", emoji:"👍", label:"Like or Emoji", color:"#FEF9EC", border:YELLOW, simple:true,
@@ -106,14 +108,14 @@ const LEAD_TYPES = [
   { id:"dm", emoji:"✉️", label:"Direct Message", color:"#FDF4FF", border:"#D8B4FE", simple:false,
     subtypes:[
       { id:"dm_service_yes", label:"Asked about a service you offer", example:'"Do you do water heater installs?"', dmScript:"Hey, thanks so much for reaching out. I really appreciate it. I wasn't sure how that post would land, so it means a lot that it resonated. We absolutely can help with [service name]. " + BOOKING_SCRIPT },
-      { id:"dm_service_no", label:"Asked about a service you don't offer", example:'"Do you do roof repairs?"', dmScript:"Hey, thanks so much for reaching out. I really appreciate it. I wasn't sure how that post would land, so it means a lot that it resonated. We don't provide [service you don't offer] but we do provide [services you offer]. Is there another item on your to-do list we can help with?" },
+      { id:"dm_service_no", label:"Asked about a service you don't offer", example:'"Do you do roof repairs?"', dmScript:"Hey, thanks so much for reaching out. I really appreciate it. I wasn't sure how that post would land, so it means a lot that it resonated. We don't provide [service] but we do provide [your services]. Is there another item on your to-do list we can help with?" },
       { id:"dm_general_q", label:"General question or area check", example:'"Do you service Hermitage?"', dmScript:"Hey, thanks so much for reaching out. I really appreciate it. I wasn't sure how that post would land, so it means a lot that it resonated. [Insert your answer to their question here.]" },
       { id:"dm_needs_now", label:"Needs help now", example:'"I was just about to call someone — DMing you now!"', dmScript:"Hey, thanks so much for reaching out. I really appreciate it. I wasn't sure how that post would land, so it means a lot that it resonated. " + BOOKING_SCRIPT },
       { id:"dm_praise", label:"Praise or encouragement", example:'"Way to go! Love what you\'re doing."', dmScript:"Hey [Name], really appreciate the encouragement. Means a lot to know the work we're doing is connecting with people. If you ever need help with [services], I'd be glad to take care of you." },
       { id:"dm_testimonial", label:"Past customer or testimonial", example:'"He did our siding last year — highly recommend!"', dmScript:"Your recommendation means the world to me. Referrals and word of mouth are what keep small businesses like mine alive. Do you know anyone else who could use [services]?" },
       { id:"dm_referral", label:"Referral or future interest", example:'"Can you help my friend?"', dmScript:"Hey, thanks so much for reaching out. I really appreciate it. The best compliment someone can give us is to refer us to someone else. We'd love to help them out — could you share their name and phone number?" },
       { id:"dm_community", label:"Community connection", example:'"We need more people like you in this town!"', dmScript:"I love being part of [city/community], and I want people here to know they have someone they can trust for [services]. If you ever need help at your place, I'd be glad to." },
-      { id:"dm_competitor", label:"Competitor or peer", example:'"We do the same services in another town."', dmScript:"Great to hear from you, [Name]. I've found there's more than enough work to go around, and sometimes the right partnership can be a win-win. If you ever have overflow jobs or something outside your focus, feel free to send them my way. I'll do the same for you." },
+      { id:"dm_competitor", label:"Competitor or peer", example:'"We do the same services in another town."', dmScript:"Great to hear from you, [Name]. I've found there's more than enough work to go around. If you ever have overflow jobs or something outside your focus, feel free to send them my way. I'll do the same for you." },
       { id:"dm_emotional", label:"Emotional support or values-based", example:'"I\'m so proud of you. Blessings to you!"', dmScript:"That's so kind of you, [Name]. Messages like this remind me why I started this business. Thank you for taking the time to say that." },
     ]},
 ];
@@ -130,19 +132,6 @@ const BAD_PHOTOS = [
 ];
 
 function wordCount(str) { return (str||"").trim().split(/\s+/).filter(Boolean).length; }
-
-async function speakEL(text) {
-  if (!text) return;
-  try {
-    const res = await fetch("/api/tts", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ text }) });
-    if (!res.ok) return;
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    audio.play();
-    audio.onended = () => URL.revokeObjectURL(url);
-  } catch(e) { console.warn("TTS failed:", e); }
-}
 
 async function callClaude(messages, system) {
   const body = { model:"claude-sonnet-4-20250514", max_tokens:2000, messages };
@@ -162,8 +151,7 @@ async function findFacebookGroups(city, count) {
   const match = reply.match(/\[[\s\S]*?\]/); if (!match) return [];
   try {
     const parsed = JSON.parse(match[0]); if (!Array.isArray(parsed)) return [];
-    return parsed.filter(g => g.name).map(g => ({...g, url:"https://www.facebook.com/search/groups/?q="+encodeURIComponent(g.name)}))
-      .sort((a,b) => a.privacy==="Public"?-1:1);
+    return parsed.filter(g => g.name).map(g => ({...g, url:"https://www.facebook.com/search/groups/?q="+encodeURIComponent(g.name)})).sort((a,b) => a.privacy==="Public"?-1:1);
   } catch(e) { return []; }
 }
 async function generateAIPost(ans) {
@@ -209,7 +197,6 @@ function getNextStep(answers, post, completedSections, coachApproved, postCount,
   return { label:"Week 1 Complete — Keep Going!", phase:"leads", emoji:"🎯" };
 }
 
-// ── Shared UI ─────────────────────────────────────────────────────────────────
 function Card({ children, style }) {
   return <div style={Object.assign({ background:WHITE, borderRadius:16, padding:28, boxShadow:"0 4px 24px rgba(0,41,66,0.08)", marginBottom:20 }, style||{})}>{children}</div>;
 }
@@ -393,13 +380,13 @@ function GroupPostRow({ group, num }) {
 function PhotoGuideReal() {
   return (
     <>
-      <div style={{ fontWeight:700, color:GREEN, fontSize:13, marginBottom:10 }}>✅ GOOD — photos like these work great:</div>
+      <div style={{ fontWeight:700, color:GREEN, fontSize:13, marginBottom:10 }}>✅ Anti-Ad — photos like these work great:</div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:10, marginBottom:24 }}>
         {GOOD_PHOTOS.map((g,i) => (
           <div key={i} style={{ border:"2.5px solid #86EFAC", borderRadius:12, overflow:"hidden", background:"#F0FDF4" }}>
             <div style={{ position:"relative", paddingBottom:"75%", background:GRAY100 }}>
               <img src={g.url} alt={g.label} style={{ position:"absolute", top:0, left:0, width:"100%", height:"100%", objectFit:"cover" }} />
-              <div style={{ position:"absolute", top:6, left:6, background:GREEN, color:WHITE, borderRadius:99, padding:"2px 8px", fontSize:10, fontWeight:800 }}>✓ GOOD</div>
+              <div style={{ position:"absolute", top:6, left:6, background:GREEN, color:WHITE, borderRadius:99, padding:"2px 8px", fontSize:10, fontWeight:800 }}>✓ ANTI-AD</div>
             </div>
             <div style={{ padding:"10px 12px" }}>
               <div style={{ fontWeight:700, color:"#166534", fontSize:12, marginBottom:2 }}>{g.label}</div>
@@ -408,13 +395,13 @@ function PhotoGuideReal() {
           </div>
         ))}
       </div>
-      <div style={{ fontWeight:700, color:RED, fontSize:13, marginBottom:10 }}>❌ DO NOT use photos like these:</div>
+      <div style={{ fontWeight:700, color:RED, fontSize:13, marginBottom:10 }}>❌ Advertisement — avoid photos like these:</div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:10 }}>
         {BAD_PHOTOS.map((b,i) => (
           <div key={i} style={{ border:"2.5px solid #FCA5A5", borderRadius:12, overflow:"hidden", background:"#FEF2F2" }}>
             <div style={{ position:"relative", paddingBottom:"75%", background:GRAY100 }}>
               <img src={b.url} alt={b.label} style={{ position:"absolute", top:0, left:0, width:"100%", height:"100%", objectFit:"cover" }} />
-              <div style={{ position:"absolute", top:6, left:6, background:RED, color:WHITE, borderRadius:99, padding:"2px 8px", fontSize:10, fontWeight:800 }}>✗ NO</div>
+              <div style={{ position:"absolute", top:6, left:6, background:RED, color:WHITE, borderRadius:99, padding:"2px 8px", fontSize:10, fontWeight:800 }}>✗ AD</div>
             </div>
             <div style={{ padding:"10px 12px" }}>
               <div style={{ fontWeight:700, color:"#991B1B", fontSize:12, marginBottom:2 }}>{b.label}</div>
@@ -445,7 +432,7 @@ function EvidenceCapture({ onSubmit }) {
         <label style={{ display:"block", fontWeight:700, color:NAVY, fontSize:14, marginBottom:8 }}>Option 1 — Paste your Facebook post URL</label>
         <input type="url" value={url} onChange={e => { setUrl(e.target.value); if (screenshot) { setScreenshot(null); setScreenshotName(""); } }} placeholder="https://www.facebook.com/groups/..."
           style={{ width:"100%", boxSizing:"border-box", border:"2px solid "+(urlValid?GREEN:GRAY200), borderRadius:10, padding:"10px 14px", fontSize:14, outline:"none", fontFamily:"inherit", background:"transparent" }} />
-        {urlValid && <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:8 }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span style={{ fontSize:13, color:GREEN, fontWeight:700 }}>URL accepted!</span></div>}
+        {urlValid && <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:8 }}><span style={{ color:GREEN, fontWeight:700, fontSize:13 }}>✓ URL accepted!</span></div>}
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:20 }}>
         <div style={{ flex:1, height:1, background:GRAY200 }} /><span style={{ fontSize:12, color:GRAY400, fontWeight:700 }}>OR</span><div style={{ flex:1, height:1, background:GRAY200 }} />
@@ -559,9 +546,17 @@ function WaitForCoach({ answers, onContinue, onBack }) {
       "Human detail: " + (answers.humanDetail||"") + "\n" +
       "Local place: " + (answers.localPlace||"") + "\n" +
       "Local activity: " + (answers.localActivity||"") + "\n\n" +
-      "Return ONLY this exact format, nothing else:\nBEST: [one sentence]\nBETTER: [one sentence]\nGOOD: [one sentence]"
-    }]).then(r => { setSuggestion(r); setLoading(false); }).catch(() => { setSuggestion("GOOD: A solo shot of you at your favorite local spot.\nBETTER: You with a family member doing something you love.\nBEST: A candid real moment that shows your personality outside of work."); setLoading(false); });
+      "Return ONLY this exact format, nothing else:\nGOOD: [one sentence]\nBETTER: [one sentence]\nBEST: [one sentence]"
+    }]).then(r => { setSuggestion(r); setLoading(false); })
+      .catch(() => { setSuggestion("GOOD: A solo shot of you at your favorite local spot.\nBETTER: You with a family member doing something you love.\nBEST: A candid real moment that shows your personality outside of work."); setLoading(false); });
   }, []);
+
+  const suggestionLines = suggestion.split("\n").filter(Boolean);
+  const tileColors = [
+    { bg:"#F0FDF4", border:"#86EFAC", labelBg:GREEN,     labelColor:WHITE },
+    { bg:"#EFF6FF", border:"#93C5FD", labelBg:"#3B82F6", labelColor:WHITE },
+    { bg:"#FEF9EC", border:YELLOW,    labelBg:YELLOW,    labelColor:NAVY  },
+  ];
 
   return (
     <div>
@@ -593,34 +588,28 @@ function WaitForCoach({ answers, onContinue, onBack }) {
           <h3 style={{ color:NAVY, fontSize:18, fontWeight:800, margin:0 }}>Before Your Session — Find Your Photo</h3>
         </div>
         <p style={{ color:GRAY600, fontSize:14, lineHeight:1.7, marginBottom:16 }}>Based on your answers, here are personalized photo ideas just for you:</p>
-        <div style={{ background:"#EFF6FF", border:"1.5px solid #93C5FD", borderRadius:12, padding:"14px 18px", marginBottom:20 }}>
+
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:24 }}>
           {loading ? (
-            <div style={{ display:"flex", alignItems:"center", gap:10, color:GRAY400, fontSize:13 }}>
+            <div style={{ gridColumn:"1/-1", display:"flex", alignItems:"center", gap:10, color:GRAY400, fontSize:13, padding:"14px 16px", background:GRAY50, borderRadius:10 }}>
               <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-              <div style={{ width:16, height:16, border:"2px solid #93C5FD", borderTopColor:NAVY, borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />
+              <div style={{ width:16, height:16, border:"2px solid "+GRAY200, borderTopColor:NAVY, borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />
               Personalizing your photo suggestions...
             </div>
-          ) : (
-            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-              {suggestion.split("\n").filter(Boolean).map((line, i) => {
-                const [label, ...rest] = line.split(": ");
-                const text = rest.join(": ");
-                const colors = [
-                  { bg:"#FEF9EC", border:YELLOW, labelBg:YELLOW, labelColor:NAVY },
-                  { bg:"#EFF6FF", border:"#93C5FD", labelBg:"#3B82F6", labelColor:WHITE },
-                  { bg:"#F0FDF4", border:"#86EFAC", labelBg:GRAY400, labelColor:WHITE },
-                ];
-                const c = colors[i] || colors[0];
-                return (
-                  <div key={i} style={{ background:c.bg, border:"1.5px solid "+c.border, borderRadius:10, padding:"10px 14px", display:"flex", alignItems:"flex-start", gap:10 }}>
-                    <span style={{ background:c.labelBg, color:c.labelColor, borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:800, flexShrink:0, marginTop:1 }}>{label}</span>
-                    <span style={{ fontSize:13, color:NAVY, lineHeight:1.6 }}>{text}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          ) : suggestionLines.map((line, i) => {
+            const colonIdx = line.indexOf(": ");
+            const label = colonIdx > -1 ? line.slice(0, colonIdx) : "";
+            const text  = colonIdx > -1 ? line.slice(colonIdx + 2) : line;
+            const c = tileColors[i] || tileColors[2];
+            return (
+              <div key={i} style={{ background:c.bg, border:"1.5px solid "+c.border, borderRadius:12, padding:"16px 14px", display:"flex", flexDirection:"column", gap:8 }}>
+                <span style={{ background:c.labelBg, color:c.labelColor, borderRadius:6, padding:"3px 10px", fontSize:11, fontWeight:800, alignSelf:"flex-start" }}>{label}</span>
+                <span style={{ fontSize:13, color:NAVY, lineHeight:1.6 }}>{text}</span>
+              </div>
+            );
+          })}
         </div>
+
         <p style={{ color:GRAY600, fontSize:13, fontWeight:600, marginBottom:12 }}>Here's what works and what doesn't:</p>
         <PhotoGuideReal />
         <div style={{ background:"#FEF9EC", border:"1.5px solid "+YELLOW, borderRadius:10, padding:"12px 16px", fontSize:13, color:NAVY, lineHeight:1.7, marginTop:20 }}>
@@ -667,7 +656,7 @@ function VoiceMode({ onComplete }) {
   function coachSay(text, afterSpeaking) {
     if (!mountedRef.current) return;
     setCoachText(text); setTurn("coach");
-    speakEL(text).then(() => { if (!mountedRef.current) return; if (afterSpeaking) afterSpeaking(); else openMic(); });
+    setTimeout(() => { if (!mountedRef.current) return; if (afterSpeaking) afterSpeaking(); else openMic(); }, 1000);
   }
   function openMic() { if (!mountedRef.current) return; setTurn("user"); setUserTranscript(""); transcriptRef.current = ""; startMic(); }
   useEffect(() => {
@@ -680,41 +669,35 @@ function VoiceMode({ onComplete }) {
       const combined = final || interim;
       if (mountedRef.current) { setUserTranscript(combined); transcriptRef.current = combined; }
     };
-    r.onend = () => {
-      if (!mountedRef.current) return;
-      listeningRef.current = false;
-      const t = transcriptRef.current.trim();
-      if (t && !processingRef.current) {
-        setTimeout(() => { const latest = transcriptRef.current.trim(); if (latest && !processingRef.current) handleUserSpeech(latest); }, 1500);
-      }
-    };
+    r.onend = () => { if (!mountedRef.current) return; listeningRef.current = false; };
     r.onerror = e => { if (!mountedRef.current) return; listeningRef.current = false; if (e.error==="not-allowed") setMicErr("Mic blocked."); };
     recogRef.current = r;
   }, []);
-  async function handleUserSpeech(text) {
+  async function handleUserDone() {
     if (processingRef.current || !mountedRef.current) return;
-    processingRef.current = true; stopMic(); setTurn("thinking");
+    stopMic();
+    const t = transcriptRef.current.trim();
+    if (!t) { coachSay("I didn't catch that. Could you say it again?", openMic); return; }
+    processingRef.current = true; setTurn("thinking");
     const q = rerecordRef.current ? ALL_QUESTIONS.find(x => x.id===rerecordRef.current) : ALL_QUESTIONS[qIdxRef.current];
     const isLast = !rerecordRef.current && qIdxRef.current === ALL_QUESTIONS.length-1;
     const nextQ = ALL_QUESTIONS[Math.min(qIdxRef.current+1, ALL_QUESTIONS.length-1)];
     let reply = "";
-    try {
-      reply = await callClaude([{ role:"user", content:"You are a warm business coach on a voice call. SHORT responses — 1-2 sentences max. Natural spoken language.\n\nQuestion: "+q.label+"\nNeeded: "+q.hint+"\nMin words: "+q.minWords+"\nSaid: "+text+"\n\nIf specific and meets word count: ACCEPT: [warm sentence]. Then ask: "+nextQ.hint+"\nIf vague or short: FOLLOWUP: [one coaching question]\nUse contractions. Be warm." }]);
-    } catch(e) { reply = "FOLLOWUP: Could you tell me a bit more about that?"; }
+    try { reply = await callClaude([{ role:"user", content:"You are a warm business coach on a voice call. SHORT responses 1-2 sentences max.\n\nQuestion: "+q.label+"\nNeeded: "+q.hint+"\nMin words: "+q.minWords+"\nSaid: "+t+"\n\nIf specific and meets word count: ACCEPT: [warm sentence]. Then ask: "+nextQ.hint+"\nIf vague or short: FOLLOWUP: [one coaching question]\nUse contractions. Be warm." }]); }
+    catch(e) { reply = "FOLLOWUP: Could you tell me a bit more about that?"; }
     if (!mountedRef.current) { processingRef.current = false; return; }
     const isAccept = reply.trim().toUpperCase().startsWith("ACCEPT");
     const msg = reply.replace(/^ACCEPT:\s*/i,"").replace(/^FOLLOWUP:\s*/i,"").trim();
     if (isAccept) {
       const id = rerecordRef.current || q.id;
-      setVoiceAnswers(prev => ({...prev, [id]:text})); setRerecordId(null);
-      if (!rerecordRef.current && isLast) { processingRef.current = false; setDone(true); coachSay(msg||"That's everything. Amazing work. Let's build your post.", () => {}); return; }
+      setVoiceAnswers(prev => ({...prev, [id]:t})); setRerecordId(null);
+      if (!rerecordRef.current && isLast) { processingRef.current = false; setDone(true); setCoachText(msg||"That's everything. Amazing work."); setTurn("coach"); return; }
       if (!rerecordRef.current) setQIdx(i => i+1);
     }
     processingRef.current = false; coachSay(msg, openMic);
   }
   function handleStart() { setStarted(true); setTimeout(() => { coachSay("Hey, I'm going to walk you through 15 questions to build your story. Take your time. Let's start: " + ALL_QUESTIONS[0].hint); }, 200); }
   function handleRerecord(id) { setRerecordId(id); const q = ALL_QUESTIONS.find(x => x.id===id); coachSay("Sure, let's redo that. " + q.hint); }
-  function handleUserDone() { stopMic(); setTimeout(() => { const t = transcriptRef.current.trim(); if (t) handleUserSpeech(t); else coachSay("I didn't catch that. Could you say it again?", openMic); }, 150); }
   const chapterLabel = currentQ ? {ch1:"Chapter 1",ch2:"Chapter 2",ch3:"Chapter 3"}[currentQ.chapter] : "";
   return (
     <div>
@@ -809,18 +792,16 @@ function Amplify({ city: initialCity, week1Total }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [amplifyCount, setAmplifyCount] = useState(0);
-  const [cityInput, setCityInput] = useState(initialCity && initialCity !== "Your City" ? initialCity : "");
-  const activeCity = cityInput.trim() || initialCity;
+  const activeCity = initialCity;
   const totalPosted = (week1Total||0) + amplifyCount;
-  async function fetchGroups(cityOverride) {
-    const c = cityOverride || activeCity;
-    if (!c || c === "Your City") { setError("Please enter your city."); return; }
+  async function fetchGroups() {
+    if (!activeCity || activeCity === "Your City") { setError("Please enter your city."); return; }
     setLoading(true); setError("");
-    try { const fresh = await findFacebookGroups(c, 20); setGroups(fresh); if (!fresh.length) setError("No groups found. Try a nearby city."); }
+    try { const fresh = await findFacebookGroups(activeCity, 20); setGroups(fresh); if (!fresh.length) setError("No groups found. Try a nearby city."); }
     catch(e) { setError("Could not load groups."); }
     setLoading(false);
   }
-  useEffect(() => { if (activeCity && activeCity !== "Your City") fetchGroups(activeCity); }, []);
+  useEffect(() => { if (activeCity && activeCity !== "Your City") fetchGroups(); }, []);
   return (
     <>
       <Card style={{ background:NAVY }}>
@@ -839,7 +820,7 @@ function Amplify({ city: initialCity, week1Total }) {
       <Card>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14, flexWrap:"wrap", gap:10 }}>
           <h3 style={{ color:NAVY, fontSize:16, fontWeight:800, margin:0 }}>More groups near you</h3>
-          <button onClick={() => fetchGroups()} disabled={loading} style={{ background:NAVY, color:YELLOW, border:"none", borderRadius:8, padding:"8px 16px", fontSize:12, fontWeight:700, cursor:"pointer" }}>{loading?"Loading...":"↺ Refresh"}</button>
+          <button onClick={fetchGroups} disabled={loading} style={{ background:NAVY, color:YELLOW, border:"none", borderRadius:8, padding:"8px 16px", fontSize:12, fontWeight:700, cursor:"pointer" }}>{loading?"Loading...":"↺ Refresh"}</button>
         </div>
         {error && <div style={{ background:"#FEF2F2", borderRadius:10, padding:12, color:RED, fontSize:13, marginBottom:12 }}>{error}</div>}
         {loading && <p style={{ color:GRAY600, fontSize:14, textAlign:"center", padding:24 }}>🔍 Finding groups...</p>}
@@ -889,8 +870,11 @@ function ProgressiveForm({ answers, onAnswer, onExit, onComplete, validationFeed
   const isLastQ = idx === ALL_QUESTIONS.length-1;
   const isFirstQ = idx === 0;
   const totalAnswered = ALL_QUESTIONS.filter(x => wordCount(answers[x.id]) >= x.minWords).length;
+  const inspoExamples = INSPIRATION_EXAMPLES[q.id] || [];
+
   useEffect(() => { if (visible && textareaRef.current) setTimeout(() => textareaRef.current && textareaRef.current.focus(), 320); }, [idx, visible]);
   useEffect(() => { onPhaseChange(q.chapter); }, [idx]);
+
   function navigate(newIdx, direction) { if (animating) return; setDir(direction); setAnimating(true); setVisible(false); setTimeout(() => { setIdx(newIdx); setVisible(true); setAnimating(false); }, 260); }
   function handleNext() { if (!met) return; if (isLastQ) { onComplete(); return; } navigate(idx+1, 1); }
   function handleBack() { if (isFirstQ) { onExit(); return; } navigate(idx-1, -1); }
@@ -898,6 +882,7 @@ function ProgressiveForm({ answers, onAnswer, onExit, onComplete, validationFeed
   const slideStyle = { transition:visible?"opacity 0.25s ease, transform 0.25s ease":"opacity 0.2s ease, transform 0.2s ease", opacity:visible?1:0, transform:visible?"translateX(0)":dir===1?"translateX(-40px)":"translateX(40px)" };
   const borderColor = wc===0?GRAY200:met?GREEN:RED;
   const bgColor = wc===0?WHITE:met?"#F0FDF4":"#FFF5F5";
+
   return (
     <div>
       <div style={{ marginBottom:12, display:"flex", alignItems:"center", gap:10 }}>
@@ -918,10 +903,21 @@ function ProgressiveForm({ answers, onAnswer, onExit, onComplete, validationFeed
             <span style={{ fontWeight:800, color:validationFeedback[q.id]?RED:NAVY, fontSize:17 }}>{q.label}</span>
             <MicBtn onTranscript={handleMic} size={28} previewValue={answers[q.id]||""} onPreviewChange={v => onAnswer(q.id, v)} />
           </div>
-          <p style={{ fontSize:13, color:GRAY600, margin:"0 0 4px" }}>{q.hint}</p>
-          <p style={{ fontSize:12, color:GRAY600, fontStyle:"italic", margin:"0 0 10px" }}>{q.placeholder}</p>
+          <p style={{ fontSize:13, color:GRAY600, margin:"0 0 10px" }}>{q.hint}</p>
           {validationFeedback[q.id] && <div style={{ background:"#FEE2E2", border:"1px solid #FCA5A5", borderRadius:8, padding:"10px 14px", marginBottom:10, fontSize:13, color:"#7F1D1D", lineHeight:1.7 }}>💬 {validationFeedback[q.id]}</div>}
-          <textarea ref={textareaRef} value={answers[q.id]||""} onChange={e => onAnswer(q.id, e.target.value)} placeholder="Type or tap mic to speak..." rows={3}
+
+          {inspoExamples.length > 0 && (
+            <div style={{ background:"#FEF9EC", border:"1.5px solid "+YELLOW, borderRadius:10, padding:"12px 14px", marginBottom:12 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:NAVY, marginBottom:8, textTransform:"uppercase", letterSpacing:"0.05em" }}>Examples from other Pros:</div>
+              {[q.placeholder, ...inspoExamples].map((ex, i) => (
+                <div key={i} style={{ fontSize:13, color:GRAY800, lineHeight:1.6, marginBottom:i < inspoExamples.length ? 8 : 0, paddingBottom:i < inspoExamples.length ? 8 : 0, borderBottom:i < inspoExamples.length ? "1px solid #FDE68A" : "none" }}>
+                  {ex}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <textarea ref={textareaRef} value={answers[q.id]||""} onChange={e => onAnswer(q.id, e.target.value)} placeholder="Type your answer here..." rows={3}
             style={{ width:"100%", boxSizing:"border-box", border:"2px solid "+borderColor, borderRadius:10, padding:"10px 14px", fontSize:14, color:GRAY800, fontFamily:"inherit", resize:"vertical", outline:"none", background:bgColor, marginBottom:6 }} />
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:20, minHeight:18 }}>
             {wc > 0 ? (
@@ -932,7 +928,7 @@ function ProgressiveForm({ answers, onAnswer, onExit, onComplete, validationFeed
             <Btn variant="ghost" onClick={handleBack} style={{ fontSize:13, padding:"8px 14px" }}>← {isFirstQ?"Back":"Previous"}</Btn>
             <div style={{ display:"flex", alignItems:"center", gap:10 }}>
               <span style={{ fontSize:12, color:GRAY400 }}>{idx+1} / {ALL_QUESTIONS.length}</span>
-              <Btn onClick={handleNext} disabled={!met||animating}>{validating?"Checking...":isLastQ?"Next →":"Next →"}</Btn>
+              <Btn onClick={handleNext} disabled={!met||animating}>Next →</Btn>
             </div>
           </div>
         </div>
@@ -947,22 +943,19 @@ function LeadEngagement({ onBack, city, week1Total, onAmplify }) {
   const [subtype, setSubtype] = useState(null);
   const [copiedIdx, setCopiedIdx] = useState(null);
   const [log, setLog] = useState([]);
-  const [metrics, setMetrics] = useState(loadMetrics);
+  const [jobsBooked, setJobsBooked] = useState(0);
   const [jobsInput, setJobsInput] = useState("");
   const [showJobEntry, setShowJobEntry] = useState(false);
-  useEffect(() => { saveMetrics(metrics); }, [metrics]);
   const activeLead = LEAD_TYPES.find(l => l.id===active);
   const activeSubtype = activeLead && subtype ? (activeLead.subtypes||[]).find(s => s.id===subtype) : null;
   function copyScript(text, idx) {
     try { const el = document.createElement("textarea"); el.value=text; el.style.position="fixed"; el.style.opacity="0"; document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el); } catch(e) { navigator.clipboard && navigator.clipboard.writeText(text); }
     setCopiedIdx(idx); setTimeout(() => setCopiedIdx(null), 2000);
   }
-  function logLead(typeId, count=1) { setLog(prev => [...prev, ...Array.from({length:count}, () => ({type:typeId, timestamp:Date.now()}))]); setMetrics(prev => ({...prev, totalLeadsWorked:{...prev.totalLeadsWorked, [typeId]:(prev.totalLeadsWorked[typeId]||0)+count}})); }
-  function addJobs(n) { setMetrics(prev => ({...prev, totalJobsBooked:(prev.totalJobsBooked||0)+n})); setJobsInput(""); setShowJobEntry(false); }
+  function logLead(typeId, count=1) { setLog(prev => [...prev, ...Array.from({length:count}, () => ({type:typeId, timestamp:Date.now()}))]); }
   function reset() { setActive(null); setSubtype(null); }
   const sessionCounts = LEAD_TYPES.reduce((acc,t) => { acc[t.id]=log.filter(l=>l.type===t.id).length; return acc; }, {});
   const sessionTotal = log.length;
-  const lifetimeTotal = Object.values(metrics.totalLeadsWorked).reduce((a,b)=>a+b,0);
   function ScriptBlock({ text, idx }) {
     return (
       <div style={{ background:GRAY50, border:"1.5px solid "+GRAY200, borderRadius:12, padding:"14px 16px", marginBottom:10 }}>
@@ -1004,9 +997,8 @@ function LeadEngagement({ onBack, city, week1Total, onAmplify }) {
               <div><h2 style={{ color:YELLOW, fontSize:20, fontWeight:900, margin:"0 0 4px" }}>Work Your Leads</h2><p style={{ color:GRAY400, fontSize:13, margin:0 }}>Pick the type of engagement. Follow the steps. Book the job.</p></div>
               <div style={{ display:"flex", gap:10 }}>
                 <div style={{ background:"rgba(255,255,255,0.08)", borderRadius:12, padding:"10px 16px", textAlign:"center", minWidth:72 }}><div style={{ color:YELLOW, fontWeight:900, fontSize:24, lineHeight:1 }}>{sessionTotal}</div><div style={{ color:GRAY400, fontSize:10, marginTop:3 }}>this session</div></div>
-                <div style={{ background:"rgba(255,255,255,0.08)", borderRadius:12, padding:"10px 16px", textAlign:"center", minWidth:72 }}><div style={{ color:YELLOW, fontWeight:900, fontSize:24, lineHeight:1 }}>{lifetimeTotal}</div><div style={{ color:GRAY400, fontSize:10, marginTop:3 }}>all-time</div></div>
                 <div style={{ background:"rgba(16,185,129,0.15)", border:"1px solid rgba(16,185,129,0.3)", borderRadius:12, padding:"10px 16px", textAlign:"center", minWidth:72, cursor:"pointer" }} onClick={() => setShowJobEntry(v=>!v)}>
-                  <div style={{ color:GREEN, fontWeight:900, fontSize:24, lineHeight:1 }}>{metrics.totalJobsBooked}</div><div style={{ color:GREEN, fontSize:10, marginTop:3 }}>jobs booked ＋</div>
+                  <div style={{ color:GREEN, fontWeight:900, fontSize:24, lineHeight:1 }}>{jobsBooked}</div><div style={{ color:GREEN, fontSize:10, marginTop:3 }}>jobs booked ＋</div>
                 </div>
               </div>
             </div>
@@ -1014,7 +1006,7 @@ function LeadEngagement({ onBack, city, week1Total, onAmplify }) {
               <div style={{ marginTop:14, padding:"14px 16px", background:"rgba(255,255,255,0.06)", borderRadius:10, display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
                 <span style={{ color:WHITE, fontSize:13, fontWeight:600 }}>Jobs booked from this post?</span>
                 <input type="number" min="1" value={jobsInput} onChange={e => setJobsInput(e.target.value)} placeholder="e.g. 2" style={{ width:72, border:"2px solid rgba(255,255,255,0.2)", borderRadius:8, padding:"7px 10px", fontSize:16, fontWeight:800, color:NAVY, outline:"none", textAlign:"center", background:WHITE }} />
-                <Btn onClick={() => { const n=parseInt(jobsInput); if(n>0) addJobs(n); }} disabled={!jobsInput||parseInt(jobsInput)<1} style={{ fontSize:13 }}>Add</Btn>
+                <Btn onClick={() => { const n=parseInt(jobsInput); if(n>0){ setJobsBooked(b=>b+n); setJobsInput(""); setShowJobEntry(false); } }} disabled={!jobsInput||parseInt(jobsInput)<1} style={{ fontSize:13 }}>Add</Btn>
               </div>
             )}
             <div style={{ marginTop:14, padding:"12px 16px", background:"rgba(255,255,255,0.06)", borderRadius:10 }}>
@@ -1030,7 +1022,7 @@ function LeadEngagement({ onBack, city, week1Total, onAmplify }) {
                   <button key={t.id} onClick={() => { setActive(t.id); setSubtype(null); }} style={{ background:t.color, border:"2px solid "+t.border, borderRadius:14, padding:"18px 16px", cursor:"pointer", textAlign:"left", display:"flex", flexDirection:"column", gap:6 }}>
                     <span style={{ fontSize:32 }}>{t.emoji}</span>
                     <span style={{ fontWeight:800, color:NAVY, fontSize:15 }}>{t.label}</span>
-                    {(sessionCounts[t.id]>0||metrics.totalLeadsWorked[t.id]>0) && <span style={{ fontSize:11, color:GRAY600, fontWeight:600 }}>{sessionCounts[t.id]>0?"✓ "+sessionCounts[t.id]+" this session":""}{sessionCounts[t.id]>0&&metrics.totalLeadsWorked[t.id]>sessionCounts[t.id]?" · ":""}{metrics.totalLeadsWorked[t.id]>0?metrics.totalLeadsWorked[t.id]+" all-time":""}</span>}
+                    {sessionCounts[t.id]>0 && <span style={{ fontSize:11, color:GRAY600, fontWeight:600 }}>✓ {sessionCounts[t.id]} this session</span>}
                   </button>
                 ))}
               </div>
@@ -1117,26 +1109,25 @@ function LeadEngagement({ onBack, city, week1Total, onAmplify }) {
   );
 }
 
-// ── Main App ──────────────────────────────────────────────────────────────────
 export default function App() {
-  const [appPhase, setAppPhase]   = useState(() => lsGet(LS_PHASE, "lane"));
-  const [answers, setAnswers]     = useState(() => lsGet(LS_ANSWERS, {}));
-  const [post, setPost]           = useState(() => lsGet(LS_POST, ""));
-  const [flags, setFlags]         = useState(() => lsGet(LS_FLAGS, { postCount:0, coachApproved:false, tenDone:false, dmSent:false, stacked:false, completedSections:[] }));
-  const [postLoading, setPostLoading]     = useState(false);
-  const [postError, setPostError]         = useState("");
+  const [appPhase, setAppPhase] = useState("lane");
+  const [answers, setAnswers] = useState({});
+  const [post, setPost] = useState("");
+  const [flags, setFlags] = useState({ postCount:0, coachApproved:false, tenDone:false, dmSent:false, stacked:false, completedSections:[] });
+  const [postLoading, setPostLoading] = useState(false);
+  const [postError, setPostError] = useState("");
   const [copiedGetpost, setCopiedGetpost] = useState(false);
-  const [validating, setValidating]       = useState(false);
+  const [validating, setValidating] = useState(false);
   const [validationFeedback, setValidationFeedback] = useState({});
-  const [groups5, setGroups5]   = useState([]);
+  const [groups5, setGroups5] = useState([]);
   const [groups20, setGroups20] = useState([]);
   const [groupsLoading, setGroupsLoading] = useState(false);
-  const [groupsError, setGroupsError]     = useState("");
+  const [groupsError, setGroupsError] = useState("");
   const [manualCity, setManualCity] = useState("");
   const [showCoachLogin, setShowCoachLogin] = useState(false);
-  const [showDashboard, setShowDashboard]   = useState(false);
-  const [passcodeInput, setPasscodeInput]   = useState("");
-  const [passcodeError, setPasscodeError]   = useState(false);
+  const [showDashboard, setShowDashboard] = useState(false);
+  const [passcodeInput, setPasscodeInput] = useState("");
+  const [passcodeError, setPasscodeError] = useState(false);
   const [lane, setLane] = useState(null);
   const topRef = useRef(null);
 
@@ -1145,14 +1136,12 @@ export default function App() {
   const setAnswer = (id, val) => setAnswers(prev => ({...prev, [id]:val}));
   const devFill = () => setAnswers(SAMPLE_ANSWERS);
 
-  useEffect(() => { lsSet(LS_ANSWERS, answers); }, [answers]);
-  useEffect(() => { lsSet(LS_PHASE, appPhase); }, [appPhase]);
-  useEffect(() => { lsSet(LS_POST, post); }, [post]);
-  useEffect(() => { lsSet(LS_FLAGS, flags); }, [flags]);
   useEffect(() => { if (topRef.current) topRef.current.scrollIntoView({ behavior:"smooth" }); }, [appPhase]);
 
   const ch3Met = ch3Qs.every(q => wordCount(answers[q.id]) >= q.minWords);
-  const city = answers.area ? answers.area.split(/[,\-\u2013\u2014]/)[0].replace(/\b(in the|area|been|here|for|years|going on|about|over|past|nearly|almost)\b.*/i,"").replace(/[^a-zA-Z\s]/g,"").trim() : manualCity.trim() || "Your City";
+  const city = answers.area
+    ? answers.area.split(/[,\-\u2013\u2014]/)[0].replace(/\b(in the|area|been|here|for|years|going on|about|over|past|nearly|almost)\b.*/i,"").replace(/[^a-zA-Z\s]/g,"").trim()
+    : manualCity.trim() || "Your City";
 
   useEffect(() => {
     if (appPhase==="groups" && groups5.length===0 && !groupsLoading) {
@@ -1238,13 +1227,7 @@ export default function App() {
         {appPhase==="lane" ? (
           <button onClick={() => setShowCoachLogin(true)} style={{ background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:8, padding:"6px 14px", color:WHITE, fontSize:12, fontWeight:600, cursor:"pointer" }}>Coach Dashboard</button>
         ) : (
-          <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:5, color:"rgba(255,255,255,0.45)", fontSize:12 }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Saved
-            </div>
-            <button onClick={() => setAppPhase("lane")} style={{ background:YELLOW, border:"none", borderRadius:8, padding:"8px 18px", color:NAVY, fontSize:13, fontWeight:800, cursor:"pointer" }}>Save &amp; Exit</button>
-          </div>
+          <button onClick={() => setAppPhase("lane")} style={{ background:YELLOW, border:"none", borderRadius:8, padding:"8px 18px", color:NAVY, fontSize:13, fontWeight:800, cursor:"pointer" }}>Save &amp; Exit</button>
         )}
       </div>
 
@@ -1273,48 +1256,33 @@ export default function App() {
             </button>
             <h3 style={{ color:NAVY, fontSize:15, fontWeight:800, margin:"0 0 12px" }}>Your Week 1 Checklist</h3>
             <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:24 }}>
-              <div onClick={() => setAppPhase("writechoice")} style={{ background:WHITE, borderRadius:16, boxShadow:"0 2px 12px rgba(0,41,66,0.06)", overflow:"hidden", cursor:"pointer", display:"flex", position:"relative" }}>
-                <div style={{ position:"absolute", top:0, left:0, bottom:0, width:Math.max(3,(answeredCount/ALL_QUESTIONS.length)*100)+"%", background:"linear-gradient(to right,rgba(16,185,129,0.12),rgba(16,185,129,0.04))", borderRight:answeredCount>0?"2px solid rgba(16,185,129,0.25)":"none", transition:"width 0.5s", pointerEvents:"none" }} />
-                <div style={{ background:NAVY, width:56, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:22 }}>✍️</div>
-                <div style={{ padding:"14px 16px", flex:1, position:"relative" }}>
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}><div style={{ fontWeight:800, color:NAVY, fontSize:15 }}>Write Post</div><StatusTag status={writeStatus} /></div>
-                  <div style={{ fontSize:12, color:GRAY600 }}>Answer 15 questions. AI writes your trust-building post.</div>
-                  <div style={{ fontSize:11, color:GRAY400, marginTop:4 }}>~8 min · {answeredCount} of 15 answered</div>
+              {[
+                { phase:"writechoice", icon:"✍️", bg:NAVY,       label:"Write Post",      status:writeStatus,  desc:"Answer 15 questions. AI writes your trust-building post.", sub:"~8 min · "+answeredCount+" of 15 answered" },
+                { phase:"groups",      icon:"📣", bg:NAVY_LIGHT,  label:"Post in Groups",  status:groupStatus,  desc:"Find local Facebook groups and replicate your post to 10.", sub:"~15 min · "+(postCount+(coachApproved?1:0))+" of 10 groups posted" },
+                { phase:"leads",       icon:"🔥", bg:"#065F46",   label:"Work Leads",      status:leadsStatus,  desc:"Turn every like, comment, share, and DM into a booked job.", sub:"~5 min · Scripts for every engagement type" },
+              ].map(item => (
+                <div key={item.phase} onClick={() => setAppPhase(item.phase)} style={{ background:WHITE, borderRadius:16, boxShadow:"0 2px 12px rgba(0,41,66,0.06)", overflow:"hidden", cursor:"pointer", display:"flex" }}>
+                  <div style={{ background:item.bg, width:56, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:22 }}>{item.icon}</div>
+                  <div style={{ padding:"14px 16px", flex:1 }}>
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}><div style={{ fontWeight:800, color:NAVY, fontSize:15 }}>{item.label}</div><StatusTag status={item.status} /></div>
+                    <div style={{ fontSize:12, color:GRAY600 }}>{item.desc}</div>
+                    <div style={{ fontSize:11, color:GRAY400, marginTop:4 }}>{item.sub}</div>
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", paddingRight:16 }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={GRAY400} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
                 </div>
-                <div style={{ display:"flex", alignItems:"center", paddingRight:16 }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={GRAY400} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-              </div>
-              <div onClick={() => setAppPhase("groups")} style={{ background:WHITE, borderRadius:16, boxShadow:"0 2px 12px rgba(0,41,66,0.06)", overflow:"hidden", cursor:"pointer", display:"flex" }}>
-                <div style={{ background:NAVY_LIGHT, width:56, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:22 }}>📣</div>
-                <div style={{ padding:"14px 16px", flex:1 }}>
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}><div style={{ fontWeight:800, color:NAVY, fontSize:15 }}>Post in Groups</div><StatusTag status={groupStatus} /></div>
-                  <div style={{ fontSize:12, color:GRAY600 }}>Find local Facebook groups and replicate your post to 10.</div>
-                  <div style={{ fontSize:11, color:GRAY400, marginTop:4 }}>~15 min · {postCount+(coachApproved?1:0)} of 10 groups posted</div>
-                </div>
-                <div style={{ display:"flex", alignItems:"center", paddingRight:16 }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={GRAY400} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-              </div>
-              <div onClick={() => setAppPhase("leads")} style={{ background:WHITE, borderRadius:16, boxShadow:"0 2px 12px rgba(0,41,66,0.06)", overflow:"hidden", cursor:"pointer", display:"flex" }}>
-                <div style={{ background:"#065F46", width:56, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:22 }}>🔥</div>
-                <div style={{ padding:"14px 16px", flex:1 }}>
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}><div style={{ fontWeight:800, color:NAVY, fontSize:15 }}>Work Leads</div><StatusTag status={leadsStatus} /></div>
-                  <div style={{ fontSize:12, color:GRAY600 }}>Turn every like, comment, share, and DM into a booked job.</div>
-                  <div style={{ fontSize:11, color:GRAY400, marginTop:4 }}>~5 min · Scripts for every engagement type</div>
-                </div>
-                <div style={{ display:"flex", alignItems:"center", paddingRight:16 }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={GRAY400} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+              ))}
+            </div>
+            <div style={{ background:"#FEF9EC", border:"1.5px dashed "+YELLOW, borderRadius:10, padding:"10px 16px" }}>
+              <div style={{ fontSize:13, color:GRAY600, marginBottom:8 }}>🧪 <strong>Dev shortcuts</strong></div>
+              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                {[
+                  { label:"Fill Sample Answers", fn:() => { devFill(); setAppPhase("ch1"); } },
+                  { label:"Skip to Stop Screen",  fn:() => { devFill(); setAppPhase("waitforcoach"); } },
+                  { label:"Skip to Groups",        fn:() => { devFill(); setAppPhase("groups"); } },
+                  { label:"Skip to Leads",         fn:() => { devFill(); setAppPhase("leads"); } },
+                ].map((b,i) => <button key={i} onClick={b.fn} style={{ background:NAVY, color:YELLOW, border:"none", borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>{b.label}</button>)}
               </div>
             </div>
-            {IS_INTERNAL && (
-              <div style={{ background:"#FEF9EC", border:"1.5px dashed "+YELLOW, borderRadius:10, padding:"10px 16px" }}>
-                <div style={{ fontSize:13, color:GRAY600, marginBottom:8 }}>🧪 <strong>Dev shortcuts</strong></div>
-                <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                  {[
-                    { label:"Fill Sample Answers", fn:() => { devFill(); setAppPhase("ch1"); } },
-                    { label:"Skip to Stop Screen", fn:() => { devFill(); setAppPhase("waitforcoach"); } },
-                    { label:"Skip to Groups",      fn:() => { devFill(); setAppPhase("groups"); saveSubmission(SAMPLE_ANSWERS,"sample post","Post Generated"); } },
-                    { label:"Skip to Leads",       fn:() => { devFill(); setAppPhase("leads"); saveSubmission(SAMPLE_ANSWERS,"sample post","10 Groups Done"); } },
-                  ].map((b,i) => <button key={i} onClick={b.fn} style={{ background:NAVY, color:YELLOW, border:"none", borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>{b.label}</button>)}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -1359,7 +1327,7 @@ export default function App() {
               <div style={{ background:"#EFF6FF", borderRadius:10, padding:"12px 16px", marginBottom:16 }}>
                 <p style={{ margin:"0 0 8px", fontSize:13, fontWeight:600, color:NAVY }}>What city or area do you serve?</p>
                 <div style={{ display:"flex", gap:8 }}>
-                  <input value={manualCity} onChange={e => setManualCity(e.target.value)} onKeyDown={e => { if (e.key==="Enter") { setGroups5([]); setGroupsLoading(true); findFacebookGroups(manualCity.trim()||"Your City",5).then(r => { setGroups5(r); setGroupsLoading(false); }).catch(() => setGroupsLoading(false)); } }} placeholder="e.g. East Nashville" style={{ flex:1, border:"2px solid "+GRAY200, borderRadius:8, padding:"8px 12px", fontSize:14, outline:"none", fontFamily:"inherit" }} />
+                  <input value={manualCity} onChange={e => setManualCity(e.target.value)} placeholder="e.g. East Nashville" style={{ flex:1, border:"2px solid "+GRAY200, borderRadius:8, padding:"8px 12px", fontSize:14, outline:"none", fontFamily:"inherit" }} />
                   <button onClick={() => { setGroups5([]); setGroupsLoading(true); findFacebookGroups(manualCity.trim()||"Your City",5).then(r => { setGroups5(r); setGroupsLoading(false); }).catch(() => setGroupsLoading(false)); }} style={{ background:NAVY, color:YELLOW, border:"none", borderRadius:8, padding:"8px 16px", fontWeight:700, fontSize:13, cursor:"pointer" }}>Search</button>
                 </div>
               </div>
@@ -1372,7 +1340,6 @@ export default function App() {
                 <div style={{ display:"flex", flexDirection:"column", gap:8 }}>{groups5.map((g,i) => <GroupActionRow key={i} group={g} onConfirmed={() => setAppPhase("getpost")} />)}</div>
               </>
             )}
-            {!groupsLoading && groups5.length===0 && !groupsError && <p style={{ color:GRAY600, fontSize:14, textAlign:"center", padding:20 }}>Enter your city above to find local groups.</p>}
           </Card>
         )}
 
@@ -1387,19 +1354,16 @@ export default function App() {
               {!postLoading && ch3Met && post && (
                 <>
                   <textarea value={post} onChange={e => setPost(e.target.value)} rows={14} style={{ width:"100%", boxSizing:"border-box", border:"2px solid "+NAVY, borderRadius:12, padding:16, fontSize:14, lineHeight:1.8, color:GRAY800, fontFamily:"inherit", resize:"vertical", background:GRAY50, marginBottom:14 }} />
-                  <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-                    <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
-                      <Btn onClick={() => { try { const el=document.createElement("textarea"); el.value=post; el.style.position="fixed"; el.style.opacity="0"; document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el); setCopiedGetpost(true); } catch(e) { navigator.clipboard&&navigator.clipboard.writeText(post).then(()=>setCopiedGetpost(true)); } }} variant={copiedGetpost?"success":"primary"}>{copiedGetpost?"✓ Copied!":"📋 Copy Post"}</Btn>
-                      <Btn variant="secondary" onClick={() => handleGeneratePost()} disabled={postLoading}>↺ Regenerate</Btn>
-                    </div>
-                    {copiedGetpost && (
-                      <div style={{ background:"#EFF6FF", border:"1.5px solid #93C5FD", borderRadius:12, padding:"14px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, flexWrap:"wrap" }}>
-                        <div><div style={{ fontWeight:700, color:NAVY, fontSize:14, marginBottom:2 }}>Post copied! 🎉</div><div style={{ fontSize:13, color:GRAY600 }}>Next up: pick a photo.</div></div>
-                        <Btn onClick={() => setAppPhase("photo")}>📸 Choose My Photo →</Btn>
-                      </div>
-                    )}
-                    {!copiedGetpost && <div style={{ borderTop:"1px solid "+GRAY200, paddingTop:14 }}><Btn variant="secondary" onClick={() => setAppPhase("photo")} style={{ fontSize:13 }}>Skip to Photo Step →</Btn></div>}
+                  <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginBottom:14 }}>
+                    <Btn onClick={() => { try { const el=document.createElement("textarea"); el.value=post; el.style.position="fixed"; el.style.opacity="0"; document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el); setCopiedGetpost(true); } catch(e) { navigator.clipboard&&navigator.clipboard.writeText(post).then(()=>setCopiedGetpost(true)); } }} variant={copiedGetpost?"success":"primary"}>{copiedGetpost?"✓ Copied!":"📋 Copy Post"}</Btn>
+                    <Btn variant="secondary" onClick={() => handleGeneratePost()} disabled={postLoading}>↺ Regenerate</Btn>
                   </div>
+                  {copiedGetpost && (
+                    <div style={{ background:"#EFF6FF", border:"1.5px solid #93C5FD", borderRadius:12, padding:"14px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, flexWrap:"wrap" }}>
+                      <div><div style={{ fontWeight:700, color:NAVY, fontSize:14, marginBottom:2 }}>Post copied! 🎉</div><div style={{ fontSize:13, color:GRAY600 }}>Next up: pick a photo.</div></div>
+                      <Btn onClick={() => setAppPhase("photo")}>📸 Choose My Photo →</Btn>
+                    </div>
+                  )}
                 </>
               )}
               {!postLoading && !ch3Met && (
