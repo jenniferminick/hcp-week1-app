@@ -1348,7 +1348,32 @@ export default function App() {
         )}
 
         {(appPhase==="ch1"||appPhase==="ch2"||appPhase==="ch3") && (
-          <ProgressiveForm answers={answers} onAnswer={setAnswer} onExit={() => setAppPhase("writechoice")} onComplete={() => handleValidateAndAdvance(ALL_QUESTIONS,"groups")} validationFeedback={validationFeedback} validating={validating} initialPhase={appPhase} onPhaseChange={setAppPhase} />
+          <ProgressiveForm answers={answers} onAnswer={setAnswer} onExit={() => setAppPhase("writechoice")} onComplete={() => setAppPhase("waitforcoach")} validationFeedback={validationFeedback} validating={validating} initialPhase={appPhase} onPhaseChange={setAppPhase} />
+        )}
+
+        {appPhase==="waitforcoach" && (
+          <div>
+            <Card style={{ background:NAVY, textAlign:"center" }}>
+              <div style={{ fontSize:52, marginBottom:12 }}>✋</div>
+              <h2 style={{ color:YELLOW, fontSize:24, fontWeight:900, margin:"0 0 12px" }}>Stop Here!</h2>
+              <p style={{ color:WHITE, fontSize:15, lineHeight:1.8, margin:"0 0 8px" }}>Your answers are saved. You're all set for your coaching session.</p>
+              <p style={{ color:GRAY400, fontSize:13, lineHeight:1.7, margin:"0 0 24px" }}>Don't go further until your Business Coach is with you. You'll generate your post and post it in groups together during the session.</p>
+              <div style={{ background:"rgba(255,255,255,0.06)", borderRadius:12, padding:"16px 20px", marginBottom:24 }}>
+                <p style={{ color:YELLOW, fontWeight:700, fontSize:14, margin:"0 0 4px" }}>What happens next:</p>
+                <p style={{ color:WHITE, fontSize:13, lineHeight:1.8, margin:0 }}>
+                  1. Join your coaching session<br/>
+                  2. Your coach will walk you through your post<br/>
+                  3. You'll post in 10 Facebook groups live
+                </p>
+              </div>
+              <Btn onClick={() => handleValidateAndAdvance(ALL_QUESTIONS, "groups")} style={{ margin:"0 auto" }}>
+                I'm in my session — let's continue →
+              </Btn>
+            </Card>
+            <div style={{ textAlign:"center" }}>
+              <button onClick={() => setAppPhase("ch1")} style={{ background:"none", border:"none", color:GRAY400, fontSize:13, cursor:"pointer", textDecoration:"underline" }}>← Go back and edit my answers</button>
+            </div>
+          </div>
         )}
 
         {appPhase==="groups" && (
