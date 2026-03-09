@@ -568,20 +568,6 @@ function WaitForCoach({ answers, onContinue, onBack }) {
         </div>
       </div>
 
-      <Card style={{ background:NAVY }}>
-        <h3 style={{ color:YELLOW, fontSize:16, fontWeight:800, margin:"0 0 14px" }}>What happens in your session:</h3>
-        {[
-          { num:1, text:"Your coach reviews your answers with you" },
-          { num:2, text:"AI generates your trust-building Facebook post" },
-          { num:3, text:"You post it live in 10 local Facebook groups together" },
-        ].map(s => (
-          <div key={s.num} style={{ display:"flex", gap:12, marginBottom:10, alignItems:"flex-start" }}>
-            <div style={{ background:YELLOW, color:NAVY, borderRadius:99, width:26, height:26, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:13, flexShrink:0 }}>{s.num}</div>
-            <p style={{ margin:0, fontSize:14, color:WHITE, paddingTop:3, lineHeight:1.6 }}>{s.text}</p>
-          </div>
-        ))}
-      </Card>
-
       <Card>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
           <span style={{ fontSize:28 }}>📸</span>
@@ -615,6 +601,20 @@ function WaitForCoach({ answers, onContinue, onBack }) {
         <div style={{ background:"#FEF9EC", border:"1.5px solid "+YELLOW, borderRadius:10, padding:"12px 16px", fontSize:13, color:NAVY, lineHeight:1.7, marginTop:20 }}>
           💡 <strong>Pro tip:</strong> Pull up your camera roll right now and find 2-3 options. Have it ready to upload the moment your session starts.
         </div>
+      </Card>
+
+      <Card style={{ background:NAVY }}>
+        <h3 style={{ color:YELLOW, fontSize:16, fontWeight:800, margin:"0 0 14px" }}>What happens in your session:</h3>
+        {[
+          { num:1, text:"Your coach reviews your answers with you" },
+          { num:2, text:"AI generates your trust-building Facebook post" },
+          { num:3, text:"You post it live in 10 local Facebook groups together" },
+        ].map(s => (
+          <div key={s.num} style={{ display:"flex", gap:12, marginBottom:10, alignItems:"flex-start" }}>
+            <div style={{ background:YELLOW, color:NAVY, borderRadius:99, width:26, height:26, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:13, flexShrink:0 }}>{s.num}</div>
+            <p style={{ margin:0, fontSize:14, color:WHITE, paddingTop:3, lineHeight:1.6 }}>{s.text}</p>
+          </div>
+        ))}
       </Card>
 
       <Card style={{ textAlign:"center", background:GRAY50, border:"2px solid "+YELLOW }}>
