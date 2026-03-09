@@ -593,7 +593,7 @@ function WaitForCoach({ answers, onContinue, onBack }) {
           {loading ? (
             <div style={{ gridColumn:"1/-1", display:"flex", alignItems:"center", gap:10, color:GRAY400, fontSize:13, padding:"14px 16px", background:GRAY50, borderRadius:10 }}>
               <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-              <div style={{ width:16, height:16, border:"2px solid "+GRAY200, borderTopColor:NAVY, borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />
+              <div style={{ width:16, height:16, border:"2px solid "+GRAY200, borderTopColor:NAVY, borderRadius:"50%", animation:"spin 0.8s linear infinite", flexShrink:0 }} />
               Personalizing your photo suggestions...
             </div>
           ) : suggestionLines.map((line, i) => {
@@ -602,9 +602,9 @@ function WaitForCoach({ answers, onContinue, onBack }) {
             const text  = colonIdx > -1 ? line.slice(colonIdx + 2) : line;
             const c = tileColors[i] || tileColors[2];
             return (
-              <div key={i} style={{ background:c.bg, border:"1.5px solid "+c.border, borderRadius:12, padding:"16px 14px", display:"flex", flexDirection:"column", gap:8 }}>
-                <span style={{ background:c.labelBg, color:c.labelColor, borderRadius:6, padding:"3px 10px", fontSize:11, fontWeight:800, alignSelf:"flex-start" }}>{label}</span>
-                <span style={{ fontSize:13, color:NAVY, lineHeight:1.6 }}>{text}</span>
+              <div key={i} style={{ background:c.bg, border:"1.5px solid "+c.border, borderRadius:12, padding:"16px 14px", display:"flex", flexDirection:"column", gap:8, minWidth:0 }}>
+                <span style={{ background:c.labelBg, color:c.labelColor, borderRadius:6, padding:"3px 8px", fontSize:11, fontWeight:800, alignSelf:"flex-start", whiteSpace:"nowrap" }}>{label}</span>
+                <span style={{ fontSize:12, color:NAVY, lineHeight:1.5 }}>{text}</span>
               </div>
             );
           })}
