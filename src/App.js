@@ -81,7 +81,7 @@ const ch1Qs = ALL_QUESTIONS.filter(q => q.chapter === "ch1");
 const ch2Qs = ALL_QUESTIONS.filter(q => q.chapter === "ch2");
 const ch3Qs = ALL_QUESTIONS.filter(q => q.chapter === "ch3");
 
-const BOOKING_SCRIPT = "I've got a few openings this week. Want me to save you a spot? I just need your name, address, email address, and phone number and I'll handle the rest.";
+const BOOKING_SCRIPT = "I've got a few openings this week. Want me to save you a spot? I just need your name, address, email address, and phone number and I will handle the rest.";
 const LEAD_TYPES = [
   { id:"like", emoji:"👍", label:"Like or Emoji", color:"#FEF9EC", border:YELLOW, simple:true,
     steps:[
@@ -554,12 +554,13 @@ function WaitForCoach({ answers, onContinue, onBack }) {
 
   useEffect(() => {
     callClaude([{ role:"user", content:
-      "You are a business coach. Based on this Pro's answers, suggest 2-3 specific personal photo ideas for their Facebook post. Reference actual details from their answers — hobbies, family, local spots. 2-3 sentences max. Warm tone. No intro or labels.\n\n" +
+      "You are a business coach. Based on this Pro's answers, give them exactly 3 photo ideas for their Facebook post — Good, Better, and Best. Each should be one short punchy sentence. Reference actual details from their answers.\n\n" +
       "Name: " + (answers.name||"") + "\n" +
       "Human detail: " + (answers.humanDetail||"") + "\n" +
       "Local place: " + (answers.localPlace||"") + "\n" +
-      "Local activity: " + (answers.localActivity||"")
-    }]).then(r => { setSuggestion(r); setLoading(false); }).catch(() => { setSuggestion("A candid photo with family or at your favorite local spot would work great."); setLoading(false); });
+      "Local activity: " + (answers.localActivity||"") + "\n\n" +
+      "Return ONLY this exact format, nothing else:\nBEST: [one sentence]\nBETTER: [one sentence]\nGOOD: [one sentence]"
+    }]).then(r => { setSuggestion(r); setLoading(false); }).catch(() => { setSuggestion("GOOD: A solo shot of you at your favorite local spot.\nBETTER: You with a family member doing something you love.\nBEST: A candid real moment that shows your personality outside of work."); setLoading(false); });
   }, []);
 
   return (
@@ -600,7 +601,24 @@ function WaitForCoach({ answers, onContinue, onBack }) {
               Personalizing your photo suggestions...
             </div>
           ) : (
-            <p style={{ margin:0, fontSize:14, color:NAVY, lineHeight:1.8, fontWeight:600 }}>💡 {suggestion}</p>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              {suggestion.split("\n").filter(Boolean).map((line, i) => {
+                const [label, ...rest] = line.split(": ");
+                const text = rest.join(": ");
+                const colors = [
+                  { bg:"#FEF9EC", border:YELLOW, labelBg:YELLOW, labelColor:NAVY },
+                  { bg:"#EFF6FF", border:"#93C5FD", labelBg:"#3B82F6", labelColor:WHITE },
+                  { bg:"#F0FDF4", border:"#86EFAC", labelBg:GRAY400, labelColor:WHITE },
+                ];
+                const c = colors[i] || colors[0];
+                return (
+                  <div key={i} style={{ background:c.bg, border:"1.5px solid "+c.border, borderRadius:10, padding:"10px 14px", display:"flex", alignItems:"flex-start", gap:10 }}>
+                    <span style={{ background:c.labelBg, color:c.labelColor, borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:800, flexShrink:0, marginTop:1 }}>{label}</span>
+                    <span style={{ fontSize:13, color:NAVY, lineHeight:1.6 }}>{text}</span>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
         <p style={{ color:GRAY600, fontSize:13, fontWeight:600, marginBottom:12 }}>Here's what works and what doesn't:</p>
