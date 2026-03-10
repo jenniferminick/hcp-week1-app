@@ -1261,6 +1261,7 @@ export default function App() {
   useEffect(() => { lsSet("hcp_post_es", postEs); }, [postEs]);
   useEffect(() => { lsSet("hcp_flags", flags); }, [flags]);
   const [postLoading, setPostLoading] = useState(false);
+  const [postEsLoading, setPostEsLoading] = useState(false);
   const [postError, setPostError] = useState("");
   const [copiedGetpost, setCopiedGetpost] = useState(false);
   const [validationFeedback, setValidationFeedback] = useState({});
@@ -1320,18 +1321,17 @@ export default function App() {
   }
 
   async function handleGeneratePost() {
-    setPostLoading(true); setPostError(""); setPost(""); setPostEs("");
+    setPostLoading(true); setPostEsLoading(true); setPostError(""); setPost(""); setPostEs("");
     try {
-      // Generate English post first, then Spanish in parallel
       const enPost = await generateAIPost(answers, "en");
       setPost(enPost);
-      // Now generate Spanish fresh from answers
-      const esPost = await generateAIPost(answers, "es");
-      setPostEs(esPost);
+      setPostLoading(false);
       setFlag("completedSections", completedSections.includes("write") ? completedSections : [...completedSections,"write"]);
       await saveSubmission(answers, enPost, "Post Generated");
-    } catch(e) { setPostError("Could not generate post. Please check your connection and try again."); }
-    setPostLoading(false);
+      const esPost = await generateAIPost(answers, "es");
+      setPostEs(esPost);
+    } catch(e) { setPostError("Could not generate post. Please check your connection and try again."); setPostLoading(false); }
+    setPostEsLoading(false);
   }
 
   const writeStatus  = getWriteStatus(answers, lang);
@@ -1495,24 +1495,24 @@ export default function App() {
               {!postLoading && ch3Met && post && (
                 <>
                   {/* Side by side posts */}
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:16 }}>
+                  <div style={{ display:"grid", gridTemplateColumns: lang==="es" ? "1fr 1fr" : "1fr", gap:16, marginBottom:16 }}>
                     <div>
-                      <div style={{ fontWeight:700, color:NAVY, fontSize:13, marginBottom:8 }}>{t.englishPost}</div>
+                      <div style={{ fontWeight:700, color:NAVY, fontSize:13, marginBottom:8 }}>{lang==="es" ? t.englishPost : ""}</div>
                       <textarea value={post} onChange={e => setPost(e.target.value)} rows={16}
                         style={{ width:"100%", boxSizing:"border-box", border:"2px solid "+NAVY, borderRadius:12, padding:14, fontSize:13, lineHeight:1.8, color:GRAY800, fontFamily:"inherit", resize:"vertical", background:GRAY50 }} />
                     </div>
-                    <div>
-                      <div style={{ fontWeight:700, color:NAVY, fontSize:13, marginBottom:8 }}>{t.spanishPost}</div>
-                      <div style={{ background:"#F8F0FF", border:"2px solid #D8B4FE", borderRadius:12, padding:14, fontSize:13, lineHeight:1.8, color:GRAY800, whiteSpace:"pre-wrap", minHeight:200, userSelect:"none", WebkitUserSelect:"none" }}>
-                        {postEs
-                          ? postEs
-                          : post && !postEs
+                    {lang==="es" && (
+                      <div>
+                        <div style={{ fontWeight:700, color:NAVY, fontSize:13, marginBottom:8 }}>{t.spanishPost}</div>
+                        <div style={{ background:"#F8F0FF", border:"2px solid #D8B4FE", borderRadius:12, padding:14, fontSize:13, lineHeight:1.8, color:GRAY800, whiteSpace:"pre-wrap", minHeight:200, userSelect:"none", WebkitUserSelect:"none" }}>
+                          {postEsLoading
                             ? <span style={{ color:GRAY400, fontStyle:"italic", display:"flex", alignItems:"center", gap:8 }}><span style={{ display:"inline-block", width:14, height:14, border:"2px solid #D8B4FE", borderTopColor:"#9333EA", borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />Generando versión en español...</span>
-                            : "—"
-                        }
+                            : postEs || "—"
+                          }
+                        </div>
+                        <p style={{ fontSize:11, color:GRAY400, marginTop:6, fontStyle:"italic" }}>{t.spanishNote}</p>
                       </div>
-                      <p style={{ fontSize:11, color:GRAY400, marginTop:6, fontStyle:"italic" }}>{t.spanishNote}</p>
-                    </div>
+                    )}
                   </div>
                   <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginBottom:14 }}>
                     <Btn onClick={() => { try { const el=document.createElement("textarea"); el.value=post; el.style.position="fixed"; el.style.opacity="0"; document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el); setCopiedGetpost(true); } catch(e) { navigator.clipboard&&navigator.clipboard.writeText(post).then(()=>setCopiedGetpost(true)); } }} variant={copiedGetpost?"success":"primary"}>{copiedGetpost?t.copied:t.copyPost}</Btn>
