@@ -132,13 +132,51 @@ async function callClaude(messages, system){
   return (d.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("")||"";
 }
 
-// TTS: uses Web Speech API (no backend needed in artifact env)
-function speak(text, lang="en-US"){
-  if(!window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(text);
-  u.lang=lang; u.rate=0.95; u.pitch=1.05;
-  window.speechSynthesis.speak(u);
+// TTS: tries OpenAI /api/tts first, falls back to browser speechSynthesis.
+// onEnd ALWAYS fires so the mic always reopens.
+async function speak(text, lang="en-US", onEnd){
+  const done = () => { if (onEnd) onEnd(); };
+
+  // Try OpenAI TTS via Next.js API route
+  try {
+    const res = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, lang }),
+    });
+    if (!res.ok) throw new Error("TTS route unavailable");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.onended = () => { URL.revokeObjectURL(url); done(); };
+    audio.onerror = () => { URL.revokeObjectURL(url); done(); };
+    await audio.play();
+    return; // success — exit here
+  } catch(e) {
+    // fall through to browser TTS
+  }
+
+  // Browser speechSynthesis fallback (artifact / no backend)
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = lang; u.rate = 0.95; u.pitch = 1.05;
+    u.onend = done;
+    u.onerror = done; // always fire even on error
+    window.speechSynthesis.speak(u);
+
+    // Safety net: speechSynthesis sometimes never fires onend in some browsers.
+    // Force done() after a generous time estimate if it hasn't fired yet.
+    const safetyMs = Math.max(3000, text.length * 65);
+    const safetyTimer = setTimeout(() => {
+      window.speechSynthesis.cancel();
+      done();
+    }, safetyMs);
+    u.onend = () => { clearTimeout(safetyTimer); done(); };
+    u.onerror = () => { clearTimeout(safetyTimer); done(); };
+  } else {
+    done(); // no TTS at all — just continue
+  }
 }
 
 async function validateChapterAnswers(questions,answers){
@@ -363,109 +401,244 @@ function GroupTable({groups,showNum}){
 }
 
 // ── Voice Mode ────────────────────────────────────────────────────────────────
+// Architecture: mic is ONLY open when coach is not speaking.
+// speak() accepts an onEnd callback — mic reopens inside that callback.
+// This prevents the AI voice from being picked up as user input.
 function VoiceMode({onComplete,lang}){
   const t=T[lang]||T.en;
   const ttsLang=lang==="es"?"es-ES":"en-US";
-  const [voiceStep,setVoiceStep]=useState("intro");
+
+  const [status,setStatus]=useState("idle"); // idle | listening | thinking | speaking | done
   const [qIdx,setQIdx]=useState(0);
   const [voiceAnswers,setVoiceAnswers]=useState({});
   const [transcript,setTranscript]=useState("");
   const [coachMsg,setCoachMsg]=useState(t.voiceIntro);
-  const [aiThinking,setAiThinking]=useState(false);
   const [rerecordId,setRerecordId]=useState(null);
-  const [listening,setListening]=useState(false);
   const [micErr,setMicErr]=useState("");
+
   const recogRef=useRef(null);
-  const activeRef=useRef(false);
+  const shouldListenRef=useRef(false); // master intent: should mic be open?
   const processingRef=useRef(false);
   const qIdxRef=useRef(0);
-  const rerecordRef=useRef(null);
+  const rerecordIdRef=useRef(null);
+  const statusRef=useRef("idle");
 
+  // keep refs in sync
   useEffect(()=>{qIdxRef.current=qIdx;},[qIdx]);
-  useEffect(()=>{rerecordRef.current=rerecordId;},[rerecordId]);
+  useEffect(()=>{rerecordIdRef.current=rerecordId;},[rerecordId]);
+  useEffect(()=>{statusRef.current=status;},[status]);
 
   const answeredCount=Object.values(voiceAnswers).filter(v=>v&&v.trim()).length;
-  const activeQ=rerecordRef.current?ALL_QUESTIONS.find(x=>x.id===rerecordRef.current):ALL_QUESTIONS[qIdx];
+  const activeQ=rerecordIdRef.current
+    ?ALL_QUESTIONS.find(x=>x.id===rerecordIdRef.current)
+    :ALL_QUESTIONS[qIdx];
 
+  // ── mic control ──
+  const openMic=()=>{
+    if(!recogRef.current||processingRef.current) return;
+    shouldListenRef.current=true;
+    try{ recogRef.current.start(); setStatus("listening"); setMicErr(""); }catch(e){}
+  };
+  const closeMic=()=>{
+    shouldListenRef.current=false;
+    try{ recogRef.current.stop(); }catch(e){}
+    setStatus(s=>s==="listening"?"idle":s);
+  };
+
+  // ── coach speaks, then reopens mic ──
+  const coachSay=(msg, afterSpeak)=>{
+    setCoachMsg(msg);
+    setStatus("speaking");
+    closeMic();
+    speak(msg, ttsLang, ()=>{
+      if(afterSpeak) afterSpeak();
+      else openMic();
+    });
+  };
+
+  // ── build speech recognizer once ──
   useEffect(()=>{
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR){setMicErr("Speech recognition not supported.");return;}
-    const r=new SR();r.continuous=true;r.interimResults=false;r.lang=ttsLang;
+    if(!SR){setMicErr("Speech recognition not supported in this browser.");return;}
+    const r=new SR();
+    r.continuous=false;
+    r.interimResults=false;
+    r.lang=ttsLang;
+
     r.onresult=async e=>{
-      const last=e.results[e.results.length-1];
-      if(!last.isFinal||processingRef.current) return;
-      const text=last[0].transcript;
-      processingRef.current=true;setTranscript(text);setAiThinking(true);
-      const q=rerecordRef.current?ALL_QUESTIONS.find(x=>x.id===rerecordRef.current):ALL_QUESTIONS[qIdxRef.current];
-      const nextQ=ALL_QUESTIONS[Math.min(qIdxRef.current+1,ALL_QUESTIONS.length-1)];
+      const text=e.results[0][0].transcript.trim();
+      if(!text||processingRef.current) return;
+      processingRef.current=true;
+      setTranscript(text);
+      setStatus("thinking");
+      shouldListenRef.current=false;
+
+      const q=rerecordIdRef.current
+        ?ALL_QUESTIONS.find(x=>x.id===rerecordIdRef.current)
+        :ALL_QUESTIONS[qIdxRef.current];
+      const isLast=!rerecordIdRef.current&&qIdxRef.current===ALL_QUESTIONS.length-1;
+      const nextQ=isLast?null:ALL_QUESTIONS[qIdxRef.current+1];
       const qLabel=(lang==="es"&&Q_ES[q.id])?Q_ES[q.id].label:q.label;
       const qHint=(lang==="es"&&Q_ES[q.id])?Q_ES[q.id].hint:q.hint;
-      const nextHint=(lang==="es"&&Q_ES[nextQ.id])?Q_ES[nextQ.id].hint:nextQ.hint;
+      const nextHint=nextQ?((lang==="es"&&Q_ES[nextQ.id])?Q_ES[nextQ.id].hint:nextQ.hint):null;
+
       const sysPrompt=lang==="es"
-        ?"Eres un coach de negocios conversacional y cálido. Respuestas cortas y naturales en español."
-        :"You are a warm conversational business coach. Keep responses short and natural.";
-      const reply=await callClaude([{role:"user",content:sysPrompt+"\n\nQuestion: "+qLabel+" ("+qHint+")\nAnswer: "+text+"\nMin words: "+q.minWords+"\n\nIf specific and meets word count: Start with ACCEPT, one warm sentence, then ask: "+nextHint+"\nIf too vague or short: Start with FOLLOWUP, one short coaching question."}]);
+        ?"Eres un coach de negocios conversacional y cálido. Respuestas cortas y naturales en español. Sin listas ni viñetas."
+        :"You are a warm, conversational business coach conducting a live interview. Speak naturally like a real person — no bullet points, no lists. Keep responses to 1-3 sentences max.";
+
+      const userPrompt=lang==="es"
+        ?`Pregunta actual: ${qLabel} (${qHint})\nRespuesta del usuario: "${text}"\nMínimo de palabras requerido: ${q.minWords}\n\nSi la respuesta es específica y cumple el mínimo de palabras: empieza con ACCEPT, di una frase cálida corta, luego haz esta siguiente pregunta de forma natural: ${nextHint||"Eso es todo, excelente trabajo."}\nSi es muy vaga o corta: empieza con FOLLOWUP, haz UNA pregunta de seguimiento corta para obtener más detalles.`
+        :`Current question: ${qLabel} (${qHint})\nUser's answer: "${text}"\nMinimum words required: ${q.minWords}\n\nIf the answer is specific and meets the word count: start with ACCEPT, say one warm short sentence acknowledging what they shared, then naturally ask the next question: ${nextHint||"That's everything I needed — amazing work."}\nIf the answer is too vague or short: start with FOLLOWUP, ask ONE short follow-up question to draw out more detail. Sound curious and human, not robotic.`;
+
+      let reply="";
+      try{ reply=await callClaude([{role:"user",content:userPrompt}],sysPrompt); }
+      catch(e){ reply="ACCEPT Got it. "+(nextHint||t.voiceDone); }
+
       const isAccept=reply.trim().toUpperCase().startsWith("ACCEPT");
       const msg=reply.replace(/^ACCEPT\s*/i,"").replace(/^FOLLOWUP\s*/i,"").trim();
-      setCoachMsg(msg);speak(msg,ttsLang);setAiThinking(false);
+
       if(isAccept){
-        const id=rerecordRef.current||q.id;
+        const id=rerecordIdRef.current||q.id;
         setVoiceAnswers(prev=>({...prev,[id]:text}));
-        setTranscript("");setRerecordId(null);
-        if(!rerecordRef.current&&qIdxRef.current<ALL_QUESTIONS.length-1){setQIdx(i=>i+1);setVoiceStep("listening");}
-        else if(!rerecordRef.current){setVoiceStep("done");activeRef.current=false;r.stop();}
-        else{setVoiceStep("listening");}
-      }else{setVoiceStep("coaching");}
+        setTranscript("");
+        setRerecordId(null);
+        rerecordIdRef.current=null;
+
+        if(isLast&&!rerecordIdRef.current){
+          // all done
+          setStatus("done");
+          coachSay(msg||t.voiceDone, ()=>setStatus("done"));
+        } else if(!rerecordIdRef.current){
+          setQIdx(i=>{ qIdxRef.current=i+1; return i+1; });
+          coachSay(msg, ()=>{ processingRef.current=false; openMic(); });
+          processingRef.current=false;
+          return;
+        } else {
+          coachSay(msg, ()=>{ processingRef.current=false; openMic(); });
+          processingRef.current=false;
+          return;
+        }
+      } else {
+        coachSay(msg, ()=>{ processingRef.current=false; openMic(); });
+        processingRef.current=false;
+        return;
+      }
       processingRef.current=false;
     };
-    r.onerror=e=>{if(e.error==="no-speech")return;setMicErr(e.error==="not-allowed"?"Mic blocked.":"Mic error: "+e.error);setListening(false);activeRef.current=false;};
-    r.onend=()=>{if(activeRef.current){try{r.start();}catch(e){}}else{setListening(false);}};
+
+    r.onerror=e=>{
+      if(e.error==="no-speech"){ if(shouldListenRef.current) openMic(); return; }
+      setMicErr(e.error==="not-allowed"?"Mic access blocked — please allow microphone in your browser.":"Mic error: "+e.error);
+      setStatus("idle");
+      shouldListenRef.current=false;
+    };
+
+    r.onend=()=>{
+      // auto-restart if we still want to listen
+      if(shouldListenRef.current&&!processingRef.current){
+        try{ r.start(); }catch(e){}
+      } else {
+        setStatus(s=>s==="listening"?"idle":s);
+      }
+    };
+
     recogRef.current=r;
-    return()=>{activeRef.current=false;try{r.stop();}catch(e){}};
+    return()=>{ shouldListenRef.current=false; try{r.stop();}catch(e){}; };
   },[lang]);
 
-  const startListening=()=>{if(!recogRef.current)return;try{recogRef.current.start();activeRef.current=true;setListening(true);setMicErr("");}catch(e){}};
-  const stopListening=()=>{if(!recogRef.current)return;activeRef.current=false;recogRef.current.stop();setListening(false);};
+  // ── start session ──
   const handleStart=()=>{
-    setVoiceStep("listening");
-    const firstHint=(lang==="es"&&Q_ES[ALL_QUESTIONS[0].id])?Q_ES[ALL_QUESTIONS[0].id].hint:ALL_QUESTIONS[0].hint;
-    setCoachMsg(firstHint);speak(firstHint,ttsLang);setTimeout(startListening,600);
+    const firstHint=(lang==="es"&&Q_ES[ALL_QUESTIONS[0].id])
+      ?Q_ES[ALL_QUESTIONS[0].id].hint
+      :ALL_QUESTIONS[0].hint;
+    const intro=lang==="es"
+      ?"¡Perfecto! Empecemos. "+firstHint
+      :"Perfect, let's do this. I'll ask you some questions about yourself and your business — just answer naturally like you're talking to a friend. First question: "+firstHint;
+    coachSay(intro, ()=>openMic());
   };
+
+  // ── re-record ──
   const handleRerecord=id=>{
     setRerecordId(id);
+    rerecordIdRef.current=id;
     const q=ALL_QUESTIONS.find(x=>x.id===id);
     const hint=(lang==="es"&&Q_ES[q.id])?Q_ES[q.id].hint:q.hint;
-    const msg=lang==="es"?"Claro, repitamos eso. "+hint:"Sure, let's redo that. "+hint;
-    setCoachMsg(msg);speak(msg,ttsLang);setTranscript("");setVoiceStep("rerecord");
-    if(!listening) startListening();
+    const msg=lang==="es"?"Claro, repitamos eso. "+hint:"No problem, let's redo that one. "+hint;
+    setTranscript("");
+    coachSay(msg, ()=>openMic());
   };
-  useEffect(()=>{if(voiceStep==="done"){const msg=t.voiceDone;setCoachMsg(msg);speak(msg,ttsLang);};},[voiceStep]);
+
   const chapterLabel=activeQ?{ch1:"Chapter 1",ch2:"Chapter 2",ch3:"Chapter 3"}[activeQ.chapter]:"";
+  const isListening=status==="listening";
+  const isThinking=status==="thinking";
+  const isSpeaking=status==="speaking";
+
+  const statusLabel=isListening?t.listenHint
+    :isThinking?t.processing
+    :isSpeaking?(lang==="es"?"Coach hablando...":"Coach speaking...")
+    :"Tap to start listening";
 
   return(
     <div>
+      {/* Coach bubble */}
       <Card style={{background:NAVY,marginBottom:16}}>
         <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
           <div style={{background:YELLOW,borderRadius:"50%",width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,color:NAVY,fontSize:14,flexShrink:0}}>AI</div>
-          <div style={{flex:1}}>{aiThinking?<p style={{color:GRAY400,fontSize:14,margin:0,fontStyle:"italic"}}>{t.processing}</p>:<p style={{color:WHITE,fontSize:16,margin:0,lineHeight:1.8}}>{coachMsg}</p>}</div>
+          <div style={{flex:1}}>
+            {isThinking
+              ?<p style={{color:GRAY400,fontSize:14,margin:0,fontStyle:"italic"}}>{t.processing}</p>
+              :<p style={{color:WHITE,fontSize:16,margin:0,lineHeight:1.8}}>{coachMsg}</p>
+            }
+          </div>
         </div>
       </Card>
-      {voiceStep!=="intro"&&voiceStep!=="done"&&(
+
+      {/* Mic + status */}
+      {status!=="idle"&&status!=="done"&&(
         <Card>
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:14,paddingTop:8,paddingBottom:8}}>
-            <button type="button" onClick={listening?stopListening:startListening}
-              style={{background:listening?RED:GRAY200,border:"none",borderRadius:"50%",width:80,height:80,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:listening?"0 0 0 8px rgba(239,68,68,0.2)":"none",transition:"all 0.3s"}}>
-              <svg width="32" height="32" viewBox="0 0 24 24" fill={listening?WHITE:GRAY600}><path d="M12 1a4 4 0 0 1 4 4v7a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-6 10a6 6 0 0 0 12 0h2a8 8 0 0 1-7 7.93V21h-2v-2.07A8 8 0 0 1 4 11h2z"/></svg>
-            </button>
-            <span style={{fontSize:13,color:listening?RED:GRAY400,fontWeight:listening?600:400}}>{listening?t.listenHint:t.tapResume}</span>
-            {micErr&&<span style={{fontSize:12,color:RED}}>{micErr}</span>}
-            {transcript&&<div style={{background:"#F0F7FF",border:"2px solid "+NAVY,borderRadius:10,padding:"10px 14px",width:"100%",boxSizing:"border-box",fontSize:14,color:GRAY800,lineHeight:1.7}}><div style={{fontSize:11,color:GRAY400,marginBottom:4,fontWeight:600}}>YOU SAID:</div>{transcript}</div>}
+            <div style={{position:"relative"}}>
+              <button type="button"
+                onClick={isListening?closeMic:openMic}
+                disabled={isThinking||isSpeaking}
+                style={{background:isListening?RED:isSpeaking||isThinking?GRAY400:GRAY200,border:"none",borderRadius:"50%",width:80,height:80,cursor:isThinking||isSpeaking?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:isListening?"0 0 0 10px rgba(239,68,68,0.15)":"none",transition:"all 0.3s"}}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill={isListening?WHITE:GRAY600}><path d="M12 1a4 4 0 0 1 4 4v7a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-6 10a6 6 0 0 0 12 0h2a8 8 0 0 1-7 7.93V21h-2v-2.07A8 8 0 0 1 4 11h2z"/></svg>
+              </button>
+              {isSpeaking&&(
+                <div style={{position:"absolute",inset:-6,borderRadius:"50%",border:"3px solid "+YELLOW,animation:"none",opacity:0.6}}/>
+              )}
+            </div>
+            <span style={{fontSize:13,color:isListening?RED:isSpeaking?YELLOW:GRAY400,fontWeight:isListening||isSpeaking?600:400,textAlign:"center"}}>{statusLabel}</span>
+            {micErr&&<span style={{fontSize:12,color:RED,textAlign:"center",maxWidth:280}}>{micErr}</span>}
+            {transcript&&(
+              <div style={{background:"#F0F7FF",border:"2px solid "+NAVY,borderRadius:10,padding:"10px 14px",width:"100%",boxSizing:"border-box",fontSize:14,color:GRAY800,lineHeight:1.7}}>
+                <div style={{fontSize:11,color:GRAY400,marginBottom:4,fontWeight:600}}>YOU SAID:</div>
+                {transcript}
+              </div>
+            )}
           </div>
-          {activeQ&&<details style={{marginTop:8}}><summary style={{fontSize:12,color:GRAY400,cursor:"pointer",userSelect:"none"}}>{chapterLabel} · Q{activeQ.num} of {ALL_QUESTIONS.length} · <span style={{textDecoration:"underline"}}>{t.seeQuestion}</span></summary><div style={{marginTop:8,padding:"10px 14px",background:GRAY50,borderRadius:10,fontSize:13,color:GRAY600,lineHeight:1.6}}><strong style={{color:NAVY}}>{activeQ.label}</strong><br/>{activeQ.hint}</div></details>}
+          {activeQ&&(
+            <details style={{marginTop:8}}>
+              <summary style={{fontSize:12,color:GRAY400,cursor:"pointer",userSelect:"none"}}>
+                {chapterLabel} · Q{activeQ.num} of {ALL_QUESTIONS.length} · <span style={{textDecoration:"underline"}}>{t.seeQuestion}</span>
+              </summary>
+              <div style={{marginTop:8,padding:"10px 14px",background:GRAY50,borderRadius:10,fontSize:13,color:GRAY600,lineHeight:1.6}}>
+                <strong style={{color:NAVY}}>{activeQ.label}</strong><br/>{activeQ.hint}
+              </div>
+            </details>
+          )}
         </Card>
       )}
-      {voiceStep!=="intro"&&<div style={{marginBottom:12}}><ProgressBar current={answeredCount} total={ALL_QUESTIONS.length}/></div>}
-      {voiceStep==="intro"&&<div style={{textAlign:"center",marginTop:8}}><Btn onClick={handleStart}>{t.voiceStart}</Btn></div>}
+
+      {/* Progress */}
+      {status!=="idle"&&<div style={{marginBottom:12}}><ProgressBar current={answeredCount} total={ALL_QUESTIONS.length}/></div>}
+
+      {/* Start button */}
+      {status==="idle"&&(
+        <div style={{textAlign:"center",marginTop:8}}><Btn onClick={handleStart}>{t.voiceStart}</Btn></div>
+      )}
+
+      {/* Answers so far */}
       {answeredCount>0&&(
         <Card>
           <h3 style={{color:NAVY,margin:"0 0 16px",fontSize:16}}>📝 {t.answeredSoFar}</h3>
@@ -473,7 +646,10 @@ function VoiceMode({onComplete,lang}){
             <div key={q.id} style={{marginBottom:14,paddingBottom:14,borderBottom:"1px solid "+GRAY200}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
                 <div style={{flex:1}}>
-                  <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:4}}><span style={{background:NAVY,color:YELLOW,borderRadius:6,padding:"1px 6px",fontSize:11,fontWeight:700}}>Q{q.num}</span><span style={{fontWeight:700,color:NAVY,fontSize:13}}>{(lang==="es"&&Q_ES[q.id])?Q_ES[q.id].label:q.label}</span></div>
+                  <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:4}}>
+                    <span style={{background:NAVY,color:YELLOW,borderRadius:6,padding:"1px 6px",fontSize:11,fontWeight:700}}>Q{q.num}</span>
+                    <span style={{fontWeight:700,color:NAVY,fontSize:13}}>{(lang==="es"&&Q_ES[q.id])?Q_ES[q.id].label:q.label}</span>
+                  </div>
                   <p style={{margin:0,fontSize:13,color:GRAY800,lineHeight:1.6}}>{voiceAnswers[q.id]}</p>
                 </div>
                 <button onClick={()=>handleRerecord(q.id)} style={{background:GRAY100,border:"none",borderRadius:8,padding:"4px 10px",fontSize:12,color:GRAY600,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>{t.rerecord}</button>
@@ -482,7 +658,11 @@ function VoiceMode({onComplete,lang}){
           ))}
         </Card>
       )}
-      {voiceStep==="done"&&<div style={{marginTop:8}}><Btn onClick={()=>onComplete(voiceAnswers)}>{t.voiceContinue}</Btn></div>}
+
+      {/* Done */}
+      {status==="done"&&(
+        <div style={{marginTop:8}}><Btn onClick={()=>onComplete(voiceAnswers)}>{t.voiceContinue}</Btn></div>
+      )}
     </div>
   );
 }
