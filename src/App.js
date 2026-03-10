@@ -483,16 +483,42 @@ function VoiceMode({onComplete,lang}){
       const nextHint=nextQ?((lang==="es"&&Q_ES[nextQ.id])?Q_ES[nextQ.id].hint:nextQ.hint):null;
 
       const sysPrompt=lang==="es"
-        ?"Eres un coach de negocios conversacional y cálido. Respuestas cortas y naturales en español. Sin listas ni viñetas."
-        :"You are a warm, conversational business coach conducting a live interview. Speak naturally like a real person — no bullet points, no lists. Keep responses to 1-3 sentences max.";
+        ?"Eres un coach de negocios cálido y alentador, como un amigo cercano que apoya al Pro. Respuestas cortas, naturales, variadas. Sin listas. Sin 'Entendido' repetitivo."
+        :`You are a warm, encouraging business coach — like a supportive friend who genuinely cares about this person's success. You're having a real conversation, not filling out a form.
+RULES:
+- NEVER start with "Got it" — vary your acknowledgments naturally (e.g. "Oh I love that", "That's so real", "Yes!", "Okay that's good stuff", "Ha, I can relate to that", "That's exactly the kind of thing people connect with")
+- Keep responses to 2-3 short sentences max
+- Sound like a real person, warm and casual
+- Give genuine positive reinforcement when answers are good
+- When asking the next question, frame it conversationally — don't just recite the hint verbatim
+- No bullet points, no lists, no robotic phrasing`;
 
       const userPrompt=lang==="es"
-        ?`Pregunta actual: ${qLabel} (${qHint})\nRespuesta del usuario: "${text}"\nMínimo de palabras requerido: ${q.minWords}\n\nSi la respuesta es específica y cumple el mínimo de palabras: empieza con ACCEPT, di una frase cálida corta, luego haz esta siguiente pregunta de forma natural: ${nextHint||"Eso es todo, excelente trabajo."}\nSi es muy vaga o corta: empieza con FOLLOWUP, haz UNA pregunta de seguimiento corta para obtener más detalles.`
-        :`Current question: ${qLabel} (${qHint})\nUser's answer: "${text}"\nMinimum words required: ${q.minWords}\n\nIf the answer is specific and meets the word count: start with ACCEPT, say one warm short sentence acknowledging what they shared, then naturally ask the next question: ${nextHint||"That's everything I needed — amazing work."}\nIf the answer is too vague or short: start with FOLLOWUP, ask ONE short follow-up question to draw out more detail. Sound curious and human, not robotic.`;
+        ?`Pregunta actual: ${qLabel} (${qHint})\nRespuesta del usuario: "${text}"\nMínimo de palabras requerido: ${q.minWords}\n\nSi la respuesta es específica y cumple el mínimo: empieza con ACCEPT, reacciona de forma cálida y variada, luego pregunta naturalmente: ${nextHint||"Eso es todo, ¡excelente trabajo!"}\nSi es muy vaga o corta: empieza con FOLLOWUP, haz UNA pregunta corta y amigable para obtener más detalles.`
+        :`Current question being answered: ${qLabel}
+What we're looking for: ${qHint}
+Their answer: "${text}"
+Minimum words needed: ${q.minWords}
+
+If their answer is specific and meets the word count:
+→ Start your reply with ACCEPT
+→ React warmly and genuinely to what they just shared (1 sentence, varied — never "Got it")
+→ Then naturally lead into the next question: ${nextHint||"That's everything — you did amazing!"}
+
+If their answer is too short or too vague:
+→ Start with FOLLOWUP
+→ Give them one short encouraging nudge to go deeper — sound like a friend helping them open up, not a form validator`;
 
       let reply="";
-      try{ reply=await callClaude([{role:"user",content:userPrompt}],sysPrompt); }
-      catch(e){ reply="ACCEPT Got it. "+(nextHint||t.voiceDone); }
+      // timeout after 12s so a slow Claude response doesn't freeze the mic
+      try{
+        const timeout = new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),12000));
+        reply = await Promise.race([callClaude([{role:"user",content:userPrompt}],sysPrompt), timeout]);
+      } catch(e){
+        // on timeout or error, accept the answer and move on naturally
+        const fallbacks=["Love it, let's keep going. ","That's great, moving on. ","Perfect, I've got that. "];
+        reply="ACCEPT "+(fallbacks[Math.floor(Math.random()*fallbacks.length)])+(nextHint||t.voiceDone);
+      }
 
       const isAccept=reply.trim().toUpperCase().startsWith("ACCEPT");
       const msg=reply.replace(/^ACCEPT\s*/i,"").replace(/^FOLLOWUP\s*/i,"").trim();
@@ -546,14 +572,25 @@ function VoiceMode({onComplete,lang}){
     return()=>{ shouldListenRef.current=false; try{r.stop();}catch(e){}; };
   },[lang]);
 
-  // ── start session ──
+  // ── start session — resume from first unanswered question ──
   const handleStart=()=>{
-    const firstHint=(lang==="es"&&Q_ES[ALL_QUESTIONS[0].id])
-      ?Q_ES[ALL_QUESTIONS[0].id].hint
-      :ALL_QUESTIONS[0].hint;
-    const intro=lang==="es"
-      ?"¡Perfecto! Empecemos. "+firstHint
-      :"Perfect, let's do this. I'll ask you some questions about yourself and your business — just answer naturally like you're talking to a friend. First question: "+firstHint;
+    // find first unanswered question
+    const firstUnansweredIdx = ALL_QUESTIONS.findIndex(q => !voiceAnswers[q.id]);
+    const startIdx = firstUnansweredIdx === -1 ? 0 : firstUnansweredIdx;
+    const isResuming = startIdx > 0;
+    setQIdx(startIdx);
+    qIdxRef.current = startIdx;
+
+    const q = ALL_QUESTIONS[startIdx];
+    const hint=(lang==="es"&&Q_ES[q.id])?Q_ES[q.id].hint:q.hint;
+
+    const intro = isResuming
+      ? (lang==="es"
+          ? `¡Bienvenido de vuelta! Ya respondiste ${startIdx} preguntas. Continuemos donde lo dejamos. ${hint}`
+          : `Hey, welcome back! You already crushed ${startIdx} question${startIdx!==1?"s":""} — let's pick up right where we left off. ${hint}`)
+      : (lang==="es"
+          ? "¡Perfecto! Empecemos. "+hint
+          : "Alright, let's build your story! I'm going to ask you some questions — just talk to me like you're catching up with a friend. There are no wrong answers, just be real. Here we go: "+hint);
     coachSay(intro, ()=>openMic());
   };
 
