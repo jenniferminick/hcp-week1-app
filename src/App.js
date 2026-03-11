@@ -557,16 +557,25 @@ function VoiceMode({ onComplete, lang }) {
     if (!SR) { setMicErr("Speech recognition not supported."); return; }
     const r = new SR();
     r.continuous = false;
-    r.interimResults = false;
+    r.interimResults = true;
     r.lang = ttsLang;
+    // Hint to browser to wait longer before cutting off — supported in some Chrome versions
+    try { r.speechTimeout = 5000; } catch(_) {}
+    try { r.endpointerType = "SMART"; } catch(_) {}
     r.onresult = e => {
-      const text = e.results[0][0].transcript.trim();
-      if (!text || S.current.busy) return;
+      // Show interim transcript live as the user speaks
+      const latest = e.results[e.results.length - 1];
+      const interimText = latest[0].transcript;
+      setTranscript(interimText);
+
+      // Only process final results — don't send partial sentences to Claude
+      if (!latest.isFinal) return;
+      if (!interimText.trim() || S.current.busy) return;
+
       S.current.busy = true;
       S.current.wantMic = false;
-      setTranscript(text);
       setUiStatus("thinking");
-      handleAnswer(text);
+      handleAnswer(interimText.trim());
     };
     r.onerror = e => {
       if (e.error === "no-speech") {
