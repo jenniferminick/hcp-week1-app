@@ -149,23 +149,6 @@ const Q_ES = {
 
 function wordCount(s){ return (s||"").trim().split(/\s+/).filter(Boolean).length; }
 
-// ── Persistent user draft storage ─────────────────────────────────────────────
-const DRAFT_KEY = "user:draft";
-
-async function loadDraft(){
-  try{
-    const r = await window.storage.get(DRAFT_KEY);
-    if (r && r.value) return JSON.parse(r.value);
-  }catch(e){}
-  return null;
-}
-
-async function saveDraft(data){
-  try{
-    await window.storage.set(DRAFT_KEY, JSON.stringify({...data, savedAt: Date.now()}));
-  }catch(e){}
-}
-
 const HOME_T = {
   en: {
     headline1: "Turn Your Story Into",
@@ -1222,39 +1205,16 @@ export default function App(){
   const [passcodeError,setPasscodeError]=useState(false);
   const [completedSections,setCompletedSections]=useState([]);
   const [autoSaved,setAutoSaved]=useState(false);
-  const [draftLoading,setDraftLoading]=useState(true);
   const [draftRestored,setDraftRestored]=useState(false);
   const topRef=useRef(null);
-  const saveTimer=useRef(null);
+  const saveTimerRef=useRef(null);
 
-  // ── Load draft on mount ──────────────────────────────────────────────────
   useEffect(()=>{
-    loadDraft().then(draft=>{
-      if(draft){
-        if(draft.answers)     setAnswers(draft.answers);
-        if(draft.post)        setPost(draft.post);
-        if(draft.postCount)   setPostCount(draft.postCount);
-        if(draft.tenDone)     setTenDone(draft.tenDone);
-        if(draft.manualCity)  setManualCity(draft.manualCity);
-        if(draft.lang)        setLang(draft.lang);
-        if(draft.completedSections) setCompletedSections(draft.completedSections);
-        setDraftRestored(true);
-      }
-      setDraftLoading(false);
-    });
-  },[]);
-
-  // ── Auto-save draft whenever key state changes ───────────────────────────
-  useEffect(()=>{
-    if(draftLoading) return; // don't save while we're still loading
-    if(saveTimer.current) clearTimeout(saveTimer.current);
+    if(Object.keys(answers).length===0) return;
     setAutoSaved(false);
-    saveTimer.current = setTimeout(()=>{
-      saveDraft({answers, post, postCount, tenDone, manualCity, lang, completedSections})
-        .then(()=>setAutoSaved(true));
-    }, 800);
-    return ()=>{ if(saveTimer.current) clearTimeout(saveTimer.current); };
-  },[answers, post, postCount, tenDone, manualCity, lang, completedSections, draftLoading]);
+    const t=setTimeout(()=>setAutoSaved(true),800);
+    return()=>clearTimeout(t);
+  },[answers,post]);
 
   useEffect(()=>{if(topRef.current)topRef.current.scrollIntoView({behavior:"smooth"});},[appPhase]);
 
@@ -1307,14 +1267,6 @@ export default function App(){
 
   return(
     <div style={{minHeight:"100vh",background:GRAY100,fontFamily:"'Inter', -apple-system, sans-serif"}}>
-      {/* Loading screen while draft restores */}
-      {draftLoading&&(
-        <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}>
-          <div style={{background:YELLOW,borderRadius:12,width:48,height:48,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,color:NAVY,fontSize:24}}>H</div>
-          <p style={{color:GRAY600,fontSize:14,fontWeight:600}}>Loading your progress...</p>
-        </div>
-      )}
-      {!draftLoading&&(<>
       {showDashboard&&<CoachDashboard onClose={()=>setShowDashboard(false)}/>}
       {showCoachLogin&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
@@ -1333,6 +1285,13 @@ export default function App(){
         </div>
       )}
 
+      {/* Draft restored banner */}
+      {draftRestored && (
+        <div style={{background:GREEN, color:WHITE, textAlign:"center", padding:"10px 16px", fontSize:13, fontWeight:700, zIndex:99}}>
+          ✓ Your answers were restored — right where you left off.
+        </div>
+      )}
+
       {/* Header */}
       <div style={{background:NAVY,padding:"16px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100,boxShadow:"0 2px 12px rgba(0,0,0,0.2)"}}>
         <div style={{display:"flex",alignItems:"center",gap:14}}>
@@ -1345,7 +1304,7 @@ export default function App(){
           )}
           {appPhase!=="lane"&&(
             <>
-              {autoSaved&&<span style={{color:"rgba(255,255,255,0.5)",fontSize:12,display:"flex",alignItems:"center",gap:5}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Saved</span>}
+              {autoSaved && <span style={{color:"rgba(255,255,255,0.6)",fontSize:12,display:"flex",alignItems:"center",gap:5}}><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Saved</span>}
               <button onClick={()=>setAppPhase("lane")} style={{background:YELLOW,border:"none",borderRadius:8,padding:"8px 18px",color:NAVY,fontSize:13,fontWeight:800,cursor:"pointer"}}>Save & Exit</button>
             </>
           )}
@@ -1413,15 +1372,6 @@ export default function App(){
               ))}
             </div>
             <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}><LangToggle lang={lang} setLang={setLang}/></div>
-            {draftRestored&&(
-              <div style={{background:"#D1FAE5",border:"1.5px solid #6EE7B7",borderRadius:12,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:10}}>
-                <span style={{fontSize:20}}>✅</span>
-                <div>
-                  <div style={{fontWeight:700,color:"#065F46",fontSize:13}}>Progress restored</div>
-                  <div style={{fontSize:12,color:"#065F46",opacity:0.8}}>Your answers, post, and progress were saved. Pick up right where you left off.</div>
-                </div>
-              </div>
-            )}
             </>);})()}
           </div>
         )}
@@ -1637,7 +1587,6 @@ export default function App(){
           <AmplifyScreen onBack={()=>setAppPhase("leads")} city={city} totalPosted={postCount+1}/>
         )}
       </div>
-      </>)}
     </div>
   );
 }
