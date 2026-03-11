@@ -392,8 +392,6 @@ function VoiceMode({ onComplete, lang }) {
   const [transcript, setTranscript] = useState("");
   const [uiStatus, setUiStatus] = useState("idle"); // idle | listening | thinking | speaking | done
   const [micErr, setMicErr] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  const [keyVisible, setKeyVisible] = useState(false);
 
   const recogRef = useRef(null);
 
@@ -574,24 +572,6 @@ function VoiceMode({ onComplete, lang }) {
 
   return (
     <div>
-      {/* OpenAI key input */}
-      <div style={{ background:"#FFFBEB", border:"1.5px solid "+YELLOW, borderRadius:12, padding:"12px 16px", marginBottom:16, display:"flex", flexDirection:"column", gap:8 }}>
-        <div style={{ fontSize:13, fontWeight:700, color:NAVY }}>🔑 OpenAI API Key (for natural voice)</div>
-        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-          <input
-            type={keyVisible ? "text" : "password"}
-            value={apiKey}
-            onChange={e => { const k = e.target.value; setApiKey(k); openAIKeyRef.current = k.trim(); }}
-            placeholder="sk-..."
-            style={{ flex:1, border:"2px solid "+GRAY200, borderRadius:8, padding:"8px 12px", fontSize:13, outline:"none", fontFamily:"monospace", background:WHITE }}
-          />
-          <button type="button" onClick={() => setKeyVisible(v => !v)} style={{ background:GRAY100, border:"none", borderRadius:8, padding:"8px 12px", fontSize:12, color:GRAY600, cursor:"pointer", whiteSpace:"nowrap" }}>
-            {keyVisible ? "Hide" : "Show"}
-          </button>
-        </div>
-        <p style={{ fontSize:11, color:GRAY600, margin:0 }}>Your key stays in your browser and is never stored. Without a key, the robot voice is used as fallback.</p>
-      </div>
-
       {/* Coach bubble */}
       <Card style={{ background:NAVY, marginBottom:16 }}>
         <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
@@ -1180,6 +1160,8 @@ export default function App() {
   const [passcodeError, setPasscodeError] = useState(false);
   const [completedSections, setCompletedSections] = useState([]);
   const [autoSaved, setAutoSaved] = useState(false);
+  const [openAIKey, setOpenAIKeyState] = useState("");
+  const [keyVisible, setKeyVisible] = useState(false);
   const topRef = useRef(null);
 
   useEffect(() => {
@@ -1289,6 +1271,19 @@ export default function App() {
               <p style={{ color:GRAY400, fontSize:14, lineHeight:1.8, margin:"0 0 20px", maxWidth:480, marginLeft:"auto", marginRight:"auto" }}>Build a trust-building Facebook post, get it in front of your community, and convert engagement into booked jobs.</p>
               <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
                 {["⏱ ~29 min total","🎯 10 group posts","💬 Real leads, real jobs"].map((s,i) => <div key={i} style={{ background:"rgba(255,255,255,0.08)", borderRadius:10, padding:"10px 18px", fontSize:13, color:WHITE }}>{s}</div>)}
+              </div>
+              {/* OpenAI key — quietly tucked at bottom of hero */}
+              <div style={{ marginTop:20, display:"flex", gap:8, alignItems:"center", justifyContent:"center", maxWidth:420, margin:"20px auto 0" }}>
+                <input
+                  type={keyVisible ? "text" : "password"}
+                  value={openAIKey}
+                  onChange={e => { const k = e.target.value; setOpenAIKeyState(k); openAIKeyRef.current = k.trim(); }}
+                  placeholder="Paste OpenAI key for natural AI voice (optional)"
+                  style={{ flex:1, background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:8, padding:"8px 12px", fontSize:12, color:WHITE, outline:"none", fontFamily:"inherit" }}
+                />
+                <button type="button" onClick={() => setKeyVisible(v => !v)} style={{ background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:8, padding:"8px 10px", fontSize:11, color:GRAY400, cursor:"pointer", whiteSpace:"nowrap" }}>
+                  {keyVisible ? "Hide" : "Show"}
+                </button>
               </div>
             </div>
 
