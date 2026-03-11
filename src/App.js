@@ -137,14 +137,40 @@ async function callClaude(messages, system) {
   return (d.content || []).filter(b => b.type === "text").map(b => b.text).join("") || "";
 }
 
-function speakBrowser(text, lang, onEnd) {
-  if (!window.speechSynthesis) { if (onEnd) onEnd(); return; }
+// Module-level ref so speakWithKey can always read the latest key
+const openAIKeyRef = { current: "" };
+
+async function speakWithKey(text, lang, onEnd) {
+  const done = () => { if (onEnd) onEnd(); };
+  const key = openAIKeyRef.current;
+
+  if (key) {
+    try {
+      const res = await fetch("https://api.openai.com/v1/audio/speech", {
+        method: "POST",
+        headers: { "Authorization": "Bearer " + key, "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "tts-1", voice: "nova", input: text, speed: 1.0 }),
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audio.onended = () => { URL.revokeObjectURL(url); done(); };
+        audio.onerror = () => { URL.revokeObjectURL(url); done(); };
+        await audio.play();
+        return;
+      }
+    } catch(e) {}
+  }
+
+  // Fallback: browser TTS
+  if (!window.speechSynthesis) { done(); return; }
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = lang || "en-US"; u.rate = 0.95; u.pitch = 1.05;
-  const timer = setTimeout(() => { window.speechSynthesis.cancel(); if (onEnd) onEnd(); }, Math.max(3000, text.length * 70));
-  u.onend = () => { clearTimeout(timer); if (onEnd) onEnd(); };
-  u.onerror = () => { clearTimeout(timer); if (onEnd) onEnd(); };
+  const timer = setTimeout(() => { window.speechSynthesis.cancel(); done(); }, Math.max(3000, text.length * 70));
+  u.onend = () => { clearTimeout(timer); done(); };
+  u.onerror = () => { clearTimeout(timer); done(); };
   window.speechSynthesis.speak(u);
 }
 
@@ -366,6 +392,8 @@ function VoiceMode({ onComplete, lang }) {
   const [transcript, setTranscript] = useState("");
   const [uiStatus, setUiStatus] = useState("idle"); // idle | listening | thinking | speaking | done
   const [micErr, setMicErr] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [keyVisible, setKeyVisible] = useState(false);
 
   const recogRef = useRef(null);
 
@@ -443,7 +471,7 @@ function VoiceMode({ onComplete, lang }) {
     setCoachMsg(msg);
     setUiStatus("speaking");
     try { recogRef.current && recogRef.current.stop(); } catch(_) {}
-    speakBrowser(msg, ttsLang, () => {
+    speakWithKey(msg, ttsLang, () => {
       stateRef.current.busy = false;
       if (afterSpeak) afterSpeak();
       else startMic();
@@ -546,6 +574,24 @@ function VoiceMode({ onComplete, lang }) {
 
   return (
     <div>
+      {/* OpenAI key input */}
+      <div style={{ background:"#FFFBEB", border:"1.5px solid "+YELLOW, borderRadius:12, padding:"12px 16px", marginBottom:16, display:"flex", flexDirection:"column", gap:8 }}>
+        <div style={{ fontSize:13, fontWeight:700, color:NAVY }}>🔑 OpenAI API Key (for natural voice)</div>
+        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+          <input
+            type={keyVisible ? "text" : "password"}
+            value={apiKey}
+            onChange={e => { const k = e.target.value; setApiKey(k); openAIKeyRef.current = k.trim(); }}
+            placeholder="sk-..."
+            style={{ flex:1, border:"2px solid "+GRAY200, borderRadius:8, padding:"8px 12px", fontSize:13, outline:"none", fontFamily:"monospace", background:WHITE }}
+          />
+          <button type="button" onClick={() => setKeyVisible(v => !v)} style={{ background:GRAY100, border:"none", borderRadius:8, padding:"8px 12px", fontSize:12, color:GRAY600, cursor:"pointer", whiteSpace:"nowrap" }}>
+            {keyVisible ? "Hide" : "Show"}
+          </button>
+        </div>
+        <p style={{ fontSize:11, color:GRAY600, margin:0 }}>Your key stays in your browser and is never stored. Without a key, the robot voice is used as fallback.</p>
+      </div>
+
       {/* Coach bubble */}
       <Card style={{ background:NAVY, marginBottom:16 }}>
         <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
