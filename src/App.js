@@ -149,6 +149,23 @@ const Q_ES = {
 
 function wordCount(s){ return (s||"").trim().split(/\s+/).filter(Boolean).length; }
 
+// ── Persistent user draft storage ─────────────────────────────────────────────
+const DRAFT_KEY = "user:draft";
+
+async function loadDraft(){
+  try{
+    const r = await window.storage.get(DRAFT_KEY);
+    if (r && r.value) return JSON.parse(r.value);
+  }catch(e){}
+  return null;
+}
+
+async function saveDraft(data){
+  try{
+    await window.storage.set(DRAFT_KEY, JSON.stringify({...data, savedAt: Date.now()}));
+  }catch(e){}
+}
+
 const HOME_T = {
   en: {
     headline1: "Turn Your Story Into",
@@ -259,12 +276,14 @@ async function ttsSpeak(text, lang, onEnd){
 }
 
 async function findFacebookGroups(city, count){
-  const reply = await callClaude([{role:"user", content:"Generate "+count+" realistic Facebook group names for the "+city+" area that a home service contractor could post in. Sort Public first.\n\nReturn ONLY a raw JSON array:\n[{\"name\":\"group name\",\"type\":\"Community or Homeowners or Family or Buy/Sell or Neighborhood\",\"members\":\"e.g. 4.2K\",\"privacy\":\"Public or Private\"}]"}]);
-  const match = reply.match(/\[[\s\S]*?\]/);
+  const reply = await callClaude([{role:"user", content:"Generate "+count+" realistic Facebook group names for the "+city+" area that a home service contractor could post in. Sort Public first.\n\nReturn ONLY a raw JSON array with no markdown, no code fences, no explanation:\n[{\"name\":\"group name\",\"type\":\"Community or Homeowners or Family or Buy/Sell or Neighborhood\",\"members\":\"e.g. 4.2K\",\"privacy\":\"Public or Private\"}]"}]);
+  // Strip any markdown code fences before parsing
+  const cleaned = reply.replace(/```json|```/g,"").trim();
+  const match = cleaned.match(/\[[\s\S]*\]/);
   if (!match) return [];
   try {
     const p = JSON.parse(match[0]);
-    return Array.isArray(p) ? p.filter(g=>g.name).map(g=>({...g,url:"https://www.facebook.com/search/groups/?q="+encodeURIComponent(g.name)})).sort((a,b)=>a.privacy==="Public"?-1:1) : [];
+    return Array.isArray(p) ? p.filter(g=>g.name).map(g=>({...g, url:"https://www.facebook.com/search/groups/?q="+encodeURIComponent(g.name)})).sort((a,b)=>a.privacy==="Public"?-1:1) : [];
   } catch(e){ return []; }
 }
 
@@ -660,43 +679,81 @@ If too short or vague:
 }
 
 // ── Type Mode ─────────────────────────────────────────────────────────────────
-function TypeMode({onComplete, lang}){
-  const [qIdx,setQIdx]=useState(0);
-  const [answers,setAnswers]=useState({});
+function TypeMode({onComplete, lang, savedAnswers, onAnswerChange}){
+  const [qIdx,setQIdx]=useState(()=>{
+    // Resume from first unanswered question
+    const first = ALL_QUESTIONS.findIndex(q => wordCount(savedAnswers[q.id]||"") < q.minWords);
+    return first === -1 ? 0 : first;
+  });
   const [showInspiration,setShowInspiration]=useState(false);
   const [inspirationLoading,setInspirationLoading]=useState(false);
   const [inspirationExamples,setInspirationExamples]=useState([]);
+  const recogRef = useRef(null);
+  const [micListening, setMicListening] = useState(false);
+  const [micErr, setMicErr] = useState("");
 
-  const q=ALL_QUESTIONS[qIdx];
-  const value=answers[q.id]||"";
-  const wc=wordCount(value);
-  const met=wc>=q.minWords;
-  const isLast=qIdx===ALL_QUESTIONS.length-1;
-  const answeredCount=ALL_QUESTIONS.filter(q2=>wordCount(answers[q2.id])>=q2.minWords).length;
-  const label=(lang==="es"&&Q_ES[q.id])?Q_ES[q.id].label:q.label;
-  const hint=(lang==="es"&&Q_ES[q.id])?Q_ES[q.id].hint:q.hint;
+  const q = ALL_QUESTIONS[qIdx];
+  const value = savedAnswers[q.id] || "";
+  const wc = wordCount(value);
+  const met = wc >= q.minWords;
+  const isLast = qIdx === ALL_QUESTIONS.length - 1;
+  const answeredCount = ALL_QUESTIONS.filter(q2 => wordCount(savedAnswers[q2.id]||"") >= q2.minWords).length;
+  const label = (lang==="es" && Q_ES[q.id]) ? Q_ES[q.id].label : q.label;
+  const hint  = (lang==="es" && Q_ES[q.id]) ? Q_ES[q.id].hint  : q.hint;
 
-  const handleMic=text=>{const c=value||"";setAnswers(prev=>({...prev,[q.id]:c?c+" "+text:text}));};
-  const handleInspiration=async()=>{
+  // Stable mic — rebuilt only when lang or qIdx changes
+  useEffect(()=>{
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR){ setMicErr("Speech recognition not supported."); return; }
+    const r = new SR();
+    r.continuous = false; r.interimResults = false;
+    r.lang = lang==="es" ? "es-ES" : "en-US";
+    r.onresult = e => {
+      const text = e.results[0][0].transcript;
+      const current = savedAnswers[q.id] || "";
+      onAnswerChange(q.id, current ? current+" "+text : text);
+      setMicListening(false);
+    };
+    r.onerror = e => {
+      setMicListening(false);
+      setMicErr(e.error==="not-allowed" ? "Mic blocked — allow microphone access." : "Mic error: "+e.error);
+    };
+    r.onend = () => setMicListening(false);
+    recogRef.current = r;
+    return () => { try{ r.stop(); }catch(_){} };
+  }, [lang, qIdx]);
+
+  const toggleMic = () => {
+    if (!recogRef.current) return;
+    if (micListening){ try{ recogRef.current.stop(); }catch(_){} setMicListening(false); }
+    else { try{ recogRef.current.start(); setMicListening(true); setMicErr(""); }catch(_){} }
+  };
+
+  const handleInspiration = async () => {
     setShowInspiration(true);
-    if(inspirationExamples.length>0) return;
+    if (inspirationExamples.length > 0) return;
     setInspirationLoading(true);
     try{
-      const reply=await callClaude([{role:"user",content:"Give 2 short vivid example answers for this question from a home service business owner:\n\nQuestion: "+q.label+"\nContext: "+q.hint+"\n\nReturn ONLY a JSON array of 2 strings: [\"example 1\",\"example 2\"]. Authentic, specific, different styles."}]);
-      const match=reply.match(/\[[\s\S]*?\]/);
-      if(match){const p=JSON.parse(match[0]);setInspirationExamples(Array.isArray(p)?p:[]);}
-    }catch(e){setInspirationExamples([q.placeholder]);}
+      const reply = await callClaude([{role:"user", content:"Give 2 short vivid example answers for this question from a home service business owner:\n\nQuestion: "+q.label+"\nContext: "+q.hint+"\n\nReturn ONLY a JSON array of 2 strings: [\"example 1\",\"example 2\"]. Authentic, specific, different styles."}]);
+      const cleaned = reply.replace(/```json|```/g,"").trim();
+      const match = cleaned.match(/\[[\s\S]*\]/);
+      if (match){ const p=JSON.parse(match[0]); setInspirationExamples(Array.isArray(p)?p:[]); }
+    }catch(e){ setInspirationExamples([q.placeholder]); }
     setInspirationLoading(false);
   };
-  const handleNext=()=>{
-    if(!met) return;
-    if(isLast){onComplete(answers);}
-    else{setQIdx(i=>i+1);setShowInspiration(false);setInspirationExamples([]);}
+
+  const handleNext = () => {
+    if (!met) return;
+    if (isLast){ onComplete(savedAnswers); }
+    else { setQIdx(i=>i+1); setShowInspiration(false); setInspirationExamples([]); setMicErr(""); }
+  };
+  const handleBack = () => {
+    if (qIdx > 0){ setQIdx(i=>i-1); setShowInspiration(false); setInspirationExamples([]); setMicErr(""); }
   };
 
-  const chapterLabel={ch1:"Chapter 1 — Who You Are",ch2:"Chapter 2 — Your Real Life",ch3:"Chapter 3 — What Shaped You"}[q.chapter];
-  const chapterBg={ch1:"#EFF6FF",ch2:"#D1FAE5",ch3:"#FEF3C7"}[q.chapter];
-  const chapterColor={ch1:"#1D4ED8",ch2:"#065F46",ch3:"#92400E"}[q.chapter];
+  const chapterLabel = {ch1:"Chapter 1 — Who You Are", ch2:"Chapter 2 — Your Real Life", ch3:"Chapter 3 — What Shaped You"}[q.chapter];
+  const chapterBg    = {ch1:"#EFF6FF", ch2:"#D1FAE5", ch3:"#FEF3C7"}[q.chapter];
+  const chapterColor = {ch1:"#1D4ED8", ch2:"#065F46", ch3:"#92400E"}[q.chapter];
 
   return(
     <div>
@@ -714,11 +771,23 @@ function TypeMode({onComplete, lang}){
         </div>
         <p style={{fontSize:14,color:GRAY600,margin:"0 0 16px",lineHeight:1.7}}>{hint}</p>
         <div style={{position:"relative"}}>
-          <textarea value={value} onChange={e=>setAnswers(prev=>({...prev,[q.id]:e.target.value}))}
-            placeholder="Type your answer here, or tap the mic to speak..." rows={4} autoFocus
-            style={{width:"100%",boxSizing:"border-box",border:"2px solid "+(value?(met?GREEN:RED):GRAY200),borderRadius:12,padding:"14px 52px 14px 14px",fontSize:15,color:GRAY800,fontFamily:"inherit",resize:"vertical",outline:"none",transition:"border 0.15s",background:value?(met?"#F0FDF4":"#FFF5F5"):WHITE,lineHeight:1.7}}/>
-          <div style={{position:"absolute",top:12,right:12}}><MicBtn onTranscript={handleMic} size={32} lang={lang}/></div>
+          <textarea
+            value={value}
+            onChange={e => onAnswerChange(q.id, e.target.value)}
+            placeholder="Type your answer here, or tap the mic to speak..."
+            rows={4}
+            autoFocus
+            style={{width:"100%",boxSizing:"border-box",border:"2px solid "+(value?(met?GREEN:RED):GRAY200),borderRadius:12,padding:"14px 52px 14px 14px",fontSize:15,color:GRAY800,fontFamily:"inherit",resize:"vertical",outline:"none",transition:"border 0.15s",background:value?(met?"#F0FDF4":"#FFF5F5"):WHITE,lineHeight:1.7}}
+          />
+          <div style={{position:"absolute",top:12,right:12}}>
+            <button type="button" onClick={toggleMic}
+              style={{background:micListening?RED:GRAY200,border:"none",borderRadius:"50%",width:32,height:32,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:micListening?"0 0 0 5px rgba(239,68,68,0.2)":"none",transition:"all 0.2s"}}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill={micListening?WHITE:GRAY600}><path d="M12 1a4 4 0 0 1 4 4v7a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-6 10a6 6 0 0 0 12 0h2a8 8 0 0 1-7 7.93V21h-2v-2.07A8 8 0 0 1 4 11h2z"/></svg>
+            </button>
+          </div>
         </div>
+        {micListening && <p style={{fontSize:12,color:RED,margin:"4px 0 0"}}>Listening...</p>}
+        {micErr && <p style={{fontSize:12,color:RED,margin:"4px 0 0"}}>{micErr}</p>}
         <div style={{display:"flex",alignItems:"center",gap:8,margin:"8px 0 16px",minHeight:20}}>
           {wc>0?(
             <>
@@ -743,11 +812,7 @@ function TypeMode({onComplete, lang}){
           </div>
         )}
       </Card>
-      <BottomNav
-        onBack={qIdx>0?()=>{setQIdx(i=>i-1);setShowInspiration(false);setInspirationExamples([]);}:undefined}
-        onNext={met?handleNext:undefined}
-        nextDisabled={!met}
-      />
+      <BottomNav onBack={qIdx>0?handleBack:undefined} onNext={met?handleNext:undefined} nextDisabled={!met}/>
       <NavSpacer/>
     </div>
   );
@@ -1157,14 +1222,39 @@ export default function App(){
   const [passcodeError,setPasscodeError]=useState(false);
   const [completedSections,setCompletedSections]=useState([]);
   const [autoSaved,setAutoSaved]=useState(false);
+  const [draftLoading,setDraftLoading]=useState(true);
+  const [draftRestored,setDraftRestored]=useState(false);
   const topRef=useRef(null);
+  const saveTimer=useRef(null);
 
+  // ── Load draft on mount ──────────────────────────────────────────────────
   useEffect(()=>{
-    if(Object.keys(answers).length===0) return;
+    loadDraft().then(draft=>{
+      if(draft){
+        if(draft.answers)     setAnswers(draft.answers);
+        if(draft.post)        setPost(draft.post);
+        if(draft.postCount)   setPostCount(draft.postCount);
+        if(draft.tenDone)     setTenDone(draft.tenDone);
+        if(draft.manualCity)  setManualCity(draft.manualCity);
+        if(draft.lang)        setLang(draft.lang);
+        if(draft.completedSections) setCompletedSections(draft.completedSections);
+        setDraftRestored(true);
+      }
+      setDraftLoading(false);
+    });
+  },[]);
+
+  // ── Auto-save draft whenever key state changes ───────────────────────────
+  useEffect(()=>{
+    if(draftLoading) return; // don't save while we're still loading
+    if(saveTimer.current) clearTimeout(saveTimer.current);
     setAutoSaved(false);
-    const t=setTimeout(()=>setAutoSaved(true),800);
-    return()=>clearTimeout(t);
-  },[answers,post]);
+    saveTimer.current = setTimeout(()=>{
+      saveDraft({answers, post, postCount, tenDone, manualCity, lang, completedSections})
+        .then(()=>setAutoSaved(true));
+    }, 800);
+    return ()=>{ if(saveTimer.current) clearTimeout(saveTimer.current); };
+  },[answers, post, postCount, tenDone, manualCity, lang, completedSections, draftLoading]);
 
   useEffect(()=>{if(topRef.current)topRef.current.scrollIntoView({behavior:"smooth"});},[appPhase]);
 
@@ -1217,6 +1307,14 @@ export default function App(){
 
   return(
     <div style={{minHeight:"100vh",background:GRAY100,fontFamily:"'Inter', -apple-system, sans-serif"}}>
+      {/* Loading screen while draft restores */}
+      {draftLoading&&(
+        <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}>
+          <div style={{background:YELLOW,borderRadius:12,width:48,height:48,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,color:NAVY,fontSize:24}}>H</div>
+          <p style={{color:GRAY600,fontSize:14,fontWeight:600}}>Loading your progress...</p>
+        </div>
+      )}
+      {!draftLoading&&(<>
       {showDashboard&&<CoachDashboard onClose={()=>setShowDashboard(false)}/>}
       {showCoachLogin&&(
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
@@ -1315,6 +1413,15 @@ export default function App(){
               ))}
             </div>
             <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}><LangToggle lang={lang} setLang={setLang}/></div>
+            {draftRestored&&(
+              <div style={{background:"#D1FAE5",border:"1.5px solid #6EE7B7",borderRadius:12,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:10}}>
+                <span style={{fontSize:20}}>✅</span>
+                <div>
+                  <div style={{fontWeight:700,color:"#065F46",fontSize:13}}>Progress restored</div>
+                  <div style={{fontSize:12,color:"#065F46",opacity:0.8}}>Your answers, post, and progress were saved. Pick up right where you left off.</div>
+                </div>
+              </div>
+            )}
             </>);})()}
           </div>
         )}
@@ -1351,7 +1458,12 @@ export default function App(){
         )}
 
         {(appPhase==="ch1"||appPhase==="ch2"||appPhase==="ch3")&&(
-          <TypeMode onComplete={va=>{setAnswers(va);setAppPhase("groups");}} lang={lang}/>
+          <TypeMode
+            onComplete={va=>{setAnswers(va);setAppPhase("groups");}}
+            lang={lang}
+            savedAnswers={answers}
+            onAnswerChange={(id,val)=>setAnswers(prev=>({...prev,[id]:val}))}
+          />
         )}
 
         {appPhase==="groups"&&(
@@ -1525,6 +1637,7 @@ export default function App(){
           <AmplifyScreen onBack={()=>setAppPhase("leads")} city={city} totalPosted={postCount+1}/>
         )}
       </div>
+      </>)}
     </div>
   );
 }
