@@ -568,8 +568,15 @@ If their answer is too short or too vague:
       const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 9000));
       reply = await Promise.race([callClaude([{ role: "user", content: userPrompt }], sysPrompt), timeout]);
     } catch(_) {
-      const fb = ["Love that. ", "Perfect. ", "Great. "];
+      const fb = ["Oh I love that. ", "That works perfectly. ", "Yeah, that's real. "];
       reply = "ACCEPT " + fb[Math.floor(Math.random() * fb.length)] + (nextVoiceQ || t.voiceDone);
+    }
+
+    // Safety: if something went wrong and busy is still true, unlock it
+    if (!reply) {
+      S.current.busy = false;
+      openMic();
+      return;
     }
 
     const isAccept = reply.trim().toUpperCase().startsWith("ACCEPT");
@@ -597,9 +604,12 @@ If their answer is too short or too vague:
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { setMicErr("Speech recognition not supported."); return; }
     const r = new SR();
-    r.continuous = true;
+    r.continuous = false;
     r.interimResults = false;
     r.lang = ttsLang;
+    // Longer silence threshold so natural pauses don't trigger early
+    try { r.maxAlternatives = 1; } catch(_) {}
+    // Some browsers support a continuous listening timeout — we manage restart manually
     r.onresult = e => {
       const text = e.results[0][0].transcript.trim();
       if (!text || S.current.busy) return;
@@ -616,8 +626,16 @@ If their answer is too short or too vague:
       setUiStatus("idle");
     };
     r.onend = () => {
-      if (S.current.wantMic && !S.current.busy) { try { r.start(); } catch(_) {} }
-      else { setUiStatus(u => u === "listening" ? "idle" : u); }
+      // Restart with a short delay so natural mid-sentence pauses don't cut off
+      if (S.current.wantMic && !S.current.busy) {
+        setTimeout(() => {
+          if (S.current.wantMic && !S.current.busy) {
+            try { r.start(); } catch(_) {}
+          }
+        }, 400);
+      } else {
+        setUiStatus(u => u === "listening" ? "idle" : u);
+      }
     };
     recogRef.current = r;
     return () => { S.current.wantMic = false; try { r.stop(); } catch(_) {} };
