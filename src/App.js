@@ -137,41 +137,43 @@ async function callClaude(messages, system) {
   return (d.content || []).filter(b => b.type === "text").map(b => b.text).join("") || "";
 }
 
-// Module-level ref so speakWithKey can always read the latest key
-const openAIKeyRef = { current: "" };
-
+// TTS: calls /api/tts (Next.js route that reads OPENAI_API_KEY from env),
+// falls back to browser speechSynthesis if the route is unavailable.
+// onEnd ALWAYS fires so the mic always reopens.
 async function speakWithKey(text, lang, onEnd) {
   const done = () => { if (onEnd) onEnd(); };
-  const key = openAIKeyRef.current;
 
-  if (key) {
-    try {
-      const res = await fetch("https://api.openai.com/v1/audio/speech", {
-        method: "POST",
-        headers: { "Authorization": "Bearer " + key, "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "tts-1", voice: "nova", input: text, speed: 1.0 }),
-      });
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audio.onended = () => { URL.revokeObjectURL(url); done(); };
-        audio.onerror = () => { URL.revokeObjectURL(url); done(); };
-        await audio.play();
-        return;
-      }
-    } catch(e) {}
+  try {
+    const res = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, lang }),
+    });
+    if (!res.ok) throw new Error("TTS route unavailable");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.onended = () => { URL.revokeObjectURL(url); done(); };
+    audio.onerror = () => { URL.revokeObjectURL(url); done(); };
+    await audio.play();
+    return;
+  } catch(e) {
+    // fall through to browser TTS
   }
 
-  // Fallback: browser TTS
-  if (!window.speechSynthesis) { done(); return; }
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = lang || "en-US"; u.rate = 0.95; u.pitch = 1.05;
-  const timer = setTimeout(() => { window.speechSynthesis.cancel(); done(); }, Math.max(3000, text.length * 70));
-  u.onend = () => { clearTimeout(timer); done(); };
-  u.onerror = () => { clearTimeout(timer); done(); };
-  window.speechSynthesis.speak(u);
+  // Browser speechSynthesis fallback
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = lang || "en-US"; u.rate = 0.95; u.pitch = 1.05;
+    const safetyMs = Math.max(3000, text.length * 65);
+    const safetyTimer = setTimeout(() => { window.speechSynthesis.cancel(); done(); }, safetyMs);
+    u.onend = () => { clearTimeout(safetyTimer); done(); };
+    u.onerror = () => { clearTimeout(safetyTimer); done(); };
+    window.speechSynthesis.speak(u);
+  } else {
+    done();
+  }
 }
 
 async function findFacebookGroups(city, count) {
@@ -1160,8 +1162,6 @@ export default function App() {
   const [passcodeError, setPasscodeError] = useState(false);
   const [completedSections, setCompletedSections] = useState([]);
   const [autoSaved, setAutoSaved] = useState(false);
-  const [openAIKey, setOpenAIKeyState] = useState("");
-  const [keyVisible, setKeyVisible] = useState(false);
   const topRef = useRef(null);
 
   useEffect(() => {
@@ -1271,19 +1271,6 @@ export default function App() {
               <p style={{ color:GRAY400, fontSize:14, lineHeight:1.8, margin:"0 0 20px", maxWidth:480, marginLeft:"auto", marginRight:"auto" }}>Build a trust-building Facebook post, get it in front of your community, and convert engagement into booked jobs.</p>
               <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
                 {["⏱ ~29 min total","🎯 10 group posts","💬 Real leads, real jobs"].map((s,i) => <div key={i} style={{ background:"rgba(255,255,255,0.08)", borderRadius:10, padding:"10px 18px", fontSize:13, color:WHITE }}>{s}</div>)}
-              </div>
-              {/* OpenAI key — quietly tucked at bottom of hero */}
-              <div style={{ marginTop:20, display:"flex", gap:8, alignItems:"center", justifyContent:"center", maxWidth:420, margin:"20px auto 0" }}>
-                <input
-                  type={keyVisible ? "text" : "password"}
-                  value={openAIKey}
-                  onChange={e => { const k = e.target.value; setOpenAIKeyState(k); openAIKeyRef.current = k.trim(); }}
-                  placeholder="Paste OpenAI key for natural AI voice (optional)"
-                  style={{ flex:1, background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:8, padding:"8px 12px", fontSize:12, color:WHITE, outline:"none", fontFamily:"inherit" }}
-                />
-                <button type="button" onClick={() => setKeyVisible(v => !v)} style={{ background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:8, padding:"8px 10px", fontSize:11, color:GRAY400, cursor:"pointer", whiteSpace:"nowrap" }}>
-                  {keyVisible ? "Hide" : "Show"}
-                </button>
               </div>
             </div>
 
