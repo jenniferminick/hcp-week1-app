@@ -42,28 +42,28 @@ const SAMPLE_ANSWERS = {
   localActivity: "always get the chicken taco plate and eat it standing outside on the sidewalk no matter what the weather is doing",
   mission: "hot chicken in Nashville",
   whyStarted: "I got tired of watching my old boss charge elderly customers three times what a job was worth and then sleeping just fine at night - I walked out one afternoon and never looked back",
-  whatChanged: "Now I make it home for dinner most nights and I coached my son's baseball team this spring for the first time",
+  whatChanged: "Now I make it home for dinner most nights and I coached my son baseball team this spring for the first time",
   heroCrisis: "An elderly woman called me at 7pm on Christmas Eve her heat had been out for two days and she had her three grandkids coming in from out of town the next morning",
   heroSacrifice: "I drove 40 minutes out there worked two hours in the cold and only charged her for the cost of the part",
   heroPayoff: "She grabbed my hand on the way out and told me she was going to tell everyone she knew about me and she has sent me four referrals since that night",
 };
 
 const ALL_QUESTIONS = [
-  { id: "name",         num: 1,    chapter: "ch1", minWords: 2,  label: "Your Name",                   voiceQ: "What's your full name?",                                                                                        hint: "First and last name.",                                                                                          placeholder: "e.g. Sarah Mitchell" },
-  { id: "business",     num: 2,    chapter: "ch1", minWords: 2,  label: "Business Name",               voiceQ: "What's the name of your business?",                                                                             hint: "Business name as it appears online.",                                                                           placeholder: "e.g. Mitchell Home Services" },
-  { id: "area",         num: 3,    chapter: "ch1", minWords: 8,  label: "Where You Serve",             voiceQ: "What cities or neighborhoods do you serve, and how long have you been working in that area?",                   hint: "Cities you serve and how long you have been there.",                                                            placeholder: "e.g. East Nashville, Donelson, and Hermitage - 11 years" },
-  { id: "knownFor",     num: 4,    chapter: "ch1", minWords: 3,  label: "Your Known For",              voiceQ: "If someone described you to a neighbor, what would they say you are the go-to person for? Give me 2 or 3 specific words, nothing generic.",hint: "2-3 specific words. No generic words like reliable or honest.",                                                 placeholder: "e.g. slow drain detective" },
-  { id: "topServices",  num: 5,    chapter: "ch1", minWords: 4,  label: "Top 2 Services",              voiceQ: "What are the two services you most want to be known for?",                                                       hint: "The two services you most want to be known for.",                                                               placeholder: "e.g. drain cleaning and water heater installs" },
-  { id: "refuses",      num: "5b", chapter: "ch1", minWords: 15, label: "What You Refuse to Do",       voiceQ: "What is one thing you flat-out refuse to do that others in your industry do? Be real about it.",                hint: "One firm thing you refuse to do that others in your industry do.",                                              placeholder: "e.g. I will never tell someone they need a full repipe just to run up a bill" },
-  { id: "humanDetail",  num: 6,    chapter: "ch2", minWords: 15, label: "One Human Detail",            voiceQ: "Tell me something real about you outside of work. Give me specifics like the year, the color, the name.",       hint: "One real detail about you outside work with specifics.",                                                        placeholder: "e.g. I have been restoring a 1967 candy apple red Ford Bronco" },
-  { id: "localPlace",   num: 7,    chapter: "ch2", minWords: 4,  label: "Local Flavor - Place",        voiceQ: "What is one specific local spot you genuinely love? Give me the actual name.",                                  hint: "The actual name of one specific local place you love.",                                                         placeholder: "e.g. Mas Tacos Por Favor in East Nashville" },
-  { id: "localActivity",num: "7b", chapter: "ch2", minWords: 10, label: "What You Do There",           voiceQ: "What do you always do or order when you are there? Paint the picture for me.",                                  hint: "Exactly what you do or order there.",                                                                           placeholder: "e.g. always get the chicken taco plate and eat it standing outside" },
-  { id: "mission",      num: 8,    chapter: "ch2", minWords: 3,  label: "Your Mission Question",       voiceQ: "Finish this sentence: I am on a mission to find the best blank in my city.",                                    hint: "Fill in: I am on a mission to find the best _______ in my city.",                                              placeholder: "e.g. hot chicken in Nashville" },
-  { id: "whyStarted",   num: 9,    chapter: "ch3", minWords: 20, label: "Why You Started",             voiceQ: "Tell me the real story of why you started your business. What was the moment that pushed you? Do not sugarcoat it.",hint: "The real moment that pushed you to start. Do not sugarcoat it.",                                                placeholder: "e.g. I got tired of watching my old boss charge elderly customers three times what a job was worth" },
-  { id: "whatChanged",  num: "9b", chapter: "ch3", minWords: 10, label: "What Did It Change?",         voiceQ: "What actually changed in your life or your family when you made that decision?",                                hint: "A real concrete change in your life or family.",                                                                placeholder: "e.g. Now I make it home for dinner most nights" },
-  { id: "heroCrisis",   num: 10,   chapter: "ch3", minWords: 20, label: "Hero Moment - The Crisis",    voiceQ: "Tell me about a time you went above and beyond for a customer. Set the scene, who was in trouble, what was at stake?",hint: "Paint the full picture. Who was in trouble, what was at stake.",                                               placeholder: "e.g. An elderly woman called me at 7pm on Christmas Eve" },
-  { id: "heroSacrifice",num: "10b",chapter: "ch3", minWords: 10, label: "Hero Moment - The Sacrifice", voiceQ: "What did you actually do or give up to help them?",                                                              hint: "What you did or gave up.",                                                                                      placeholder: "e.g. I drove 40 minutes, worked two hours, and only charged her for the part" },
-  { id: "heroPayoff",   num: "10c",chapter: "ch3", minWords: 10, label: "Hero Moment - The Payoff",    voiceQ: "What was the reaction from them or from you? What did that moment feel like?",                                  hint: "The real emotional reaction, theirs or yours.",                                                                 placeholder: "e.g. She grabbed my hand on the way out" },
+  { id: "name",         num: 1,    chapter: "ch1", minWords: 2,  label: "Your Name",                    voiceQ: "What is your full name?",                                                                                                    hint: "First and last name.",                                                                    placeholder: "e.g. Sarah Mitchell" },
+  { id: "business",     num: 2,    chapter: "ch1", minWords: 2,  label: "Business Name",                voiceQ: "What is the name of your business?",                                                                                         hint: "Business name as it appears online.",                                                     placeholder: "e.g. Mitchell Home Services" },
+  { id: "area",         num: 3,    chapter: "ch1", minWords: 8,  label: "Where You Serve",              voiceQ: "What cities or neighborhoods do you serve, and how long have you been working in that area?",                                hint: "Cities you serve and how long you have been there.",                                      placeholder: "e.g. East Nashville, Donelson, and Hermitage - 11 years" },
+  { id: "knownFor",     num: 4,    chapter: "ch1", minWords: 3,  label: "Your Known For",               voiceQ: "If someone described you to a neighbor, what would they say you are the go-to person for? Give me 2 or 3 specific words, nothing generic.",hint: "2-3 specific words. No generic words like reliable or honest.",                          placeholder: "e.g. slow drain detective" },
+  { id: "topServices",  num: 5,    chapter: "ch1", minWords: 4,  label: "Top 2 Services",               voiceQ: "What are the two services you most want to be known for?",                                                                   hint: "The two services you most want to be known for.",                                         placeholder: "e.g. drain cleaning and water heater installs" },
+  { id: "refuses",      num: "5b", chapter: "ch1", minWords: 15, label: "What You Refuse to Do",        voiceQ: "What is one thing you flat-out refuse to do that others in your industry do? Be real about it.",                             hint: "One firm thing you refuse to do that others in your industry do.",                        placeholder: "e.g. I will never tell someone they need a full repipe just to run up a bill" },
+  { id: "humanDetail",  num: 6,    chapter: "ch2", minWords: 15, label: "One Human Detail",             voiceQ: "Outside of work, what do you actually enjoy doing? Like what are you into - a hobby, something you are building, something you do on weekends.",hint: "What do you genuinely enjoy outside of work? A hobby, passion, or project.",            placeholder: "e.g. I have been restoring a 1967 candy apple red Ford Bronco I found rusting in a barn" },
+  { id: "localPlace",   num: 7,    chapter: "ch2", minWords: 4,  label: "Local Flavor - Place",         voiceQ: "What is one specific local spot you genuinely love? Give me the actual name.",                                               hint: "The actual name of one specific local place you love.",                                   placeholder: "e.g. Mas Tacos Por Favor in East Nashville" },
+  { id: "localActivity",num: "7b", chapter: "ch2", minWords: 10, label: "What You Do There",            voiceQ: "What do you always do or order when you are there? Paint the picture for me.",                                               hint: "Exactly what you do or order there.",                                                     placeholder: "e.g. always get the chicken taco plate and eat it standing outside" },
+  { id: "mission",      num: 8,    chapter: "ch2", minWords: 3,  label: "Your Mission Question",        voiceQ: "Finish this sentence: I am on a mission to find the best blank in my city. What is it?",                                     hint: "Fill in: I am on a mission to find the best _______ in my city.",                        placeholder: "e.g. hot chicken in Nashville" },
+  { id: "whyStarted",   num: 9,    chapter: "ch3", minWords: 20, label: "Why You Started",              voiceQ: "Tell me the real story of why you started your business. What was the moment that pushed you? Do not sugarcoat it.",          hint: "The real moment that pushed you to start. Do not sugarcoat it.",                         placeholder: "e.g. I got tired of watching my old boss charge elderly customers three times what a job was worth" },
+  { id: "whatChanged",  num: "9b", chapter: "ch3", minWords: 10, label: "What Did It Change?",          voiceQ: "What actually changed in your life or your family when you made that decision?",                                              hint: "A real concrete change in your life or family.",                                          placeholder: "e.g. Now I make it home for dinner most nights" },
+  { id: "heroCrisis",   num: 10,   chapter: "ch3", minWords: 20, label: "Hero Moment - The Crisis",     voiceQ: "Tell me about a time you went above and beyond for a customer. Set the scene - who was in trouble, what was at stake?",       hint: "Paint the full picture. Who was in trouble, what was at stake.",                         placeholder: "e.g. An elderly woman called me at 7pm on Christmas Eve" },
+  { id: "heroSacrifice",num: "10b",chapter: "ch3", minWords: 10, label: "Hero Moment - The Sacrifice",  voiceQ: "What did you actually do or give up to help them?",                                                                           hint: "What you did or gave up.",                                                                placeholder: "e.g. I drove 40 minutes, worked two hours, and only charged her for the cost of the part" },
+  { id: "heroPayoff",   num: "10c",chapter: "ch3", minWords: 10, label: "Hero Moment - The Payoff",     voiceQ: "What was the reaction from them or from you? What did that moment feel like?",                                               hint: "The real emotional reaction, theirs or yours.",                                           placeholder: "e.g. She grabbed my hand on the way out" },
 ];
 
 const ch1Qs = ALL_QUESTIONS.filter(q => q.chapter === "ch1");
@@ -83,13 +83,13 @@ const LEAD_TYPES = [
   {
     id: "comment", emoji: "💬", label: "Comment", color: "#EFF6FF", border: "#93C5FD", simple: false,
     subtypes: [
-      { id: "cs1", label: "Asked about a service you offer",    example: '"Do you do drain cleaning?"',           publicReplies: ["@[Name] great question. I do handle [service type], and quality is always guaranteed."], dmScript: "Hey [Name], thanks so much for commenting. We absolutely can help with [service]. " + BOOKING },
-      { id: "cs2", label: "Asked about your service area",      example: '"Do you service Donelson?"',            publicReplies: ["@[Name] great question. We do service [city name], we would love to help you out."],    dmScript: "Hey [Name], thanks for reaching out. Yes, we absolutely service [area]. Just curious, is there something specific going on I can help with?" },
-      { id: "cs3", label: "Needs help now",                     example: '"I was just about to call someone!"',   publicReplies: ["@[Name] we would love to help serve you and your family."],                             dmScript: "Hey [Name], so glad you reached out. " + BOOKING },
-      { id: "cs4", label: "Praise or encouragement",            example: '"Love this post! Keep it up!"',         publicReplies: ["@[Name] really appreciate the kind words! Makes all the long days worth it."],           dmScript: "Hey [Name], really appreciate the encouragement. If you ever need help with [services], I would be glad to take care of you." },
-      { id: "cs5", label: "Past customer or testimonial",       example: '"He did great work for us last year!"', publicReplies: ["@[Name] repeat customers like you are what keep me going. Grateful for your support."],  dmScript: "Your recommendation means the world to me. Do you know anyone else who could use [services]?" },
-      { id: "cs6", label: "Referral or future interest",        example: '"I will share this with my neighbor!"', publicReplies: ["@[Name] really appreciate that. Supporting local businesses helps the whole community."], dmScript: "Hey [Name], the best compliment someone can give us is to refer us. Could you share their name and phone number?" },
-      { id: "cs7", label: "Community connection",               example: '"We need more people like you!"',       publicReplies: ["@[Name] thank you. Our community deserves honest work and that is what I will always stand for."], dmScript: "I love being part of [city/community]. If you ever need help at your place, I would be glad to." },
+      { id: "cs1", label: "Asked about a service you offer",    example: "Do you do drain cleaning?",           publicReplies: ["@[Name] great question. I do handle [service type], and quality is always guaranteed."], dmScript: "Hey [Name], thanks so much for commenting. We absolutely can help with [service]. " + BOOKING },
+      { id: "cs2", label: "Asked about your service area",      example: "Do you service Donelson?",            publicReplies: ["@[Name] great question. We do service [city name], we would love to help you out."],    dmScript: "Hey [Name], thanks for reaching out. Yes, we absolutely service [area]. Just curious, is there something specific going on I can help with?" },
+      { id: "cs3", label: "Needs help now",                     example: "I was just about to call someone!",   publicReplies: ["@[Name] we would love to help serve you and your family."],                             dmScript: "Hey [Name], so glad you reached out. " + BOOKING },
+      { id: "cs4", label: "Praise or encouragement",            example: "Love this post! Keep it up!",         publicReplies: ["@[Name] really appreciate the kind words! Makes all the long days worth it."],           dmScript: "Hey [Name], really appreciate the encouragement. If you ever need help with [services], I would be glad to take care of you." },
+      { id: "cs5", label: "Past customer or testimonial",       example: "He did great work for us last year!", publicReplies: ["@[Name] repeat customers like you are what keep me going. Grateful for your support."],  dmScript: "Your recommendation means the world to me. Do you know anyone else who could use [services]?" },
+      { id: "cs6", label: "Referral or future interest",        example: "I will share this with my neighbor!", publicReplies: ["@[Name] really appreciate that. Supporting local businesses helps the whole community."], dmScript: "Hey [Name], the best compliment someone can give us is to refer us. Could you share their name and phone number?" },
+      { id: "cs7", label: "Community connection",               example: "We need more people like you!",       publicReplies: ["@[Name] thank you. Our community deserves honest work and that is what I will always stand for."], dmScript: "I love being part of [city/community]. If you ever need help at your place, I would be glad to." },
     ],
   },
   {
@@ -102,61 +102,61 @@ const LEAD_TYPES = [
   {
     id: "dm", emoji: "✉️", label: "Direct Message", color: "#FDF4FF", border: "#D8B4FE", simple: false,
     subtypes: [
-      { id: "ds1",  label: "Asked about a service you offer",        example: '"Do you do water heater installs?"',               dmScript: "Hey, thanks so much for reaching out. We absolutely can help with [service name]. " + BOOKING },
-      { id: "ds2",  label: "Asked about a service you do not offer", example: '"Do you do roof repairs?"',                        dmScript: "Hey, thanks so much for reaching out. We do not provide [service] but we do provide [your services]. Is there another item on your to-do list we can help with?" },
-      { id: "ds3",  label: "General question or area check",         example: '"Do you service Hermitage?"',                      dmScript: "Hey, thanks so much for reaching out. [Insert your answer to their question here.]" },
-      { id: "ds4",  label: "Needs help now",                         example: '"I was just about to call someone!"',              dmScript: "Hey, thanks so much for reaching out. " + BOOKING },
-      { id: "ds5",  label: "Praise or encouragement",                example: '"Way to go! Love what you are doing."',            dmScript: "Hey [Name], really appreciate the encouragement. If you ever need help with [services], I would be glad to take care of you." },
-      { id: "ds6",  label: "Past customer or testimonial",           example: '"He did our siding last year, highly recommend!"', dmScript: "Your recommendation means the world to me. Do you know anyone else who could use [services]?" },
-      { id: "ds7",  label: "Referral or future interest",            example: '"Can you help my friend?"',                        dmScript: "Hey, thanks so much for reaching out. Could you share their name and phone number?" },
-      { id: "ds8",  label: "Community connection",                   example: '"We need more people like you!"',                  dmScript: "I love being part of [city/community]. If you ever need help at your place, I would be glad to." },
-      { id: "ds9",  label: "Competitor or peer",                     example: '"We do the same services in another town."',       dmScript: "Great to hear from you. If you ever have overflow jobs outside your focus, feel free to send them my way." },
-      { id: "ds10", label: "Emotional support or values-based",      example: '"I am so proud of you. Blessings to you!"',        dmScript: "That is so kind of you. Messages like this remind me why I started this business. Thank you." },
+      { id: "ds1",  label: "Asked about a service you offer",        example: "Do you do water heater installs?",               dmScript: "Hey, thanks so much for reaching out. We absolutely can help with [service name]. " + BOOKING },
+      { id: "ds2",  label: "Asked about a service you do not offer", example: "Do you do roof repairs?",                        dmScript: "Hey, thanks so much for reaching out. We do not provide [service] but we do provide [your services]. Is there another item on your to-do list we can help with?" },
+      { id: "ds3",  label: "General question or area check",         example: "Do you service Hermitage?",                      dmScript: "Hey, thanks so much for reaching out. [Insert your answer to their question here.]" },
+      { id: "ds4",  label: "Needs help now",                         example: "I was just about to call someone!",              dmScript: "Hey, thanks so much for reaching out. " + BOOKING },
+      { id: "ds5",  label: "Praise or encouragement",                example: "Way to go! Love what you are doing.",            dmScript: "Hey [Name], really appreciate the encouragement. If you ever need help with [services], I would be glad to take care of you." },
+      { id: "ds6",  label: "Past customer or testimonial",           example: "He did our siding last year, highly recommend!", dmScript: "Your recommendation means the world to me. Do you know anyone else who could use [services]?" },
+      { id: "ds7",  label: "Referral or future interest",            example: "Can you help my friend?",                        dmScript: "Hey, thanks so much for reaching out. Could you share their name and phone number?" },
+      { id: "ds8",  label: "Community connection",                   example: "We need more people like you!",                  dmScript: "I love being part of [city/community]. If you ever need help at your place, I would be glad to." },
+      { id: "ds9",  label: "Competitor or peer",                     example: "We do the same services in another town.",       dmScript: "Great to hear from you. If you ever have overflow jobs outside your focus, feel free to send them my way." },
+      { id: "ds10", label: "Emotional support or values-based",      example: "I am so proud of you. Blessings to you!",        dmScript: "That is so kind of you. Messages like this remind me why I started this business. Thank you." },
     ],
   },
 ];
 
 const T = {
   en: {
-    voiceIntro: "Hey! I'm going to walk you through a series of questions to build your story. Tap Start and I'll guide you through everything.",
+    voiceIntro: "Hey! I am going to walk you through a series of questions to build your story. Tap Start and I will guide you through everything.",
     voiceStart: "Start Voice Session",
-    voiceDone: "That's everything I need. Amazing work. Let's build your post now.",
-    voiceContinue: "Continue to Post in Groups →",
-    listenHint: "Listening — speak your answer",
+    voiceDone: "That is everything I need. Amazing work. Let us build your post now.",
+    voiceContinue: "Continue to Post in Groups",
+    listenHint: "Listening - speak your answer",
     processing: "Processing...",
     answeredSoFar: "Your Answers So Far",
-    rerecord: "🎤 Re-record",
+    rerecord: "Re-record",
     seeQuestion: "See current question",
   },
   es: {
-    voiceIntro: "¡Hola! Voy a guiarte por una serie de preguntas para construir tu historia.",
-    voiceStart: "Iniciar Sesión de Voz",
+    voiceIntro: "Hola! Voy a guiarte por una serie de preguntas para construir tu historia.",
+    voiceStart: "Iniciar Sesion de Voz",
     voiceDone: "Eso es todo. Excelente trabajo.",
-    voiceContinue: "Continuar →",
-    listenHint: "Escuchando — di tu respuesta",
+    voiceContinue: "Continuar",
+    listenHint: "Escuchando - di tu respuesta",
     processing: "Procesando...",
     answeredSoFar: "Tus Respuestas Hasta Ahora",
-    rerecord: "🎤 Re-grabar",
+    rerecord: "Re-grabar",
     seeQuestion: "Ver pregunta actual",
   },
 };
 
 const Q_ES = {
-  name:         { label: "Tu Nombre",                   hint: "¿Cuál es tu nombre completo?",                                                            voiceQ: "¿Cuál es tu nombre completo?" },
-  business:     { label: "Nombre del Negocio",          hint: "¿Cómo se llama tu negocio?",                                                              voiceQ: "¿Cuál es el nombre de tu negocio, exactamente como aparece en línea?" },
-  area:         { label: "Dónde Trabajas",              hint: "¿Qué ciudades atiendes y cuánto tiempo llevas?",                                          voiceQ: "¿Qué ciudades o vecindarios atiendes, y cuánto tiempo llevas trabajando en esa área?" },
-  knownFor:     { label: "Por qué te conocen",          hint: "¿Con qué 2-3 palabras específicas te describirían?",                                      voiceQ: "Si alguien te describiera a un vecino, ¿qué dirían que eres el experto? Dame 2 o 3 palabras específicas." },
-  topServices:  { label: "Top 2 Servicios",             hint: "¿Cuáles son los dos servicios principales?",                                              voiceQ: "¿Cuáles son los dos servicios por los que más quieres ser conocido?" },
-  refuses:      { label: "Lo que te niegas a hacer",    hint: "¿Qué te niegas a hacer que otros hacen?",                                                 voiceQ: "¿Qué es algo que te niegas rotundamente a hacer, que otros en tu industria sí hacen?" },
-  humanDetail:  { label: "Un Detalle Humano",           hint: "¿Algo real sobre ti fuera del trabajo? Sé específico.",                                   voiceQ: "Cuéntame algo real sobre ti fuera del trabajo. Dame detalles específicos como el año, el color, el nombre." },
-  localPlace:   { label: "Lugar Local",                 hint: "¿Un lugar local específico que amas? El nombre real.",                                    voiceQ: "¿Cuál es un lugar local específico que realmente te gusta? Dame el nombre real." },
-  localActivity:{ label: "Qué Haces Allí",              hint: "¿Qué siempre haces o pides ahí?",                                                         voiceQ: "¿Qué siempre haces o pides cuando estás ahí? Descríbemelo." },
-  mission:      { label: "Tu Misión",                   hint: "Completa: Estoy en misión de encontrar el mejor ___ en mi ciudad.",                       voiceQ: "Completa esta frase: Estoy en una misión para encontrar el mejor ___ en mi ciudad. ¿Qué es?" },
-  whyStarted:   { label: "Por qué Empezaste",           hint: "¿La verdadera razón por la que empezaste?",                                               voiceQ: "Cuéntame la historia real de por qué empezaste tu negocio. ¿Cuál fue el momento que te impulsó?" },
-  whatChanged:  { label: "¿Qué Cambió?",                hint: "¿Qué cambió en tu vida o familia?",                                                       voiceQ: "¿Qué cambió realmente en tu vida o en tu familia cuando tomaste esa decisión?" },
-  heroCrisis:   { label: "Momento Héroe - La Crisis",   hint: "¿Cuéntame de una vez que fuiste más allá?",                                               voiceQ: "Cuéntame de una vez que fuiste más allá por un cliente. ¿Quién estaba en problemas, qué estaba en juego?" },
-  heroSacrifice:{ label: "Momento Héroe - El Sacrificio",hint: "¿Qué hiciste o sacrificaste?",                                                           voiceQ: "¿Qué hiciste realmente o qué sacrificaste para ayudarlos?" },
-  heroPayoff:   { label: "Momento Héroe - El Resultado",hint: "¿Cuál fue la reacción?",                                                                  voiceQ: "¿Cuál fue la reacción — de ellos o tuya? ¿Cómo se sintió ese momento?" },
+  name:         { label: "Tu Nombre",                    hint: "Cual es tu nombre completo?",                                                          voiceQ: "Cual es tu nombre completo?" },
+  business:     { label: "Nombre del Negocio",           hint: "Como se llama tu negocio?",                                                            voiceQ: "Cual es el nombre de tu negocio, exactamente como aparece en linea?" },
+  area:         { label: "Donde Trabajas",               hint: "Que ciudades atiendes y cuanto tiempo llevas?",                                        voiceQ: "Que ciudades o vecindarios atiendes, y cuanto tiempo llevas trabajando en esa area?" },
+  knownFor:     { label: "Por que te conocen",           hint: "Con que 2-3 palabras especificas te describirian?",                                    voiceQ: "Si alguien te describiera a un vecino, que dirian que eres el experto? Dame 2 o 3 palabras especificas." },
+  topServices:  { label: "Top 2 Servicios",              hint: "Cuales son los dos servicios principales?",                                            voiceQ: "Cuales son los dos servicios por los que mas quieres ser conocido?" },
+  refuses:      { label: "Lo que te niegas a hacer",     hint: "Que te niegas a hacer que otros hacen?",                                               voiceQ: "Que es algo que te niegas rotundamente a hacer, que otros en tu industria si hacen?" },
+  humanDetail:  { label: "Un Detalle Humano",            hint: "Algo real sobre ti fuera del trabajo? Se especifico.",                                 voiceQ: "Fuera del trabajo, que es lo que realmente disfrutas hacer? Un pasatiempo, un proyecto, algo que haces los fines de semana." },
+  localPlace:   { label: "Lugar Local",                  hint: "Un lugar local especifico que amas? El nombre real.",                                  voiceQ: "Cual es un lugar local especifico que realmente te gusta? Dame el nombre real." },
+  localActivity:{ label: "Que Haces Alli",               hint: "Que siempre haces o pides ahi?",                                                       voiceQ: "Que siempre haces o pides cuando estas ahi? Describemelo." },
+  mission:      { label: "Tu Mision",                    hint: "Completa: Estoy en mision de encontrar el mejor ___ en mi ciudad.",                    voiceQ: "Completa esta frase: Estoy en una mision para encontrar el mejor ___ en mi ciudad. Que es?" },
+  whyStarted:   { label: "Por que Empezaste",            hint: "La verdadera razon por la que empezaste?",                                             voiceQ: "Cuentame la historia real de por que empezaste tu negocio. Cual fue el momento que te impulso?" },
+  whatChanged:  { label: "Que Cambio?",                  hint: "Que cambio en tu vida o familia?",                                                     voiceQ: "Que cambio realmente en tu vida o en tu familia cuando tomaste esa decision?" },
+  heroCrisis:   { label: "Momento Heroe - La Crisis",    hint: "Cuentame de una vez que fuiste mas alla?",                                             voiceQ: "Cuentame de una vez que fuiste mas alla por un cliente. Quien estaba en problemas, que estaba en juego?" },
+  heroSacrifice:{ label: "Momento Heroe - El Sacrificio",hint: "Que hiciste o sacrificaste?",                                                          voiceQ: "Que hiciste realmente o que sacrificaste para ayudarlos?" },
+  heroPayoff:   { label: "Momento Heroe - El Resultado", hint: "Cual fue la reaccion?",                                                                voiceQ: "Cual fue la reaccion de ellos o tuya? Como se sintio ese momento?" },
 };
 
 const HOME_T = {
@@ -164,71 +164,39 @@ const HOME_T = {
     headline1: "Turn Your Story Into",
     headline2: "Jobs on Your Calendar",
     subheadline: "Build a trust-building Facebook post, get it in front of your community, and convert engagement into booked jobs.",
-    stat1: "⏱ ~29 min total",
-    stat2: "🎯 10 group posts",
-    stat3: "💬 Real leads, real jobs",
+    stat1: "~29 min total", stat2: "10 group posts", stat3: "Real leads, real jobs",
     continueLabel: "Continue where you left off",
-    cta0: "✍️ Start Writing Your Post",
-    cta1: "✨ Generate Your Post",
-    cta2: "🔁 Cross-Post to More Groups",
-    cta3: "🔥 Work Your Leads",
+    cta0: "Start Writing Your Post", cta1: "Generate Your Post",
+    cta2: "Cross-Post to More Groups", cta3: "Work Your Leads",
     checklistTitle: "Your Week 1 Checklist",
-    writeTitle: "Write Post",
-    writeDesc: "Answer 15 questions. AI writes your trust-building post.",
-    writeTime: "~8 min",
-    groupsTitle: "Post in Groups",
-    groupsDesc: "Find local Facebook groups and replicate your post to 10.",
-    groupsTime: "~15 min",
-    leadsTitle: "Work Leads",
-    leadsDesc: "Turn every like, comment, share, and DM into a booked job.",
-    leadsTime: "~5 min",
+    writeTitle: "Write Post", writeDesc: "Answer 15 questions. AI writes your trust-building post.", writeTime: "~8 min",
+    groupsTitle: "Post in Groups", groupsDesc: "Find local Facebook groups and replicate your post to 10.", groupsTime: "~15 min",
+    leadsTitle: "Work Leads", leadsDesc: "Turn every like, comment, share, and DM into a booked job.", leadsTime: "~5 min",
     leadsProgress: "Scripts for every engagement type",
-    statusNotStarted: "Not Started",
-    statusInProgress: "In Progress",
-    statusDone: "Done",
-    ofAnswered: "of 15 answered",
-    ofGroups: "of 10 groups posted",
-    typeTitle: "Type My Answers",
-    typeDesc: "Fill in each question at your own pace. Mic icon available to dictate.",
-    voiceTitle: "Talk Through It",
-    voiceDesc: "Speak your answers. An AI coach guides you through every question.",
-    howStart: "How would you like to answer the questions?",
-    writePostTitle: "Write Your Post",
+    statusNotStarted: "Not Started", statusInProgress: "In Progress", statusDone: "Done",
+    ofAnswered: "of 15 answered", ofGroups: "of 10 groups posted",
+    typeTitle: "Type My Answers", typeDesc: "Fill in each question at your own pace. Mic icon available to dictate.",
+    voiceTitle: "Talk Through It", voiceDesc: "Speak your answers. An AI coach guides you through every question.",
+    howStart: "How would you like to answer the questions?", writePostTitle: "Write Your Post",
   },
   es: {
     headline1: "Convierte Tu Historia en",
     headline2: "Trabajos en Tu Calendario",
-    subheadline: "Construye una publicación de Facebook que genera confianza, ponla frente a tu comunidad y convierte el engagement en trabajos reservados.",
-    stat1: "⏱ ~29 min en total",
-    stat2: "🎯 10 publicaciones en grupos",
-    stat3: "💬 Leads reales, trabajos reales",
+    subheadline: "Construye una publicacion de Facebook que genera confianza, ponla frente a tu comunidad y convierte el engagement en trabajos reservados.",
+    stat1: "~29 min en total", stat2: "10 publicaciones en grupos", stat3: "Leads reales, trabajos reales",
     continueLabel: "Continuar donde lo dejaste",
-    cta0: "✍️ Empezar a Escribir Tu Publicación",
-    cta1: "✨ Generar Tu Publicación",
-    cta2: "🔁 Publicar en Más Grupos",
-    cta3: "🔥 Trabajar Tus Leads",
+    cta0: "Empezar a Escribir Tu Publicacion", cta1: "Generar Tu Publicacion",
+    cta2: "Publicar en Mas Grupos", cta3: "Trabajar Tus Leads",
     checklistTitle: "Tu Lista de la Semana 1",
-    writeTitle: "Escribir Publicación",
-    writeDesc: "Responde 15 preguntas. La IA escribe tu publicación.",
-    writeTime: "~8 min",
-    groupsTitle: "Publicar en Grupos",
-    groupsDesc: "Encuentra grupos locales de Facebook y replica tu publicación en 10.",
-    groupsTime: "~15 min",
-    leadsTitle: "Trabajar Leads",
-    leadsDesc: "Convierte cada me gusta, comentario, compartido y mensaje en un trabajo.",
-    leadsTime: "~5 min",
+    writeTitle: "Escribir Publicacion", writeDesc: "Responde 15 preguntas. La IA escribe tu publicacion.", writeTime: "~8 min",
+    groupsTitle: "Publicar en Grupos", groupsDesc: "Encuentra grupos locales de Facebook y replica tu publicacion en 10.", groupsTime: "~15 min",
+    leadsTitle: "Trabajar Leads", leadsDesc: "Convierte cada me gusta, comentario, compartido y mensaje en un trabajo.", leadsTime: "~5 min",
     leadsProgress: "Scripts para cada tipo de engagement",
-    statusNotStarted: "Sin Empezar",
-    statusInProgress: "En Progreso",
-    statusDone: "Listo",
-    ofAnswered: "de 15 respondidas",
-    ofGroups: "de 10 grupos publicados",
-    typeTitle: "Escribir Mis Respuestas",
-    typeDesc: "Completa cada pregunta a tu ritmo. Ícono de micrófono disponible.",
-    voiceTitle: "Hablar con el Coach",
-    voiceDesc: "Di tus respuestas. Un coach de IA te guía en Español.",
-    howStart: "¿Cómo quieres responder las preguntas?",
-    writePostTitle: "Escribe Tu Publicación",
+    statusNotStarted: "Sin Empezar", statusInProgress: "En Progreso", statusDone: "Listo",
+    ofAnswered: "de 15 respondidas", ofGroups: "de 10 grupos publicados",
+    typeTitle: "Escribir Mis Respuestas", typeDesc: "Completa cada pregunta a tu ritmo. Icono de microfono disponible.",
+    voiceTitle: "Hablar con el Coach", voiceDesc: "Di tus respuestas. Un coach de IA te guia en Espanol.",
+    howStart: "Como quieres responder las preguntas?", writePostTitle: "Escribe Tu Publicacion",
   },
 };
 
@@ -283,11 +251,9 @@ async function ttsSpeak(text, lang, onEnd) {
 async function findFacebookGroups(city, count) {
   const reply = await callClaude([{
     role: "user",
-    content: "Generate " + count + " realistic Facebook group names for the " + city + " area that a home service contractor could post in. Sort Public groups first.\n\nYou MUST return ONLY a valid JSON array. No markdown. No code fences. No explanation. Just the raw JSON array starting with [ and ending with ].\n\nFormat:\n[{\"name\":\"group name\",\"type\":\"Community or Homeowners or Family or Buy/Sell or Neighborhood\",\"members\":\"e.g. 4.2K\",\"privacy\":\"Public or Private\"}]",
+    content: "Generate " + count + " realistic Facebook group names for the " + city + " area that a home service contractor could post in. Sort Public groups first. You MUST return ONLY a valid JSON array. No markdown. No code fences. No explanation. Just the raw JSON array starting with [ and ending with ].\n\nFormat:\n[{\"name\":\"group name\",\"type\":\"Community or Homeowners or Family or Buy/Sell or Neighborhood\",\"members\":\"e.g. 4.2K\",\"privacy\":\"Public or Private\"}]",
   }]);
-  // Strip any possible markdown fences and whitespace
   const cleaned = reply.replace(/```json/gi, "").replace(/```/g, "").trim();
-  // Find the outermost JSON array
   const start = cleaned.indexOf("[");
   const end = cleaned.lastIndexOf("]");
   if (start === -1 || end === -1) return [];
@@ -308,7 +274,7 @@ async function generateAIPost(ans) {
     + "\n10. Crisis: " + (ans.heroCrisis || "") + "\n10b. Sacrifice: " + (ans.heroSacrifice || "") + "\n10c. Payoff: " + (ans.heroPayoff || "")
     + "\n\nSTRICT NO-HALLUCINATION: Only use facts from answers above.\n"
     + "RULES: First person only. Never use: professionalism, integrity, excellence, quality work, commitment, reliable, expert, top-notch. No em dashes. No CTA, phone, or website. Fix all grammar. 330-450 words. Short paragraphs.\n"
-    + "STRUCTURE: (1) Vulnerable hook, (2) Identity anchor, (3) Hero moment 8-12 lines, (4) Neighbor proof, (5) End ONLY with: \"Also, I am on a mission to find the best [mission] in [city]. Any suggestions?\"\n"
+    + "STRUCTURE: (1) Vulnerable hook, (2) Identity anchor, (3) Hero moment 8-12 lines, (4) Neighbor proof, (5) End ONLY with: Also, I am on a mission to find the best [mission] in [city]. Any suggestions?\n"
     + "Output post only. No labels.";
   return await callClaude([{ role: "user", content: p }]);
 }
@@ -338,8 +304,8 @@ function Btn({ children, onClick, variant, style, disabled }) {
 function BottomNav({ onBack, onNext, nextDisabled }) {
   return (
     <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 90, background: "rgba(255,255,255,0.97)", backdropFilter: "blur(8px)", borderTop: "2px solid " + GRAY200, padding: "14px 32px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-      {onBack ? <Btn variant="primary" onClick={onBack} style={{ minWidth: 110 }}>← Back</Btn> : <div />}
-      {onNext ? <Btn variant="primary" onClick={onNext} disabled={!!nextDisabled} style={{ minWidth: 110 }}>Next →</Btn> : <div />}
+      {onBack ? <Btn variant="primary" onClick={onBack} style={{ minWidth: 110 }}>Back</Btn> : <div />}
+      {onNext ? <Btn variant="primary" onClick={onNext} disabled={!!nextDisabled} style={{ minWidth: 110 }}>Next</Btn> : <div />}
     </div>
   );
 }
@@ -375,7 +341,7 @@ function LangToggle({ lang, setLang }) {
     <div style={{ display: "inline-flex", border: "2px solid " + NAVY, borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
       {["en", "es"].map(l => (
         <button key={l} onClick={() => setLang(l)} style={{ background: lang === l ? NAVY : WHITE, color: lang === l ? YELLOW : NAVY, border: "none", padding: "7px 20px", fontWeight: 700, fontSize: 13, cursor: "pointer", transition: "all 0.2s" }}>
-          {l === "en" ? "🇺🇸 English" : "🇪🇸 Español"}
+          {l === "en" ? "English" : "Espanol"}
         </button>
       ))}
     </div>
@@ -400,7 +366,7 @@ function PhaseNav({ current, onNavigate, completedSections }) {
             <div key={section.id} style={{ flex: 1, minWidth: 0 }}>
               <div onClick={() => onNavigate && onNavigate(section.phases[0])}
                 style={{ background: sectionDone ? GREEN : sectionActive ? NAVY : GRAY200, color: sectionDone ? WHITE : sectionActive ? YELLOW : GRAY600, borderRadius: sectionActive ? "10px 10px 0 0" : 10, padding: "8px 14px", fontSize: 13, fontWeight: 800, textAlign: "center", cursor: "pointer", transition: "all 0.2s" }}>
-                {sectionDone ? "✓ " : ""}{section.label}
+                {sectionDone ? "Done " : ""}{section.label}
               </div>
               {sectionActive && (
                 <div style={{ background: GRAY50, border: "1px solid " + GRAY200, borderTop: "none", borderRadius: "0 0 10px 10px", padding: "8px 10px", display: "flex", flexDirection: "column", gap: 5 }}>
@@ -410,7 +376,7 @@ function PhaseNav({ current, onNavigate, completedSections }) {
                     return (
                       <div key={p} onClick={e => { e.stopPropagation(); onNavigate && onNavigate(p); }}
                         style={{ padding: "3px 10px", borderRadius: 99, fontSize: 11, fontWeight: 600, background: isDone ? "#D1FAE5" : isActive ? YELLOW : GRAY200, color: isDone ? "#065F46" : isActive ? NAVY : GRAY400, cursor: "pointer", textAlign: "center", transition: "all 0.2s", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {isDone ? "✓ " : ""}{PHASE_LABELS[p] || p}
+                        {isDone ? "Done " : ""}{PHASE_LABELS[p] || p}
                       </div>
                     );
                   })}
@@ -470,7 +436,6 @@ function GroupTable({ groups, showNum }) {
 function VoiceMode({ onComplete, lang }) {
   const t = T[lang] || T.en;
   const ttsLang = lang === "es" ? "es-ES" : "en-US";
-
   const S = useRef({ qIdx: 0, answers: {}, rerecordId: null, busy: false, wantMic: false });
   const [displayQIdx, setDisplayQIdx] = useState(0);
   const [displayAnswers, setDisplayAnswers] = useState({});
@@ -516,13 +481,11 @@ function VoiceMode({ onComplete, lang }) {
 
   function resumeSession() {
     setPaused(false);
-    const q = S.current.rerecordId
-      ? ALL_QUESTIONS.find(x => x.id === S.current.rerecordId)
-      : ALL_QUESTIONS[S.current.qIdx];
+    const q = S.current.rerecordId ? ALL_QUESTIONS.find(x => x.id === S.current.rerecordId) : ALL_QUESTIONS[S.current.qIdx];
     const vq = (lang === "es" && Q_ES[q.id]) ? Q_ES[q.id].voiceQ : (q.voiceQ || q.hint);
     const msg = lang === "es"
       ? "Bienvenido de vuelta. Continuemos. " + vq
-      : "Welcome back! Let's pick up where we left off. " + vq;
+      : "Welcome back! Let us pick up where we left off. " + vq;
     coachSay(msg, () => openMic());
   }
 
@@ -538,48 +501,26 @@ function VoiceMode({ onComplete, lang }) {
       ? ((lang === "es" && Q_ES[nextQ.id]) ? Q_ES[nextQ.id].voiceQ : (nextQ.voiceQ || nextQ.hint))
       : null;
 
-    const sysPrompt = lang === "es"
-      ? "Eres un coach de negocios cálido y alentador. SIEMPRE responde completamente en español. Respuestas cortas, naturales, como una conversación entre amigos. NUNCA uses frases genéricas como 'Perfecto' o 'Genial'. Reacciona específicamente a lo que dijeron."
-      : `You are having a real, warm conversation — like a close friend who genuinely cares about this person's story.
+    const wordCountMet = text.trim().split(/\s+/).filter(Boolean).length >= q.minWords;
 
-CRITICAL RULES:
-- NEVER use filler affirmations like "Perfect!", "Love that!", "Great!", "Awesome!", "Got it!", "Amazing!" — these sound fake and robotic.
-- You MUST reference something SPECIFIC from what they just said. If they mention a Ford truck, say something about the truck. If they mention Christmas Eve, acknowledge Christmas Eve. If they describe an emotional moment, reflect that emotion back.
-- Sound like a real human reacting in real time — surprised, curious, moved, or amused by the actual content.
-- Keep it SHORT: one genuine reaction sentence, then smoothly ask the next question.
-- Examples of good reactions: "Oh a 67 Bronco, that's a serious project.", "Man, Christmas Eve — that had to hit different.", "Walking out like that takes guts.", "Ha, okay so you're basically the drain whisperer.", "That moment with her grabbing your hand — that's the whole story right there."`;
+    const sysPrompt = lang === "es"
+      ? "Eres un coach de negocios calido. SIEMPRE en espanol. Reacciona especificamente a lo que dijeron. NUNCA uses Perfecto, Genial, Increible."
+      : "You are having a real warm conversation like a close friend. NEVER use filler words like Perfect, Love that, Great, Awesome, Got it, Amazing, Wonderful. You MUST reference something specific from what they just said. React like a real human - surprised, curious, moved, or amused by the actual content. Keep it SHORT: one genuine reaction sentence then the next question.";
 
     const userPrompt = lang === "es"
-      ? "Pregunta: " + qLabel + " (" + qHint + ")\nRespuesta: \"" + text + "\"\nMínimo: " + q.minWords + " palabras\n\nSi específica y cumple mínimo: ACCEPT + reacción específica a lo que dijeron (¡no genérica!) + pregunta natural: " + (nextVoiceQ || "Eso es todo.") + "\nSi vaga o corta: FOLLOWUP + una pregunta curiosa para sacar más detalles."
-      : `Question being answered: ${qLabel}
-What a good answer looks like: ${qHint}
-What they said: "${text}"
-Minimum words required: ${q.minWords}
-
-If their answer is specific and meets the word count:
-→ Reply starting with ACCEPT
-→ React to something SPECIFIC they actually said — mirror their words back, show genuine curiosity or emotion about the actual content
-→ Then naturally transition: ${nextVoiceQ || "And that's everything — you just gave me so much to work with."}
-
-If too short or vague:
-→ Reply starting with FOLLOWUP
-→ Ask one specific follow-up question about what they mentioned — be genuinely curious, not robotic`;
+      ? "Pregunta: " + qLabel + "\nLo que necesitamos: " + qHint + "\nRespuesta: \"" + text + "\"\nMinimo de palabras: " + q.minWords + "\n\n" + (wordCountMet ? "Su respuesta cumple el minimo. Empieza con ACCEPT." : "Su respuesta es muy corta. Empieza con FOLLOWUP.") + "\n\nACCEPT: Reacciona a algo especifico que dijeron (sin palabras de relleno), luego pregunta: " + (nextVoiceQ || "Eso es todo, excelente trabajo.") + "\nFOLLOWUP: Haz una pregunta especifica y curiosa sobre lo que mencionaron."
+      : "Question: " + qLabel + "\nLooking for: " + qHint + "\nWhat they said: \"" + text + "\"\nMin words: " + q.minWords + "\n\n" + (wordCountMet ? "Their answer meets the word count. Start with ACCEPT." : "Their answer is too short (" + text.trim().split(/\s+/).filter(Boolean).length + " words, need " + q.minWords + "). Start with FOLLOWUP.") + "\n\nACCEPT format: React to one specific thing they actually said (no filler words ever), then ask: " + (nextVoiceQ || "That is everything - you gave me so much to work with.") + "\nFOLLOWUP format: Ask one specific curious question about something in what they said.";
 
     let reply = "";
     try {
       const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 9000));
       reply = await Promise.race([callClaude([{ role: "user", content: userPrompt }], sysPrompt), timeout]);
     } catch(_) {
-      const fb = ["Oh I love that. ", "That works perfectly. ", "Yeah, that's real. "];
+      const fb = ["Oh that is a good one. ", "Yeah that tracks. ", "Okay that is real. "];
       reply = "ACCEPT " + fb[Math.floor(Math.random() * fb.length)] + (nextVoiceQ || t.voiceDone);
     }
 
-    // Safety: if something went wrong and busy is still true, unlock it
-    if (!reply) {
-      S.current.busy = false;
-      openMic();
-      return;
-    }
+    if (!reply) { S.current.busy = false; openMic(); return; }
 
     const isAccept = reply.trim().toUpperCase().startsWith("ACCEPT");
     const msg = reply.replace(/^ACCEPT\s*/i, "").replace(/^FOLLOWUP\s*/i, "").trim();
@@ -592,10 +533,7 @@ If too short or vague:
       setTranscript("");
       if (isLast) {
         const finalAnswers = { ...S.current.answers };
-        coachSay(msg || t.voiceDone, () => {
-          setUiStatus("done");
-          setDisplayAnswers(finalAnswers);
-        });
+        coachSay(msg || t.voiceDone, () => { setUiStatus("done"); setDisplayAnswers(finalAnswers); });
       } else {
         S.current.qIdx = qIdx + 1;
         setDisplayQIdx(qIdx + 1);
@@ -613,9 +551,6 @@ If too short or vague:
     r.continuous = false;
     r.interimResults = false;
     r.lang = ttsLang;
-    // Longer silence threshold so natural pauses don't trigger early
-    try { r.maxAlternatives = 1; } catch(_) {}
-    // Some browsers support a continuous listening timeout — we manage restart manually
     r.onresult = e => {
       const text = e.results[0][0].transcript.trim();
       if (!text || S.current.busy) return;
@@ -626,18 +561,18 @@ If too short or vague:
       handleAnswer(text);
     };
     r.onerror = e => {
-      if (e.error === "no-speech") { if (S.current.wantMic && !S.current.busy) try { r.start(); } catch(_) {} return; }
+      if (e.error === "no-speech") {
+        if (S.current.wantMic && !S.current.busy) try { r.start(); } catch(_) {}
+        return;
+      }
       S.current.wantMic = false;
-      setMicErr(e.error === "not-allowed" ? "Mic blocked — please allow microphone." : "Mic error: " + e.error);
+      setMicErr(e.error === "not-allowed" ? "Mic blocked - please allow microphone." : "Mic error: " + e.error);
       setUiStatus("idle");
     };
     r.onend = () => {
-      // Restart with a short delay so natural mid-sentence pauses don't cut off
       if (S.current.wantMic && !S.current.busy) {
         setTimeout(() => {
-          if (S.current.wantMic && !S.current.busy) {
-            try { r.start(); } catch(_) {}
-          }
+          if (S.current.wantMic && !S.current.busy) try { r.start(); } catch(_) {}
         }, 400);
       } else {
         setUiStatus(u => u === "listening" ? "idle" : u);
@@ -656,8 +591,8 @@ If too short or vague:
     const q = ALL_QUESTIONS[idx];
     const firstQ = (lang === "es" && Q_ES[q.id]) ? Q_ES[q.id].voiceQ : (q.voiceQ || q.hint);
     const intro = isResuming
-      ? (lang === "es" ? "Bienvenido de vuelta. Continuemos. " + firstQ : "Hey, welcome back! Let's pick up right where we left off. " + firstQ)
-      : (lang === "es" ? "Perfecto. Empecemos. " + firstQ : "Alright, let's build your story! Just talk to me like you're catching up with a friend. Here we go: " + firstQ);
+      ? (lang === "es" ? "Bienvenido de vuelta. Continuemos. " + firstQ : "Hey, welcome back! Let us pick up right where we left off. " + firstQ)
+      : (lang === "es" ? "Perfecto. Empecemos. " + firstQ : "Alright, let us build your story! Just talk to me like you are catching up with a friend. Here we go: " + firstQ);
     coachSay(intro, () => openMic());
   }
 
@@ -665,7 +600,7 @@ If too short or vague:
     S.current.rerecordId = id;
     const q = ALL_QUESTIONS.find(x => x.id === id);
     const vq = (lang === "es" && Q_ES[q.id]) ? Q_ES[q.id].voiceQ : (q.voiceQ || q.hint);
-    const msg = lang === "es" ? "Claro, repitamos. " + vq : "No problem, let's redo that one. " + vq;
+    const msg = lang === "es" ? "Claro, repitamos. " + vq : "No problem, let us redo that one. " + vq;
     setTranscript("");
     coachSay(msg, () => openMic());
   }
@@ -695,7 +630,7 @@ If too short or vague:
           <div style={{ fontSize: 36, marginBottom: 8 }}>⏸️</div>
           <h3 style={{ color: NAVY, fontSize: 18, fontWeight: 800, margin: "0 0 8px" }}>Session Paused</h3>
           <p style={{ color: GRAY600, fontSize: 14, margin: "0 0 20px", lineHeight: 1.6 }}>Your answers are saved. Tap Resume whenever you are ready.</p>
-          <Btn onClick={resumeSession}>▶ Resume Session</Btn>
+          <Btn onClick={resumeSession}>Resume Session</Btn>
         </Card>
       )}
 
@@ -720,13 +655,13 @@ If too short or vague:
               </div>
             )}
             <button onClick={pauseSession} style={{ marginTop: 4, background: "none", border: "1.5px solid " + GRAY300, borderRadius: 8, padding: "6px 18px", fontSize: 12, color: GRAY600, cursor: "pointer", fontWeight: 600 }}>
-              ⏸ Pause Session
+              Pause Session
             </button>
           </div>
           {activeQ && (
             <details style={{ marginTop: 8 }}>
               <summary style={{ fontSize: 12, color: GRAY400, cursor: "pointer", userSelect: "none" }}>
-                {chapterLabel} · Q{activeQ.num} of {ALL_QUESTIONS.length} · <span style={{ textDecoration: "underline" }}>{t.seeQuestion}</span>
+                {chapterLabel} - Q{activeQ.num} of {ALL_QUESTIONS.length} - <span style={{ textDecoration: "underline" }}>{t.seeQuestion}</span>
               </summary>
               <div style={{ marginTop: 8, padding: "10px 14px", background: GRAY50, borderRadius: 10, fontSize: 13, color: GRAY600, lineHeight: 1.6 }}>
                 <strong style={{ color: NAVY }}>{activeQ.label}</strong><br />{activeQ.hint}
@@ -737,14 +672,27 @@ If too short or vague:
       )}
 
       {!paused && uiStatus !== "idle" && (
-        <div style={{ marginBottom: 12 }}>
-          <ProgressBar current={answeredCount} total={ALL_QUESTIONS.length} />
-        </div>
+        <div style={{ marginBottom: 12 }}><ProgressBar current={answeredCount} total={ALL_QUESTIONS.length} /></div>
       )}
 
       {uiStatus === "idle" && !paused && (
-        <div style={{ textAlign: "center", marginTop: 8 }}>
+        <div style={{ textAlign: "center", marginTop: 8, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
           <Btn onClick={handleStart}>{t.voiceStart}</Btn>
+          {(window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.search.includes("dev=1")) && (
+            <button
+              onClick={() => {
+                S.current.answers = { ...SAMPLE_ANSWERS };
+                S.current.qIdx = ALL_QUESTIONS.length - 1;
+                setDisplayAnswers({ ...SAMPLE_ANSWERS });
+                setDisplayQIdx(ALL_QUESTIONS.length - 1);
+                setCoachMsg("Dev mode - all answers filled. Hit Continue to generate your post.");
+                setUiStatus("done");
+              }}
+              style={{ background: "#1a1a2e", color: YELLOW, border: "1.5px dashed " + YELLOW, borderRadius: 8, padding: "6px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+            >
+              Dev: Auto-fill all answers
+            </button>
+          )}
         </div>
       )}
 
@@ -815,7 +763,7 @@ function TypeMode({ onComplete, lang, savedAnswers, onAnswerChange }) {
     };
     r.onerror = e => {
       setMicListening(false);
-      setMicErr(e.error === "not-allowed" ? "Mic blocked — allow microphone access." : "Mic error: " + e.error);
+      setMicErr(e.error === "not-allowed" ? "Mic blocked - allow microphone access." : "Mic error: " + e.error);
     };
     r.onend = () => setMicListening(false);
     recogRef.current = r;
@@ -833,10 +781,14 @@ function TypeMode({ onComplete, lang, savedAnswers, onAnswerChange }) {
     if (inspirationExamples.length > 0) return;
     setInspirationLoading(true);
     try {
-      const reply = await callClaude([{ role: "user", content: "Give 3 short vivid example answers for this question from a home service business owner:\n\nQuestion: " + q.label + "\nContext: " + q.hint + "\nDefault example already shown to user: " + q.placeholder + "\n\nReturn ONLY a JSON array of 3 strings: [\"example 1\",\"example 2\",\"example 3\"]. Each must be clearly different from the default example above — different industry, different detail, different style. Authentic and specific." }]);
-      const cleaned = reply.replace(/```json|```/g, "").trim();
-      const match = cleaned.match(/\[[\s\S]*\]/);
-      if (match) { const p = JSON.parse(match[0]); setInspirationExamples(Array.isArray(p) ? p : []); }
+      const reply = await callClaude([{ role: "user", content: "Give 3 short vivid example answers for this question from a home service business owner:\n\nQuestion: " + q.label + "\nContext: " + q.hint + "\nDefault example already shown to user: " + q.placeholder + "\n\nReturn ONLY a JSON array of 3 strings. Each must be clearly different from the default example - different industry, different detail, different style. Authentic and specific. No markdown, no code fences." }]);
+      const cleaned = reply.replace(/```json/gi, "").replace(/```/g, "").trim();
+      const start = cleaned.indexOf("[");
+      const end = cleaned.lastIndexOf("]");
+      if (start !== -1 && end !== -1) {
+        const p = JSON.parse(cleaned.slice(start, end + 1));
+        setInspirationExamples(Array.isArray(p) ? p : []);
+      }
     } catch(e) { setInspirationExamples([q.placeholder]); }
     setInspirationLoading(false);
   };
@@ -851,7 +803,7 @@ function TypeMode({ onComplete, lang, savedAnswers, onAnswerChange }) {
     if (qIdx > 0) { setQIdx(i => i - 1); setShowInspiration(false); setInspirationExamples([]); setMicErr(""); }
   };
 
-  const chapterLabel = { ch1: "Chapter 1 — Who You Are", ch2: "Chapter 2 — Your Real Life", ch3: "Chapter 3 — What Shaped You" }[q.chapter];
+  const chapterLabel = { ch1: "Chapter 1 - Who You Are", ch2: "Chapter 2 - Your Real Life", ch3: "Chapter 3 - What Shaped You" }[q.chapter];
   const chapterBg = { ch1: "#EFF6FF", ch2: "#D1FAE5", ch3: "#FEF3C7" }[q.chapter];
   const chapterColor = { ch1: "#1D4ED8", ch2: "#065F46", ch3: "#92400E" }[q.chapter];
 
@@ -895,11 +847,11 @@ function TypeMode({ onComplete, lang, savedAnswers, onAnswerChange }) {
               <div style={{ flex: 1, background: GRAY200, borderRadius: 99, height: 5, overflow: "hidden" }}>
                 <div style={{ background: met ? GREEN : RED, height: 5, borderRadius: 99, width: Math.min((wc / q.minWords) * 100, 100) + "%", transition: "width 0.2s" }} />
               </div>
-              <span style={{ fontSize: 12, fontWeight: 700, color: met ? GREEN : RED, whiteSpace: "nowrap" }}>{met ? "✓ " : ""}{wc} / {q.minWords} words{met ? "" : " min"}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: met ? GREEN : RED, whiteSpace: "nowrap" }}>{met ? "done " : ""}{wc} / {q.minWords} words{met ? "" : " min"}</span>
             </>
           ) : <span style={{ fontSize: 12, color: GRAY400 }}>Minimum {q.minWords} word{q.minWords !== 1 ? "s" : ""} required</span>}
         </div>
-        <button onClick={handleInspiration} style={{ background: "transparent", border: "2px dashed " + GRAY300, borderRadius: 10, padding: "9px 18px", fontSize: 13, color: GRAY600, cursor: "pointer", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}>💡 Need inspiration?</button>
+        <button onClick={handleInspiration} style={{ background: "transparent", border: "2px dashed " + GRAY300, borderRadius: 10, padding: "9px 18px", fontSize: 13, color: GRAY600, cursor: "pointer", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 6 }}>Need inspiration?</button>
         {showInspiration && (
           <div style={{ marginTop: 10, background: "#FFFBEB", border: "1.5px solid " + YELLOW, borderRadius: 12, padding: 16 }}>
             <p style={{ fontSize: 12, fontWeight: 700, color: GRAY600, margin: "0 0 10px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Example answers</p>
@@ -909,7 +861,7 @@ function TypeMode({ onComplete, lang, savedAnswers, onAnswerChange }) {
                 {i < inspirationExamples.length - 1 && <div style={{ borderTop: "1px solid " + GRAY200, margin: "10px 0 0" }} />}
               </div>
             ))}
-            <p style={{ fontSize: 11, color: GRAY400, margin: "10px 0 0" }}>Use these as a guide — write your own real version.</p>
+            <p style={{ fontSize: 11, color: GRAY400, margin: "10px 0 0" }}>Use these as a guide - write your own real version.</p>
           </div>
         )}
       </Card>
@@ -934,7 +886,7 @@ function LeadEngagement({ onBack, onAmplify }) {
 
   const activeLead = LEAD_TYPES.find(l => l.id === active);
   const activeSubtype = activeLead && subtype ? (activeLead.subtypes || []).find(s => s.id === subtype) : null;
-  const sessionCounts = LEAD_TYPES.reduce((acc, t) => { acc[t.id] = log.filter(l => l.type === t.id).length; return acc; }, {});
+  const sessionCounts = LEAD_TYPES.reduce((acc, lt) => { acc[lt.id] = log.filter(l => l.type === lt.id).length; return acc; }, {});
   const sessionTotal = log.length;
 
   function copyText(text, idx) {
@@ -957,7 +909,7 @@ function LeadEngagement({ onBack, onAmplify }) {
       <div style={{ background: GRAY50, border: "1.5px solid " + GRAY200, borderRadius: 12, padding: "14px 16px", marginBottom: 10 }}>
         <p style={{ fontSize: 14, color: GRAY800, lineHeight: 1.8, margin: "0 0 10px", fontStyle: "italic" }}>"{text}"</p>
         <button onClick={() => copyText(text, idx)} style={{ background: copiedIdx === idx ? GREEN : NAVY, color: copiedIdx === idx ? WHITE : YELLOW, border: "none", borderRadius: 8, padding: "7px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-          {copiedIdx === idx ? "✓ Copied!" : "📋 Copy Script"}
+          {copiedIdx === idx ? "Copied!" : "Copy Script"}
         </button>
       </div>
     );
@@ -976,16 +928,16 @@ function LeadEngagement({ onBack, onAmplify }) {
     return (
       <>
         <Card>
-          <SectionHeader emoji="🎉" title="Session Complete — Now We Execute" subtitle="Watch this training video before working your leads." />
+          <SectionHeader emoji="🎉" title="Session Complete - Now We Execute" subtitle="Watch this training video before working your leads." />
           <div style={{ background: "#EFF6FF", borderRadius: 12, padding: 16, marginBottom: 16 }}>
-            <p style={{ margin: "0 0 12px", fontSize: 14, color: NAVY, fontWeight: 600 }}>📹 Lead Engagement Training Video</p>
+            <p style={{ margin: "0 0 12px", fontSize: 14, color: NAVY, fontWeight: 600 }}>Lead Engagement Training Video</p>
             <div style={{ position: "relative", paddingBottom: "56.25%", height: 0, borderRadius: 10, overflow: "hidden", marginBottom: 14 }}>
               <iframe src="https://fast.wistia.net/embed/iframe/indqjc1oov?autoPlay=false" title="Lead Engagement Training" allowFullScreen style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none", borderRadius: 10 }} />
             </div>
-            <Btn onClick={() => setWatched(true)}>✓ I watched the video — show me the playbook</Btn>
+            <Btn onClick={() => setWatched(true)}>I watched the video - show me the playbook</Btn>
           </div>
           <div style={{ borderTop: "1px solid " + GRAY200, paddingTop: 12 }}>
-            <p style={{ fontSize: 12, color: GRAY400, margin: 0 }}>Already watched? <button onClick={() => setWatched(true)} style={{ background: "none", border: "none", color: NAVY, fontSize: 12, fontWeight: 700, cursor: "pointer", textDecoration: "underline", padding: 0 }}>Skip →</button></p>
+            <p style={{ fontSize: 12, color: GRAY400, margin: 0 }}>Already watched? <button onClick={() => setWatched(true)} style={{ background: "none", border: "none", color: NAVY, fontSize: 12, fontWeight: 700, cursor: "pointer", textDecoration: "underline", padding: 0 }}>Skip</button></p>
           </div>
         </Card>
         <BottomNav onBack={onBack} />
@@ -1009,7 +961,7 @@ function LeadEngagement({ onBack, onAmplify }) {
             </div>
             <div style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: 12, padding: "10px 16px", textAlign: "center", minWidth: 72, cursor: "pointer" }} onClick={() => setShowJobEntry(v => !v)}>
               <div style={{ color: GREEN, fontWeight: 900, fontSize: 24, lineHeight: 1 }}>{totalJobs}</div>
-              <div style={{ color: GREEN, fontSize: 10, marginTop: 3 }}>jobs booked ＋</div>
+              <div style={{ color: GREEN, fontSize: 10, marginTop: 3 }}>jobs booked</div>
             </div>
           </div>
         </div>
@@ -1021,7 +973,7 @@ function LeadEngagement({ onBack, onAmplify }) {
           </div>
         )}
         <div style={{ marginTop: 14, padding: "12px 16px", background: "rgba(255,255,255,0.06)", borderRadius: 10 }}>
-          <p style={{ color: WHITE, fontSize: 13, margin: 0 }}>⚡ <strong style={{ color: YELLOW }}>Time kills deals.</strong> First 24–48 hours are everything.</p>
+          <p style={{ color: WHITE, fontSize: 13, margin: 0 }}>Time kills deals. First 24-48 hours are everything.</p>
         </div>
       </Card>
 
@@ -1035,7 +987,7 @@ function LeadEngagement({ onBack, onAmplify }) {
                 style={{ background: lt.color, border: "2px solid " + lt.border, borderRadius: 14, padding: "18px 16px", cursor: "pointer", textAlign: "left", display: "flex", flexDirection: "column", gap: 6 }}>
                 <span style={{ fontSize: 32 }}>{lt.emoji}</span>
                 <span style={{ fontWeight: 800, color: NAVY, fontSize: 15 }}>{lt.label}</span>
-                {sessionCounts[lt.id] > 0 && <span style={{ fontSize: 11, color: GRAY600, fontWeight: 600 }}>✓ {sessionCounts[lt.id]} this session</span>}
+                {sessionCounts[lt.id] > 0 && <span style={{ fontSize: 11, color: GRAY600, fontWeight: 600 }}>{sessionCounts[lt.id]} this session</span>}
               </button>
             ))}
           </div>
@@ -1045,7 +997,7 @@ function LeadEngagement({ onBack, onAmplify }) {
       {activeLead && activeLead.simple && (
         <Card>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-            <button onClick={reset} style={{ background: GRAY100, border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, color: GRAY600, fontWeight: 600, cursor: "pointer" }}>← Back</button>
+            <button onClick={reset} style={{ background: GRAY100, border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, color: GRAY600, fontWeight: 600, cursor: "pointer" }}>Back</button>
             <span style={{ fontSize: 26 }}>{activeLead.emoji}</span>
             <h3 style={{ color: NAVY, fontSize: 18, fontWeight: 800, margin: 0 }}>{activeLead.label}</h3>
           </div>
@@ -1062,14 +1014,14 @@ function LeadEngagement({ onBack, onAmplify }) {
               <p style={{ fontWeight: 700, color: NAVY, fontSize: 14, margin: "0 0 12px" }}>How many people did you DM?</p>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
                 <input type="number" min="1" value={likeCount} onChange={e => setLikeCount(Math.max(1, parseInt(e.target.value) || 1))} style={{ width: 90, border: "2px solid " + NAVY, borderRadius: 10, padding: "10px 14px", fontSize: 22, fontWeight: 800, color: NAVY, outline: "none", textAlign: "center", fontFamily: "inherit", background: WHITE }} />
-                <Btn variant="success" onClick={() => { logLead(activeLead.id, likeCount); reset(); }}>Log {likeCount} DM{likeCount !== 1 ? "s" : ""} ✓</Btn>
+                <Btn variant="success" onClick={() => { logLead(activeLead.id, likeCount); reset(); }}>Log {likeCount} DM{likeCount !== 1 ? "s" : ""}</Btn>
               </div>
-              <Btn variant="ghost" onClick={reset}>← Back</Btn>
+              <Btn variant="ghost" onClick={reset}>Back</Btn>
             </div>
           ) : (
             <div style={{ borderTop: "1px solid " + GRAY200, paddingTop: 16, marginTop: 16, display: "flex", gap: 10 }}>
-              <Btn variant="success" onClick={() => { logLead(activeLead.id); reset(); }}>✓ Mark as Worked</Btn>
-              <Btn variant="ghost" onClick={reset}>← Back</Btn>
+              <Btn variant="success" onClick={() => { logLead(activeLead.id); reset(); }}>Mark as Worked</Btn>
+              <Btn variant="ghost" onClick={reset}>Back</Btn>
             </div>
           )}
         </Card>
@@ -1078,7 +1030,7 @@ function LeadEngagement({ onBack, onAmplify }) {
       {activeLead && !activeLead.simple && !subtype && (
         <Card>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-            <button onClick={reset} style={{ background: GRAY100, border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, color: GRAY600, fontWeight: 600, cursor: "pointer" }}>← Back</button>
+            <button onClick={reset} style={{ background: GRAY100, border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, color: GRAY600, fontWeight: 600, cursor: "pointer" }}>Back</button>
             <span style={{ fontSize: 26 }}>{activeLead.emoji}</span>
             <h3 style={{ color: NAVY, fontSize: 18, fontWeight: 800, margin: 0 }}>{activeLead.label}</h3>
           </div>
@@ -1098,7 +1050,7 @@ function LeadEngagement({ onBack, onAmplify }) {
       {activeLead && !activeLead.simple && activeSubtype && (
         <Card>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-            <button onClick={() => setSubtype(null)} style={{ background: GRAY100, border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, color: GRAY600, fontWeight: 600, cursor: "pointer" }}>← Back</button>
+            <button onClick={() => setSubtype(null)} style={{ background: GRAY100, border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, color: GRAY600, fontWeight: 600, cursor: "pointer" }}>Back</button>
             <span style={{ fontSize: 26 }}>{activeLead.emoji}</span>
             <div>
               <div style={{ fontWeight: 800, color: NAVY, fontSize: 15 }}>{activeLead.label}</div>
@@ -1120,15 +1072,15 @@ function LeadEngagement({ onBack, onAmplify }) {
             </div>
           )}
           <div style={{ borderTop: "1px solid " + GRAY200, paddingTop: 16, marginTop: 16, display: "flex", gap: 10 }}>
-            <Btn variant="success" onClick={() => { logLead(activeLead.id); reset(); }}>✓ Mark as Worked</Btn>
-            <Btn variant="ghost" onClick={() => setSubtype(null)}>← Different Response</Btn>
+            <Btn variant="success" onClick={() => { logLead(activeLead.id); reset(); }}>Mark as Worked</Btn>
+            <Btn variant="ghost" onClick={() => setSubtype(null)}>Different Response</Btn>
           </div>
         </Card>
       )}
 
       {sessionTotal > 0 && !active && (
         <Card>
-          <h3 style={{ color: NAVY, fontSize: 16, fontWeight: 800, margin: "0 0 14px" }}>📊 This Session</h3>
+          <h3 style={{ color: NAVY, fontSize: 16, fontWeight: 800, margin: "0 0 14px" }}>This Session</h3>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
             {LEAD_TYPES.map(lt => sessionCounts[lt.id] > 0 && (
               <div key={lt.id} style={{ background: lt.color, border: "1.5px solid " + lt.border, borderRadius: 10, padding: "8px 14px", display: "flex", alignItems: "center", gap: 8 }}>
@@ -1150,7 +1102,7 @@ function LeadEngagement({ onBack, onAmplify }) {
           <div style={{ fontSize: 36, marginBottom: 8 }}>⚡</div>
           <h3 style={{ color: YELLOW, fontSize: 18, fontWeight: 900, margin: "0 0 8px" }}>Done working leads for now?</h3>
           <p style={{ color: GRAY400, fontSize: 13, lineHeight: 1.7, margin: "0 0 20px" }}>Post in more groups to get more leads.</p>
-          <Btn onClick={onAmplify} style={{ margin: "0 auto" }}>⚡ Amplify — Post in More Groups →</Btn>
+          <Btn onClick={onAmplify} style={{ margin: "0 auto" }}>Amplify - Post in More Groups</Btn>
         </Card>
       )}
 
@@ -1183,7 +1135,7 @@ function AmplifyScreen({ onBack, city, totalPosted }) {
       <Card style={{ background: NAVY }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div>
-            <h2 style={{ color: YELLOW, fontSize: 20, fontWeight: 900, margin: "0 0 4px" }}>⚡ Amplify</h2>
+            <h2 style={{ color: YELLOW, fontSize: 20, fontWeight: 900, margin: "0 0 4px" }}>Amplify</h2>
             <p style={{ color: GRAY400, fontSize: 13, margin: 0 }}>Keep the momentum going.</p>
           </div>
           <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: 12, padding: "14px 20px", textAlign: "center", minWidth: 90 }}>
@@ -1198,9 +1150,9 @@ function AmplifyScreen({ onBack, city, totalPosted }) {
       <Card>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
           <h3 style={{ color: NAVY, fontSize: 16, fontWeight: 800, margin: 0 }}>More groups near you</h3>
-          <button onClick={loadGroups} style={{ background: NAVY, color: YELLOW, border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>↺ Refresh</button>
+          <button onClick={loadGroups} style={{ background: NAVY, color: YELLOW, border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Refresh</button>
         </div>
-        {loading && <p style={{ color: GRAY600, fontSize: 14 }}>🔍 Finding groups near {city}...</p>}
+        {loading && <p style={{ color: GRAY600, fontSize: 14 }}>Finding groups near {city}...</p>}
         {error && <div style={{ background: "#FEF2F2", borderRadius: 10, padding: 14, color: RED, fontSize: 13 }}>{error}</div>}
         {!loading && groups.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1269,8 +1221,8 @@ function CoachDashboard({ onClose }) {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={loadData} style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "6px 14px", color: WHITE, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>↺ Refresh</button>
-          <button onClick={onClose} style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "6px 14px", color: WHITE, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>← Back</button>
+          <button onClick={loadData} style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "6px 14px", color: WHITE, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Refresh</button>
+          <button onClick={onClose} style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "6px 14px", color: WHITE, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Back</button>
         </div>
       </div>
       <div style={{ maxWidth: 800, margin: "0 auto", padding: "28px 16px 60px" }}>
@@ -1281,8 +1233,8 @@ function CoachDashboard({ onClose }) {
               <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
               <p style={{ color: GRAY600, fontSize: 14, marginBottom: 20 }}>No submissions yet.</p>
               <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-                <button onClick={doTestSave} style={{ background: YELLOW, color: NAVY, border: "none", borderRadius: 10, padding: "10px 20px", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>🧪 Write Test Entry</button>
-                <button onClick={loadData} style={{ background: NAVY, color: WHITE, border: "none", borderRadius: 10, padding: "10px 20px", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>↺ Refresh</button>
+                <button onClick={doTestSave} style={{ background: YELLOW, color: NAVY, border: "none", borderRadius: 10, padding: "10px 20px", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Write Test Entry</button>
+                <button onClick={loadData} style={{ background: NAVY, color: WHITE, border: "none", borderRadius: 10, padding: "10px 20px", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Refresh</button>
               </div>
               {testMsg && <p style={{ marginTop: 14, fontWeight: 700, fontSize: 13, color: testMsg.startsWith("Saving") ? GRAY400 : testMsg.startsWith("Error") ? RED : GREEN }}>{testMsg}</p>}
             </div>
@@ -1293,13 +1245,13 @@ function CoachDashboard({ onClose }) {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
               <div>
                 <div style={{ fontWeight: 800, color: NAVY, fontSize: 17 }}>{s.name || "Unknown"}</div>
-                <div style={{ fontSize: 13, color: GRAY600, marginTop: 2 }}>{s.business} · {s.city}</div>
+                <div style={{ fontSize: 13, color: GRAY600, marginTop: 2 }}>{s.business} - {s.city}</div>
                 <div style={{ fontSize: 12, color: GRAY400, marginTop: 4 }}>{s.timestamp ? new Date(s.timestamp).toLocaleString() : "—"}</div>
               </div>
               <span style={{ background: "#DBEAFE", color: "#1D4ED8", borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{s.status || "Post Generated"}</span>
             </div>
             <button onClick={() => setExpanded(expanded === i ? null : i)} style={{ marginTop: 14, background: GRAY50, border: "1px solid " + GRAY200, borderRadius: 8, padding: "6px 14px", fontSize: 12, color: NAVY, fontWeight: 600, cursor: "pointer" }}>
-              {expanded === i ? "Hide Details ▲" : "View Details ▼"}
+              {expanded === i ? "Hide Details" : "View Details"}
             </button>
             {expanded === i && (
               <div style={{ marginTop: 16 }}>
@@ -1348,7 +1300,6 @@ export default function App() {
   const topRef = useRef(null);
   const saveTimerRef = useRef(null);
 
-  // Restore draft from localStorage on mount
   useEffect(() => {
     try {
       const raw = localStorage.getItem("draft:answers");
@@ -1365,7 +1316,6 @@ export default function App() {
     } catch(e) {}
   }, []);
 
-  // Auto-save to localStorage
   useEffect(() => {
     if (Object.keys(answers).length === 0) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -1455,13 +1405,12 @@ export default function App() {
         </div>
       )}
 
-      {/* Header */}
       <div style={{ background: NAVY, padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 12px rgba(0,0,0,0.2)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ background: YELLOW, borderRadius: 10, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, color: NAVY, fontSize: 18 }}>H</div>
           <div>
             <div style={{ color: WHITE, fontWeight: 800, fontSize: 16, lineHeight: 1 }}>Business Coaching Foundations</div>
-            <div style={{ color: YELLOW, fontSize: 12, fontWeight: 600 }}>Week 1 — Facebook Organic Strategy</div>
+            <div style={{ color: YELLOW, fontSize: 12, fontWeight: 600 }}>Week 1 - Facebook Organic Strategy</div>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -1476,23 +1425,21 @@ export default function App() {
                   Saved
                 </span>
               )}
-              <button onClick={() => setAppPhase("lane")} style={{ background: YELLOW, border: "none", borderRadius: 8, padding: "8px 18px", color: NAVY, fontSize: 13, fontWeight: 800, cursor: "pointer" }}>Save & Exit</button>
+              <button onClick={() => setAppPhase("lane")} style={{ background: YELLOW, border: "none", borderRadius: 8, padding: "8px 18px", color: NAVY, fontSize: 13, fontWeight: 800, cursor: "pointer" }}>Save and Exit</button>
             </>
           )}
         </div>
       </div>
 
-      {/* Draft restored banner */}
       {draftRestored && (
         <div style={{ background: GREEN, color: WHITE, textAlign: "center", padding: "10px 16px", fontSize: 13, fontWeight: 700 }}>
-          ✓ Your answers were restored — right where you left off.
+          Your answers were restored - right where you left off.
         </div>
       )}
 
       <div ref={topRef} style={{ maxWidth: 960, margin: "0 auto", padding: "28px 32px 60px" }}>
         <PhaseNav current={appPhase} onNavigate={id => setAppPhase(id)} completedSections={completedSections} />
 
-        {/* HOME */}
         {appPhase === "lane" && (
           <div>
             <div style={{ background: NAVY, borderRadius: 16, padding: 32, marginBottom: 20, textAlign: "center" }}>
@@ -1548,11 +1495,11 @@ export default function App() {
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
                       <div style={{ fontWeight: 800, color: NAVY, fontSize: 15 }}>{item.title}</div>
                       <span style={{ background: item.status.bg, color: item.status.fg, borderRadius: 99, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
-                        {item.status.label === ht.statusDone ? "✓ " : item.status.label === ht.statusInProgress ? "● " : "○ "}{item.status.label}
+                        {item.status.label === ht.statusDone ? "Done" : item.status.label === ht.statusInProgress ? "In Progress" : "Not Started"}
                       </span>
                     </div>
                     <div style={{ fontSize: 12, color: GRAY600 }}>{item.desc}</div>
-                    <div style={{ fontSize: 11, color: GRAY400, marginTop: 4 }}>{item.time} · {item.progress}</div>
+                    <div style={{ fontSize: 11, color: GRAY400, marginTop: 4 }}>{item.time} - {item.progress}</div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", paddingRight: 16 }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={GRAY400} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
@@ -1598,8 +1545,8 @@ export default function App() {
             <VoiceMode
               onComplete={va => {
                 setAnswers(va);
-                handleGeneratePost(va);
                 setAppPhase("getpost");
+                setTimeout(() => handleGeneratePost(va), 50);
               }}
               lang={lang}
             />
@@ -1620,7 +1567,7 @@ export default function App() {
         {appPhase === "groups" && (
           <>
             <Card>
-              <SectionHeader emoji="🧭" title="Step 1 — Join a Group" subtitle="Find an active local Facebook group and join it. You only need one to start." />
+              <SectionHeader emoji="🧭" title="Step 1 - Join a Group" subtitle="Find an active local Facebook group and join it. You only need one to start." />
               {!answers.area && (
                 <div style={{ background: "#EFF6FF", borderRadius: 10, padding: "12px 16px", marginBottom: 16 }}>
                   <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: NAVY }}>What city or area do you serve?</p>
@@ -1630,11 +1577,11 @@ export default function App() {
                   </div>
                 </div>
               )}
-              {groupsLoading && <div style={{ textAlign: "center", padding: 32 }}><p style={{ color: GRAY600 }}>🔍 Finding groups near {city}...</p></div>}
+              {groupsLoading && <div style={{ textAlign: "center", padding: 32 }}><p style={{ color: GRAY600 }}>Finding groups near {city}...</p></div>}
               {groupsError && <div style={{ background: "#FEF2F2", borderRadius: 10, padding: 14, marginBottom: 16, color: RED, fontSize: 13 }}>{groupsError}</div>}
               {!groupsLoading && groups5.length > 0 && (
                 <>
-                  <div style={{ background: "#EFF6FF", borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: NAVY, lineHeight: 1.6 }}>💡 Click a group name to open Facebook. Find it, click in, and join.</div>
+                  <div style={{ background: "#EFF6FF", borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 13, color: NAVY, lineHeight: 1.6 }}>Click a group name to open Facebook. Find it, click in, and join.</div>
                   <GroupTable groups={groups5} showNum={false} />
                 </>
               )}
@@ -1647,12 +1594,12 @@ export default function App() {
         {appPhase === "getpost" && (
           <>
             <Card>
-              <SectionHeader emoji="✍️" title="Step 2 — Get Your Post" />
+              <SectionHeader emoji="✍️" title="Step 2 - Get Your Post" />
               {allCh3Met && !post && !postLoading && (
                 <>
                   <p style={{ color: GRAY600, fontSize: 14, lineHeight: 1.7, marginBottom: 20 }}>Your story answers are ready. Tap the button below and we will write your post for you.</p>
                   {postError && <div style={{ background: "#FEF2F2", borderRadius: 10, padding: 14, marginBottom: 16, color: RED, fontSize: 13 }}>{postError}</div>}
-                  <Btn onClick={() => handleGeneratePost()}>Generate My Post →</Btn>
+                  <Btn onClick={() => handleGeneratePost()}>Generate My Post</Btn>
                 </>
               )}
               {postLoading && <div style={{ textAlign: "center", padding: 40 }}><div style={{ fontSize: 32, marginBottom: 12 }}>✨</div><p style={{ color: GRAY600, fontSize: 14 }}>Writing your post...</p></div>}
@@ -1661,13 +1608,13 @@ export default function App() {
                   <div style={{ background: "#FEF9EC", border: "1.5px solid " + YELLOW, borderRadius: 10, padding: 16, marginBottom: 20 }}>
                     <p style={{ fontWeight: 700, color: NAVY, fontSize: 14, margin: "0 0 6px" }}>You will need a post to continue.</p>
                     <p style={{ color: GRAY600, fontSize: 13, lineHeight: 1.7, margin: "0 0 14px" }}>Go back to Write Post to build your story, or paste an existing post below.</p>
-                    <Btn onClick={() => setAppPhase("writechoice")}>← Write My Post</Btn>
+                    <Btn onClick={() => setAppPhase("writechoice")}>Write My Post</Btn>
                   </div>
                   <textarea value={post} onChange={e => setPost(e.target.value)} rows={10} placeholder="Paste your Facebook post here..."
                     style={{ width: "100%", boxSizing: "border-box", border: "2px solid " + (post ? NAVY : GRAY200), borderRadius: 12, padding: 16, fontSize: 14, lineHeight: 1.8, color: GRAY800, fontFamily: "inherit", resize: "vertical", background: post ? "#F0F7FF" : GRAY50, outline: "none" }} />
                 </>
               )}
-              {post && !postLoading && <p style={{ color: GREEN, fontWeight: 700, fontSize: 14, marginTop: 12 }}>✓ Your post is ready!</p>}
+              {post && !postLoading && <p style={{ color: GREEN, fontWeight: 700, fontSize: 14, marginTop: 12 }}>Your post is ready!</p>}
             </Card>
             <BottomNav onBack={() => setAppPhase("groups")} onNext={post && !postLoading ? () => setAppPhase("copypost") : undefined} nextDisabled={!post || postLoading} />
             <NavSpacer />
@@ -1677,11 +1624,11 @@ export default function App() {
         {appPhase === "copypost" && (
           <>
             <Card>
-              <SectionHeader emoji="📋" title="Step 3 — Copy Your Post" subtitle="Read it over, then copy it. Do not edit — paste it exactly as written." />
+              <SectionHeader emoji="📋" title="Step 3 - Copy Your Post" subtitle="Read it over, then copy it. Do not edit - paste it exactly as written." />
               <textarea value={post} onChange={e => setPost(e.target.value)} rows={14}
                 style={{ width: "100%", boxSizing: "border-box", border: "2px solid " + NAVY, borderRadius: 12, padding: 16, fontSize: 14, lineHeight: 1.8, color: GRAY800, fontFamily: "inherit", resize: "vertical", background: GRAY50 }} />
               <div style={{ marginTop: 14 }}>
-                <Btn onClick={handleCopy} variant={copied ? "success" : "primary"}>{copied ? "✓ Copied!" : "📋 Copy Post"}</Btn>
+                <Btn onClick={handleCopy} variant={copied ? "success" : "primary"}>{copied ? "Copied!" : "Copy Post"}</Btn>
               </div>
             </Card>
             <BottomNav onBack={() => setAppPhase("getpost")} onNext={copied ? () => setAppPhase("photo") : undefined} nextDisabled={!copied} />
@@ -1692,8 +1639,8 @@ export default function App() {
         {appPhase === "photo" && (
           <>
             <Card>
-              <SectionHeader emoji="📸" title="Step 4 — Choose Your Photo" subtitle="Pick one real photo of you. Your face needs to be clearly visible." />
-              <div style={{ fontWeight: 700, color: GREEN, fontSize: 13, marginBottom: 10 }}>✅ GOOD — choose one of these:</div>
+              <SectionHeader emoji="📸" title="Step 4 - Choose Your Photo" subtitle="Pick one real photo of you. Your face needs to be clearly visible." />
+              <div style={{ fontWeight: 700, color: GREEN, fontSize: 13, marginBottom: 10 }}>GOOD - choose one of these:</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(155px, 1fr))", gap: 10, marginBottom: 20 }}>
                 {[{ emoji: "😊", label: "You with family", desc: "Smiling face, bright natural light." }, { emoji: "☕", label: "You at your local spot", desc: "Candid shot where you hang out." }, { emoji: "🔧", label: "Candid job-site photo", desc: "You working, face clearly visible." }].map((g, i) => (
                   <div key={i} style={{ background: "#F0FDF4", border: "1.5px solid #86EFAC", borderRadius: 12, padding: 14, textAlign: "center" }}>
@@ -1703,7 +1650,7 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              <div style={{ fontWeight: 700, color: RED, fontSize: 13, marginBottom: 10 }}>❌ DO NOT use these:</div>
+              <div style={{ fontWeight: 700, color: RED, fontSize: 13, marginBottom: 10 }}>DO NOT use these:</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(155px, 1fr))", gap: 10 }}>
                 {[{ emoji: "🚛", label: "Truck only", desc: "No face = no connection." }, { emoji: "🖼️", label: "Logo or flyer", desc: "Looks like an ad." }, { emoji: "🕶️", label: "Dark selfie", desc: "Hard to connect with." }, { emoji: "🤖", label: "AI or stock photo", desc: "People can tell." }].map((b, i) => (
                   <div key={i} style={{ background: "#FEF2F2", border: "1.5px solid #FCA5A5", borderRadius: 12, padding: 14, textAlign: "center" }}>
@@ -1722,7 +1669,7 @@ export default function App() {
         {appPhase === "dopost" && (
           <>
             <Card>
-              <SectionHeader emoji="🚀" title="Step 5 — Post It" subtitle="You are ready. Follow these steps exactly in the Facebook group." />
+              <SectionHeader emoji="🚀" title="Step 5 - Post It" subtitle="You are ready. Follow these steps exactly in the Facebook group." />
               {[
                 { num: 1, text: "Open the Facebook group you joined and tap Write something" },
                 { num: 2, text: "Paste your copied post" },
@@ -1743,7 +1690,7 @@ export default function App() {
         {appPhase === "approval" && (
           <>
             <Card>
-              <SectionHeader emoji="📋" title="Step 6 — Coach Approval" subtitle="Let your coach know you are ready for your post audit." />
+              <SectionHeader emoji="📋" title="Step 6 - Coach Approval" subtitle="Let your coach know you are ready for your post audit." />
               <div style={{ background: "#EFF6FF", borderRadius: 12, padding: 24, marginBottom: 24, textAlign: "center" }}>
                 <div style={{ fontSize: 48, marginBottom: 10 }}>👋</div>
                 <p style={{ color: NAVY, fontWeight: 700, fontSize: 15, margin: "0 0 8px" }}>Your post is live!</p>
@@ -1758,10 +1705,10 @@ export default function App() {
         {appPhase === "replicate" && (
           <>
             <Card>
-              <SectionHeader emoji="🔁" title="Step 7 — Cross-Post to 9 More Groups" subtitle="Same post. Same photo. No edits. Hit 10 total to complete your Week 1 goal." />
+              <SectionHeader emoji="🔁" title="Step 7 - Cross-Post to 9 More Groups" subtitle="Same post. Same photo. No edits. Hit 10 total to complete your Week 1 goal." />
               <div style={{ background: GRAY50, borderRadius: 12, padding: 16, marginBottom: 20 }}>
                 {[
-                  "Use the exact same post — do not change a single word.",
+                  "Use the exact same post - do not change a single word.",
                   "Attach the exact same photo.",
                   "Do not add your phone number, website, or any contact info.",
                   "Public groups: post immediately. Private groups: join and post once approved.",
@@ -1772,12 +1719,12 @@ export default function App() {
                   </div>
                 ))}
               </div>
-              {groupsLoading && <p style={{ color: GRAY600, fontSize: 14, textAlign: "center" }}>🔍 Loading groups...</p>}
+              {groupsLoading && <p style={{ color: GRAY600, fontSize: 14, textAlign: "center" }}>Loading groups...</p>}
               {!groupsLoading && groups20.length > 0 && <div style={{ marginBottom: 20 }}><GroupTable groups={groups20} showNum={true} /></div>}
             </Card>
             <Card>
               <h3 style={{ color: NAVY, margin: "0 0 8px", fontSize: 18 }}>How many additional groups did you post in?</h3>
-              <p style={{ color: GRAY600, fontSize: 13, marginTop: 0, marginBottom: 16 }}>You already posted in 1 — tap how many more you completed.</p>
+              <p style={{ color: GRAY600, fontSize: 13, marginTop: 0, marginBottom: 16 }}>You already posted in 1 - tap how many more you completed.</p>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
                 {[1,2,3,4,5,6,7,8,9].map(n => (
                   <button key={n} onClick={() => setPostCount(n)} style={{ width: 48, height: 48, borderRadius: 10, border: "2px solid " + (postCount === n ? NAVY : GRAY200), background: postCount === n ? NAVY : WHITE, color: postCount === n ? YELLOW : GRAY600, fontWeight: 800, fontSize: 16, cursor: "pointer", transition: "all 0.15s" }}>{n}</button>
@@ -1789,7 +1736,7 @@ export default function App() {
                 </div>
               )}
               {postCount === 9 && !tenDone && (
-                <Btn variant="success" onClick={() => { setTenDone(true); setCompletedSections(prev => prev.includes("grouppost") ? prev : [...prev, "grouppost"]); saveSubmission(answers, post, "10 Groups Done"); }}>10 Groups Done! 🎯</Btn>
+                <Btn variant="success" onClick={() => { setTenDone(true); setCompletedSections(prev => prev.includes("grouppost") ? prev : [...prev, "grouppost"]); saveSubmission(answers, post, "10 Groups Done"); }}>10 Groups Done!</Btn>
               )}
             </Card>
             {tenDone && (
@@ -1797,7 +1744,7 @@ export default function App() {
                 <div style={{ fontSize: 48, marginBottom: 8 }}>🎯</div>
                 <h2 style={{ color: YELLOW, fontSize: 24, margin: "0 0 8px" }}>WEEK 1 GOAL ACHIEVED</h2>
                 <p style={{ color: WHITE, fontSize: 15, lineHeight: 1.8, margin: "0 0 20px" }}>10 groups. 10 posts. Mission accomplished.</p>
-                <Btn onClick={() => setAppPhase("leads")}>Open Lead Engagement →</Btn>
+                <Btn onClick={() => setAppPhase("leads")}>Open Lead Engagement</Btn>
               </Card>
             )}
             <BottomNav onBack={() => setAppPhase("approval")} onNext={tenDone ? () => setAppPhase("leads") : undefined} nextDisabled={!tenDone} />
