@@ -130,24 +130,97 @@ const T = {
 };
 
 const Q_ES = {
-  name:{label:"Tu Nombre",hint:"¿Cuál es tu nombre completo?"},
-  business:{label:"Nombre del Negocio",hint:"¿Cómo se llama tu negocio?"},
-  area:{label:"Dónde Trabajas",hint:"¿Qué ciudades atiendes y cuánto tiempo llevas?"},
-  knownFor:{label:"Por qué te conocen",hint:"¿Con qué 2-3 palabras específicas te describirían?"},
-  topServices:{label:"Top 2 Servicios",hint:"¿Cuáles son los dos servicios principales?"},
-  refuses:{label:"Lo que te niegas a hacer",hint:"¿Qué te niegas a hacer que otros hacen?"},
-  humanDetail:{label:"Un Detalle Humano",hint:"¿Algo real sobre ti fuera del trabajo? Sé específico."},
-  localPlace:{label:"Lugar Local",hint:"¿Un lugar local específico que amas? El nombre real."},
-  localActivity:{label:"Qué Haces Allí",hint:"¿Qué siempre haces o pides ahí?"},
-  mission:{label:"Tu Misión",hint:"Completa: Estoy en misión de encontrar el mejor ___ en mi ciudad."},
-  whyStarted:{label:"Por qué Empezaste",hint:"¿La verdadera razón por la que empezaste?"},
-  whatChanged:{label:"¿Qué Cambió?",hint:"¿Qué cambió en tu vida o familia?"},
-  heroCrisis:{label:"Momento Héroe - La Crisis",hint:"¿Cuéntame de una vez que fuiste más allá?"},
-  heroSacrifice:{label:"Momento Héroe - El Sacrificio",hint:"¿Qué hiciste o sacrificaste?"},
-  heroPayoff:{label:"Momento Héroe - El Resultado",hint:"¿Cuál fue la reacción?"},
+  name:{label:"Tu Nombre", hint:"¿Cuál es tu nombre completo?", voiceQ:"¿Cuál es tu nombre completo?"},
+  business:{label:"Nombre del Negocio", hint:"¿Cómo se llama tu negocio?", voiceQ:"¿Cuál es el nombre de tu negocio, exactamente como aparece en línea?"},
+  area:{label:"Dónde Trabajas", hint:"¿Qué ciudades atiendes y cuánto tiempo llevas?", voiceQ:"¿Qué ciudades o vecindarios atiendes, y cuánto tiempo llevas trabajando en esa área?"},
+  knownFor:{label:"Por qué te conocen", hint:"¿Con qué 2-3 palabras específicas te describirían?", voiceQ:"Si alguien te describiera a un vecino, ¿qué dirían que eres el experto? Dame 2 o 3 palabras específicas, nada genérico como confiable u honesto."},
+  topServices:{label:"Top 2 Servicios", hint:"¿Cuáles son los dos servicios principales?", voiceQ:"¿Cuáles son los dos servicios por los que más quieres ser conocido?"},
+  refuses:{label:"Lo que te niegas a hacer", hint:"¿Qué te niegas a hacer que otros hacen?", voiceQ:"¿Qué es algo que te niegas rotundamente a hacer, que otros en tu industria sí hacen? Sé honesto."},
+  humanDetail:{label:"Un Detalle Humano", hint:"¿Algo real sobre ti fuera del trabajo? Sé específico.", voiceQ:"Cuéntame algo real sobre ti fuera del trabajo — un pasatiempo, un proyecto. Dame detalles específicos como el año, el color, el nombre."},
+  localPlace:{label:"Lugar Local", hint:"¿Un lugar local específico que amas? El nombre real.", voiceQ:"¿Cuál es un lugar local específico que realmente te gusta — un restaurante, un parque, una cafetería? Dame el nombre real."},
+  localActivity:{label:"Qué Haces Allí", hint:"¿Qué siempre haces o pides ahí?", voiceQ:"¿Qué siempre haces o pides cuando estás ahí? Descríbemelo."},
+  mission:{label:"Tu Misión", hint:"Completa: Estoy en misión de encontrar el mejor ___ en mi ciudad.", voiceQ:"Completa esta frase: Estoy en una misión para encontrar el mejor ___ en mi ciudad. ¿Qué es?"},
+  whyStarted:{label:"Por qué Empezaste", hint:"¿La verdadera razón por la que empezaste?", voiceQ:"Cuéntame la historia real de por qué empezaste tu negocio. ¿Cuál fue el momento que te impulsó? No lo suavices."},
+  whatChanged:{label:"¿Qué Cambió?", hint:"¿Qué cambió en tu vida o familia?", voiceQ:"¿Qué cambió realmente en tu vida o en tu familia cuando tomaste esa decisión?"},
+  heroCrisis:{label:"Momento Héroe - La Crisis", hint:"¿Cuéntame de una vez que fuiste más allá?", voiceQ:"Cuéntame de una vez que fuiste más allá por un cliente. Ponme en la escena — ¿quién estaba en problemas, qué pasaba, qué estaba en juego?"},
+  heroSacrifice:{label:"Momento Héroe - El Sacrificio", hint:"¿Qué hiciste o sacrificaste?", voiceQ:"¿Qué hiciste realmente o qué sacrificaste para ayudarlos?"},
+  heroPayoff:{label:"Momento Héroe - El Resultado", hint:"¿Cuál fue la reacción?", voiceQ:"¿Cuál fue la reacción — de ellos o tuya? ¿Cómo se sintió ese momento?"},
 };
 
 function wordCount(s){ return (s||"").trim().split(/\s+/).filter(Boolean).length; }
+
+const HOME_T = {
+  en: {
+    headline1: "Turn Your Story Into",
+    headline2: "Jobs on Your Calendar",
+    subheadline: "Build a trust-building Facebook post, get it in front of your community, and convert engagement into booked jobs.",
+    stat1: "⏱ ~29 min total",
+    stat2: "🎯 10 group posts",
+    stat3: "💬 Real leads, real jobs",
+    continueLabel: "Continue where you left off",
+    cta0: "✍️ Start Writing Your Post",
+    cta1: "✨ Generate Your Post",
+    cta2: "🔁 Cross-Post to More Groups",
+    cta3: "🔥 Work Your Leads",
+    checklistTitle: "Your Week 1 Checklist",
+    writeTitle: "Write Post",
+    writeDesc: "Answer 15 questions. AI writes your trust-building post.",
+    writeTime: "~8 min",
+    groupsTitle: "Post in Groups",
+    groupsDesc: "Find local Facebook groups and replicate your post to 10.",
+    groupsTime: "~15 min",
+    leadsTitle: "Work Leads",
+    leadsDesc: "Turn every like, comment, share, and DM into a booked job.",
+    leadsTime: "~5 min",
+    leadsProgress: "Scripts for every engagement type",
+    statusNotStarted: "Not Started",
+    statusInProgress: "In Progress",
+    statusDone: "Done",
+    ofAnswered: "of 15 answered",
+    ofGroups: "of 10 groups posted",
+    typeTitle: "Type My Answers",
+    typeDesc: "Fill in each question at your own pace. Mic icon available to dictate.",
+    voiceTitle: "Talk Through It",
+    voiceDesc: "Speak your answers. An AI coach guides you through every question",
+    howStart: "How would you like to answer the questions?",
+    writePostTitle: "Write Your Post",
+  },
+  es: {
+    headline1: "Convierte Tu Historia en",
+    headline2: "Trabajos en Tu Calendario",
+    subheadline: "Construye una publicación de Facebook que genera confianza, ponla frente a tu comunidad y convierte el engagement en trabajos reservados.",
+    stat1: "⏱ ~29 min en total",
+    stat2: "🎯 10 publicaciones en grupos",
+    stat3: "💬 Leads reales, trabajos reales",
+    continueLabel: "Continuar donde lo dejaste",
+    cta0: "✍️ Empezar a Escribir Tu Publicación",
+    cta1: "✨ Generar Tu Publicación",
+    cta2: "🔁 Publicar en Más Grupos",
+    cta3: "🔥 Trabajar Tus Leads",
+    checklistTitle: "Tu Lista de la Semana 1",
+    writeTitle: "Escribir Publicación",
+    writeDesc: "Responde 15 preguntas. La IA escribe tu publicación.",
+    writeTime: "~8 min",
+    groupsTitle: "Publicar en Grupos",
+    groupsDesc: "Encuentra grupos locales de Facebook y replica tu publicación en 10.",
+    groupsTime: "~15 min",
+    leadsTitle: "Trabajar Leads",
+    leadsDesc: "Convierte cada me gusta, comentario, compartido y mensaje en un trabajo.",
+    leadsTime: "~5 min",
+    leadsProgress: "Scripts para cada tipo de engagement",
+    statusNotStarted: "Sin Empezar",
+    statusInProgress: "En Progreso",
+    statusDone: "Listo",
+    ofAnswered: "de 15 respondidas",
+    ofGroups: "de 10 grupos publicados",
+    typeTitle: "Escribir Mis Respuestas",
+    typeDesc: "Completa cada pregunta a tu ritmo. Ícono de micrófono disponible.",
+    voiceTitle: "Hablar con el Coach",
+    voiceDesc: "Di tus respuestas. Un coach de IA te guía por cada pregunta en Español.",
+    howStart: "¿Cómo quieres responder las preguntas?",
+    writePostTitle: "Escribe Tu Publicación",
+  },
+};
 
 async function callClaude(messages, system){
   const body = {model:"claude-sonnet-4-20250514", max_tokens:2000, messages};
@@ -413,10 +486,10 @@ function VoiceMode({onComplete, lang}){
     const nextQ      = isLast ? null : ALL_QUESTIONS[qIdx+1];
     const qLabel = (lang==="es"&&Q_ES[q.id])?Q_ES[q.id].label:q.label;
     const qHint  = (lang==="es"&&Q_ES[q.id])?Q_ES[q.id].hint:q.hint;
-    const nextVoiceQ = nextQ?(nextQ.voiceQ||nextQ.hint):null;
+    const nextVoiceQ = nextQ ? ((lang==="es" && Q_ES[nextQ.id]) ? Q_ES[nextQ.id].voiceQ : nextQ.voiceQ || nextQ.hint) : null;
 
     const sysPrompt = lang==="es"
-      ?"Eres un coach de negocios cálido y alentador. Respuestas cortas, naturales. Sin listas."
+      ?"Eres un coach de negocios cálido y alentador. SIEMPRE responde completamente en español. Respuestas cortas, naturales, variadas. Sin listas. Sin 'Entendido' repetitivo."
       :`You are a warm, encouraging business coach — like a supportive friend.
 NEVER start with "Got it". Vary acknowledgments naturally.
 2-3 short sentences max. Casual, warm, real. No bullet points.`;
@@ -501,7 +574,7 @@ If too short or vague:
     const isResuming=idx>0;
     S.current.qIdx=idx; setDisplayQIdx(idx);
     const q=ALL_QUESTIONS[idx];
-    const firstQ=q.voiceQ||q.hint;
+    const firstQ = (lang==="es" && Q_ES[q.id]) ? Q_ES[q.id].voiceQ : (q.voiceQ||q.hint);
     const intro=isResuming
       ?(lang==="es"?`¡Bienvenido de vuelta! Continuemos. ${firstQ}`:`Hey, welcome back! Let's pick up right where we left off. ${firstQ}`)
       :(lang==="es"?`¡Perfecto! Empecemos. ${firstQ}`:`Alright, let's build your story! Just talk to me like you're catching up with a friend. Here we go: ${firstQ}`);
@@ -510,7 +583,7 @@ If too short or vague:
   function handleRerecord(id){
     S.current.rerecordId=id;
     const q=ALL_QUESTIONS.find(x=>x.id===id);
-    const vq=q.voiceQ||q.hint;
+    const vq = (lang==="es" && Q_ES[q.id]) ? Q_ES[q.id].voiceQ : (q.voiceQ||q.hint);
     const msg=lang==="es"?`Claro, repitamos. ${vq}`:`No problem, let's redo that one. ${vq}`;
     setTranscript("");
     coachSay(msg, ()=>openMic());
@@ -1187,32 +1260,26 @@ export default function App(){
         {/* HOME */}
         {appPhase==="lane"&&(
           <div>
+            {(()=>{ const ht=HOME_T[lang]||HOME_T.en; const answeredN=ALL_QUESTIONS.filter(q=>wordCount(answers[q.id])>=q.minWords).length; return(<>
             <div style={{background:NAVY,borderRadius:16,padding:32,marginBottom:20,textAlign:"center"}}>
               <div style={{fontSize:40,marginBottom:12}}>🚀</div>
-              <h1 style={{color:WHITE,fontSize:24,fontWeight:900,margin:"0 0 12px",lineHeight:1.3}}>Turn Your Story Into<br/><span style={{color:YELLOW}}>Jobs on Your Calendar</span></h1>
-              <p style={{color:GRAY400,fontSize:14,lineHeight:1.8,margin:"0 0 20px",maxWidth:480,marginLeft:"auto",marginRight:"auto"}}>Build a trust-building Facebook post, get it in front of your community, and convert engagement into booked jobs.</p>
+              <h1 style={{color:WHITE,fontSize:24,fontWeight:900,margin:"0 0 12px",lineHeight:1.3}}>{ht.headline1}<br/><span style={{color:YELLOW}}>{ht.headline2}</span></h1>
+              <p style={{color:GRAY400,fontSize:14,lineHeight:1.8,margin:"0 0 20px",maxWidth:480,marginLeft:"auto",marginRight:"auto"}}>{ht.subheadline}</p>
               <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
-                {["⏱ ~29 min total","🎯 10 group posts","💬 Real leads, real jobs"].map((s,i)=><div key={i} style={{background:"rgba(255,255,255,0.08)",borderRadius:10,padding:"10px 18px",fontSize:13,color:WHITE}}>{s}</div>)}
+                {[ht.stat1,ht.stat2,ht.stat3].map((s,i)=><div key={i} style={{background:"rgba(255,255,255,0.08)",borderRadius:10,padding:"10px 18px",fontSize:13,color:WHITE}}>{s}</div>)}
               </div>
             </div>
 
             <button onClick={()=>{
-              const n=ALL_QUESTIONS.filter(q=>wordCount(answers[q.id])>=q.minWords).length;
-              if(n===0)setAppPhase("writechoice");
+              if(answeredN===0)setAppPhase("writechoice");
               else if(!post)setAppPhase("getpost");
               else if(postCount<9)setAppPhase("replicate");
               else setAppPhase("leads");
             }} style={{width:"100%",background:YELLOW,border:"none",borderRadius:14,padding:"18px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",marginBottom:24,boxShadow:"0 4px 20px rgba(254,183,5,0.35)"}}>
               <div style={{textAlign:"left"}}>
-                <div style={{fontSize:11,fontWeight:700,color:NAVY,opacity:0.6,marginBottom:3,textTransform:"uppercase",letterSpacing:"0.05em"}}>Continue where you left off</div>
+                <div style={{fontSize:11,fontWeight:700,color:NAVY,opacity:0.6,marginBottom:3,textTransform:"uppercase",letterSpacing:"0.05em"}}>{ht.continueLabel}</div>
                 <div style={{fontSize:16,fontWeight:900,color:NAVY}}>
-                  {(()=>{
-                    const n=ALL_QUESTIONS.filter(q=>wordCount(answers[q.id])>=q.minWords).length;
-                    if(n===0) return "✍️ Start Writing Your Post";
-                    if(!post) return "✨ Generate Your Post";
-                    if(postCount<9) return "🔁 Cross-Post to More Groups";
-                    return "🔥 Work Your Leads";
-                  })()}
+                  {answeredN===0?ht.cta0:!post?ht.cta1:postCount<9?ht.cta2:ht.cta3}
                 </div>
               </div>
               <div style={{background:NAVY,borderRadius:10,width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
@@ -1220,25 +1287,25 @@ export default function App(){
               </div>
             </button>
 
-            <h3 style={{color:NAVY,fontSize:15,fontWeight:800,margin:"0 0 12px"}}>Your Week 1 Checklist</h3>
+            <h3 style={{color:NAVY,fontSize:15,fontWeight:800,margin:"0 0 12px"}}>{ht.checklistTitle}</h3>
             <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:24}}>
               {[
-                {phase:"writechoice",icon:"✍️",bg:NAVY,title:"Write Post",desc:"Answer 15 questions. AI writes your trust-building post.",time:"~8 min",
-                  progress:(()=>{const n=ALL_QUESTIONS.filter(q=>wordCount(answers[q.id])>=q.minWords).length;return n+" of 15 answered";})(),
-                  status:(()=>{const n=ALL_QUESTIONS.filter(q=>wordCount(answers[q.id])>=q.minWords).length;if(n===0)return{label:"Not Started",bg:GRAY100,fg:GRAY400};if(n<15)return{label:"In Progress",bg:"#FEF9EC",fg:"#92400E"};return{label:"Done",bg:"#D1FAE5",fg:"#065F46"};})()},
-                {phase:"groups",icon:"📣",bg:NAVY_LIGHT,title:"Post in Groups",desc:"Find local Facebook groups and replicate your post to 10.",time:"~15 min",
-                  progress:(postCount+1)+" of 10 groups posted",
-                  status:postCount===9?{label:"Done",bg:"#D1FAE5",fg:"#065F46"}:postCount>0?{label:"In Progress",bg:"#FEF9EC",fg:"#92400E"}:{label:"Not Started",bg:GRAY100,fg:GRAY400}},
-                {phase:"leads",icon:"🔥",bg:"#065F46",title:"Work Leads",desc:"Turn every like, comment, share, and DM into a booked job.",time:"~5 min",
-                  progress:"Scripts for every engagement type",
-                  status:{label:"Not Started",bg:GRAY100,fg:GRAY400}},
+                {phase:"writechoice",icon:"✍️",bg:NAVY,title:ht.writeTitle,desc:ht.writeDesc,time:ht.writeTime,
+                  progress:answeredN+" "+ht.ofAnswered,
+                  status:(()=>{if(answeredN===0)return{label:ht.statusNotStarted,bg:GRAY100,fg:GRAY400};if(answeredN<15)return{label:ht.statusInProgress,bg:"#FEF9EC",fg:"#92400E"};return{label:ht.statusDone,bg:"#D1FAE5",fg:"#065F46"};})()},
+                {phase:"groups",icon:"📣",bg:NAVY_LIGHT,title:ht.groupsTitle,desc:ht.groupsDesc,time:ht.groupsTime,
+                  progress:(postCount+1)+" "+ht.ofGroups,
+                  status:postCount===9?{label:ht.statusDone,bg:"#D1FAE5",fg:"#065F46"}:postCount>0?{label:ht.statusInProgress,bg:"#FEF9EC",fg:"#92400E"}:{label:ht.statusNotStarted,bg:GRAY100,fg:GRAY400}},
+                {phase:"leads",icon:"🔥",bg:"#065F46",title:ht.leadsTitle,desc:ht.leadsDesc,time:ht.leadsTime,
+                  progress:ht.leadsProgress,
+                  status:{label:ht.statusNotStarted,bg:GRAY100,fg:GRAY400}},
               ].map(item=>(
                 <div key={item.phase} onClick={()=>setAppPhase(item.phase)} style={{background:WHITE,borderRadius:16,boxShadow:"0 2px 12px rgba(0,41,66,0.06)",overflow:"hidden",cursor:"pointer",display:"flex"}}>
                   <div style={{background:item.bg,width:56,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:22}}>{item.icon}</div>
                   <div style={{padding:"14px 16px",flex:1}}>
                     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
                       <div style={{fontWeight:800,color:NAVY,fontSize:15}}>{item.title}</div>
-                      <span style={{background:item.status.bg,color:item.status.fg,borderRadius:99,padding:"3px 10px",fontSize:11,fontWeight:700}}>{item.status.label==="Done"?"✓ ":item.status.label==="In Progress"?"● ":"○ "}{item.status.label}</span>
+                      <span style={{background:item.status.bg,color:item.status.fg,borderRadius:99,padding:"3px 10px",fontSize:11,fontWeight:700}}>{item.status.label===ht.statusDone?"✓ ":item.status.label===ht.statusInProgress?"● ":"○ "}{item.status.label}</span>
                     </div>
                     <div style={{fontSize:12,color:GRAY600}}>{item.desc}</div>
                     <div style={{fontSize:11,color:GRAY400,marginTop:4}}>{item.time} · {item.progress}</div>
@@ -1248,25 +1315,28 @@ export default function App(){
               ))}
             </div>
             <div style={{display:"flex",justifyContent:"flex-end",marginBottom:12}}><LangToggle lang={lang} setLang={setLang}/></div>
+            </>);})()}
           </div>
         )}
 
         {appPhase==="writechoice"&&(
           <>
+            {(()=>{ const ht=HOME_T[lang]||HOME_T.en; return(
             <Card>
-              <SectionHeader emoji="✍️" title="Write Your Post" subtitle="How would you like to answer the questions?"/>
+              <SectionHeader emoji="✍️" title={ht.writePostTitle} subtitle={ht.howStart}/>
               <LangToggle lang={lang} setLang={setLang}/>
               <div style={{display:"flex",flexDirection:"column",gap:12,marginTop:8}}>
                 <button onClick={()=>setAppPhase("ch1")} style={{background:WHITE,border:"2px solid "+NAVY,borderRadius:14,padding:20,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16}}>
                   <div style={{fontSize:32,flexShrink:0}}>⌨️</div>
-                  <div><div style={{fontWeight:800,color:NAVY,fontSize:15,marginBottom:4}}>Type My Answers</div><div style={{fontSize:13,color:GRAY600,lineHeight:1.5}}>Fill in each question at your own pace. Mic icon available to dictate.</div></div>
+                  <div><div style={{fontWeight:800,color:NAVY,fontSize:15,marginBottom:4}}>{ht.typeTitle}</div><div style={{fontSize:13,color:GRAY600,lineHeight:1.5}}>{ht.typeDesc}</div></div>
                 </button>
                 <button onClick={()=>setAppPhase("voice")} style={{background:NAVY,border:"2px solid "+NAVY,borderRadius:14,padding:20,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16}}>
                   <div style={{fontSize:32,flexShrink:0}}>🎤</div>
-                  <div><div style={{fontWeight:800,color:YELLOW,fontSize:15,marginBottom:4}}>Talk Through It</div><div style={{fontSize:13,color:GRAY400,lineHeight:1.5}}>Speak your answers. An AI coach guides you through every question{lang==="es"?" (en Español)":""}.</div></div>
+                  <div><div style={{fontWeight:800,color:YELLOW,fontSize:15,marginBottom:4}}>{ht.voiceTitle}</div><div style={{fontSize:13,color:GRAY400,lineHeight:1.5}}>{ht.voiceDesc}</div></div>
                 </button>
               </div>
             </Card>
+            ); })()}
             <BottomNav onBack={()=>setAppPhase("lane")}/>
             <NavSpacer/>
           </>
