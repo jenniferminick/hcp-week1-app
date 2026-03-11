@@ -127,8 +127,6 @@ const Q_ES = {
   heroPayoff:{ label:"Momento Héroe - El Resultado", hint:"¿Cuál fue la reacción?" },
 };
 
-const isDev = () => typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.search.includes("dev=1"));
-
 function wordCount(s) { return (s || "").trim().split(/\s+/).filter(Boolean).length; }
 
 async function callClaude(messages, system) {
@@ -139,28 +137,15 @@ async function callClaude(messages, system) {
   return (d.content || []).filter(b => b.type === "text").map(b => b.text).join("") || "";
 }
 
-async function speak(text, lang, onEnd) {
-  const done = () => { if (onEnd) onEnd(); };
-  try {
-    const res = await fetch("/api/tts", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ text, lang }) });
-    if (!res.ok) throw new Error();
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    audio.onended = () => { URL.revokeObjectURL(url); done(); };
-    audio.onerror = () => { URL.revokeObjectURL(url); done(); };
-    await audio.play();
-    return;
-  } catch(e) {}
-  if (window.speechSynthesis) {
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = lang || "en-US"; u.rate = 0.95; u.pitch = 1.05;
-    const timer = setTimeout(() => { window.speechSynthesis.cancel(); done(); }, Math.max(3000, text.length * 65));
-    u.onend = () => { clearTimeout(timer); done(); };
-    u.onerror = () => { clearTimeout(timer); done(); };
-    window.speechSynthesis.speak(u);
-  } else { done(); }
+function speakBrowser(text, lang, onEnd) {
+  if (!window.speechSynthesis) { if (onEnd) onEnd(); return; }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = lang || "en-US"; u.rate = 0.95; u.pitch = 1.05;
+  const timer = setTimeout(() => { window.speechSynthesis.cancel(); if (onEnd) onEnd(); }, Math.max(3000, text.length * 70));
+  u.onend = () => { clearTimeout(timer); if (onEnd) onEnd(); };
+  u.onerror = () => { clearTimeout(timer); if (onEnd) onEnd(); };
+  window.speechSynthesis.speak(u);
 }
 
 async function findFacebookGroups(city, count) {
@@ -360,134 +345,227 @@ function GroupTable({ groups, showNum }) {
   );
 }
 
-// ── Voice Mode ────────────────────────────────────────────────────────────────
+// ── Voice Mode — fully rewritten with stable refs ─────────────────────────────
 function VoiceMode({ onComplete, lang }) {
   const t = T[lang] || T.en;
   const ttsLang = lang === "es" ? "es-ES" : "en-US";
-  const [status, setStatus] = useState("idle");
-  const [qIdx, setQIdx] = useState(0);
-  const [voiceAnswers, setVoiceAnswers] = useState({});
-  const [transcript, setTranscript] = useState("");
+
+  // All mutable state that the speech handler needs lives in refs to avoid stale closures
+  const stateRef = useRef({
+    qIdx: 0,
+    voiceAnswers: {},
+    rerecordId: null,
+    busy: false,       // true while speaking OR processing AI
+    listening: false,
+  });
+
+  // React state just for rendering
+  const [displayQIdx, setDisplayQIdx] = useState(0);
+  const [displayAnswers, setDisplayAnswers] = useState({});
   const [coachMsg, setCoachMsg] = useState(t.voiceIntro);
-  const [rerecordId, setRerecordId] = useState(null);
+  const [transcript, setTranscript] = useState("");
+  const [uiStatus, setUiStatus] = useState("idle"); // idle | listening | thinking | speaking | done
   const [micErr, setMicErr] = useState("");
+
   const recogRef = useRef(null);
-  const shouldListenRef = useRef(false);
-  const processingRef = useRef(false);
-  const qIdxRef = useRef(0);
-  const rerecordIdRef = useRef(null);
 
-  useEffect(() => { qIdxRef.current = qIdx; }, [qIdx]);
-  useEffect(() => { rerecordIdRef.current = rerecordId; }, [rerecordId]);
-
-  const answeredCount = Object.values(voiceAnswers).filter(v => v && v.trim()).length;
-  const activeQ = rerecordIdRef.current ? ALL_QUESTIONS.find(x => x.id === rerecordIdRef.current) : ALL_QUESTIONS[qIdx];
-
-  const openMic = () => {
-    if (!recogRef.current || processingRef.current) return;
-    shouldListenRef.current = true;
-    try { recogRef.current.start(); setStatus("listening"); setMicErr(""); } catch(e) {}
-  };
-  const closeMic = () => {
-    shouldListenRef.current = false;
-    try { recogRef.current.stop(); } catch(e) {}
-    setStatus(s => s === "listening" ? "idle" : s);
-  };
-  const coachSay = (msg, afterSpeak) => {
-    setCoachMsg(msg); setStatus("speaking"); closeMic();
-    speak(msg, ttsLang, () => { if (afterSpeak) afterSpeak(); else openMic(); });
-  };
-
+  // Sync lang-dependent T strings
   useEffect(() => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { setMicErr("Speech recognition not supported."); return; }
-    const r = new SR();
-    r.continuous = false; r.interimResults = false; r.lang = ttsLang;
-    r.onresult = async e => {
-      const text = e.results[0][0].transcript.trim();
-      if (!text || processingRef.current) return;
-      processingRef.current = true; setTranscript(text); setStatus("thinking"); shouldListenRef.current = false;
-      const q = rerecordIdRef.current ? ALL_QUESTIONS.find(x => x.id === rerecordIdRef.current) : ALL_QUESTIONS[qIdxRef.current];
-      const isLast = !rerecordIdRef.current && qIdxRef.current === ALL_QUESTIONS.length - 1;
-      const nextQ = isLast ? null : ALL_QUESTIONS[qIdxRef.current + 1];
-      const qLabel = (lang === "es" && Q_ES[q.id]) ? Q_ES[q.id].label : q.label;
-      const qHint  = (lang === "es" && Q_ES[q.id]) ? Q_ES[q.id].hint  : q.hint;
-      const nextVoiceQ = nextQ ? (nextQ.voiceQ || nextQ.hint) : null;
-      const sysPrompt = lang === "es"
-        ? "Eres un coach de negocios cálido y alentador. Respuestas cortas, naturales. Sin listas. Sin 'Entendido' repetitivo."
-        : "You are a warm, encouraging business coach — like a supportive friend.\nNEVER start with 'Got it'. Vary acknowledgments. 2-3 sentences max. No bullet points.";
-      const userPrompt = lang === "es"
-        ? "Pregunta: "+qLabel+" ("+qHint+")\nRespuesta: \""+text+"\"\nMínimo: "+q.minWords+" palabras\n\nSi específica y cumple mínimo: ACCEPT + reacción cálida + pregunta: "+(nextVoiceQ||"Eso es todo.")+"\nSi vaga o corta: FOLLOWUP + una pregunta amigable."
-        : "Question: "+qLabel+"\nNeeded: "+qHint+"\nAnswer: \""+text+"\"\nMin words: "+q.minWords+"\n\nIf specific and meets word count: ACCEPT + warm reaction (1 sentence, never 'Got it') + lead into: "+(nextVoiceQ||"That's everything — amazing!")+"\nIf too short/vague: FOLLOWUP + one encouraging nudge.";
-      let reply = "";
-      try {
-        const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("t")), 8000));
-        reply = await Promise.race([callClaude([{ role:"user", content:userPrompt }], sysPrompt), timeout]);
-      } catch(e) {
-        const f = ["Love it, moving on. ", "That's great. ", "Perfect. "];
-        reply = "ACCEPT " + f[Math.floor(Math.random()*f.length)] + (nextVoiceQ || t.voiceDone);
-      }
-      const isAccept = reply.trim().toUpperCase().startsWith("ACCEPT");
-      const msg = reply.replace(/^ACCEPT\s*/i,"").replace(/^FOLLOWUP\s*/i,"").trim();
-      if (isAccept) {
-        const id = rerecordIdRef.current || q.id;
-        setVoiceAnswers(prev => ({ ...prev, [id]:text }));
-        setTranscript(""); setRerecordId(null); rerecordIdRef.current = null;
-        if (isLast) { setStatus("done"); coachSay(msg || t.voiceDone, () => setStatus("done")); }
-        else { setQIdx(i => { qIdxRef.current = i+1; return i+1; }); coachSay(msg, () => { processingRef.current = false; openMic(); }); processingRef.current = false; return; }
-      } else { coachSay(msg, () => { processingRef.current = false; openMic(); }); processingRef.current = false; return; }
-      processingRef.current = false;
-    };
-    r.onerror = e => {
-      if (e.error === "no-speech") { if (shouldListenRef.current) openMic(); return; }
-      setMicErr(e.error === "not-allowed" ? "Mic access blocked." : "Mic error: "+e.error);
-      setStatus("idle"); shouldListenRef.current = false;
-    };
-    r.onend = () => {
-      if (shouldListenRef.current && !processingRef.current) { try { r.start(); } catch(e) {} }
-      else { setStatus(s => s === "listening" ? "idle" : s); }
-    };
-    recogRef.current = r;
-    return () => { shouldListenRef.current = false; try { r.stop(); } catch(e) {} };
+    if (uiStatus === "idle") setCoachMsg(t.voiceIntro);
   }, [lang]);
 
-  const handleStart = () => {
-    const idx = ALL_QUESTIONS.findIndex(q => !voiceAnswers[q.id]);
-    const startIdx = idx === -1 ? 0 : idx;
-    const isResuming = startIdx > 0;
-    setQIdx(startIdx); qIdxRef.current = startIdx;
-    const q = ALL_QUESTIONS[startIdx];
+  // Build / rebuild speech recognition whenever lang changes
+  useEffect(() => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { setMicErr("Speech recognition not supported in this browser."); return; }
+
+    const r = new SR();
+    r.continuous = false;
+    r.interimResults = false;
+    r.lang = ttsLang;
+
+    r.onresult = (e) => {
+      const text = e.results[0][0].transcript.trim();
+      if (!text || stateRef.current.busy) return;
+      stateRef.current.listening = false;
+      setUiStatus("thinking");
+      setTranscript(text);
+      handleAnswer(text);
+    };
+
+    r.onerror = (e) => {
+      if (e.error === "no-speech") {
+        // silently restart if we should still be listening
+        if (stateRef.current.listening && !stateRef.current.busy) {
+          try { r.start(); } catch(_) {}
+        }
+        return;
+      }
+      stateRef.current.listening = false;
+      setMicErr(e.error === "not-allowed" ? "Mic access blocked. Please allow microphone." : "Mic error: " + e.error);
+      setUiStatus("idle");
+    };
+
+    r.onend = () => {
+      // Auto-restart if we're supposed to be listening and not busy
+      if (stateRef.current.listening && !stateRef.current.busy) {
+        try { r.start(); } catch(_) {}
+      } else {
+        setUiStatus(u => u === "listening" ? "idle" : u);
+      }
+    };
+
+    recogRef.current = r;
+    return () => {
+      stateRef.current.listening = false;
+      try { r.stop(); } catch(_) {}
+    };
+  }, [lang]);
+
+  function startMic() {
+    if (!recogRef.current) return;
+    stateRef.current.listening = true;
+    stateRef.current.busy = false;
+    setUiStatus("listening");
+    setMicErr("");
+    try { recogRef.current.start(); } catch(_) {}
+  }
+
+  function stopMic() {
+    stateRef.current.listening = false;
+    try { recogRef.current && recogRef.current.stop(); } catch(_) {}
+    setUiStatus(u => u === "listening" ? "idle" : u);
+  }
+
+  function coachSay(msg, afterSpeak) {
+    stateRef.current.busy = true;
+    stateRef.current.listening = false;
+    setCoachMsg(msg);
+    setUiStatus("speaking");
+    try { recogRef.current && recogRef.current.stop(); } catch(_) {}
+    speakBrowser(msg, ttsLang, () => {
+      stateRef.current.busy = false;
+      if (afterSpeak) afterSpeak();
+      else startMic();
+    });
+  }
+
+  async function handleAnswer(text) {
+    stateRef.current.busy = true;
+
+    const { qIdx, rerecordId } = stateRef.current;
+    const q = rerecordId ? ALL_QUESTIONS.find(x => x.id === rerecordId) : ALL_QUESTIONS[qIdx];
+    const isLast = !rerecordId && qIdx === ALL_QUESTIONS.length - 1;
+    const nextQ = isLast ? null : ALL_QUESTIONS[qIdx + 1];
+
+    const qLabel = (lang === "es" && Q_ES[q.id]) ? Q_ES[q.id].label : q.label;
+    const qHint  = (lang === "es" && Q_ES[q.id]) ? Q_ES[q.id].hint  : q.hint;
+    const nextVoiceQ = nextQ ? (nextQ.voiceQ || nextQ.hint) : null;
+
+    const sysPrompt = lang === "es"
+      ? "Eres un coach de negocios cálido y alentador. Respuestas cortas, naturales. Sin listas."
+      : "You are a warm, encouraging business coach. NEVER start with 'Got it'. 2-3 sentences max. No bullet points.";
+    const userPrompt = lang === "es"
+      ? `Pregunta: ${qLabel} (${qHint})\nRespuesta: "${text}"\nMínimo: ${q.minWords} palabras\n\nSi específica y cumple mínimo: ACCEPT + reacción cálida + pregunta: ${nextVoiceQ||"Eso es todo."}\nSi vaga o corta: FOLLOWUP + una pregunta amigable.`
+      : `Question: ${qLabel}\nNeeded: ${qHint}\nAnswer: "${text}"\nMin words: ${q.minWords}\n\nIf specific and meets word count: ACCEPT + warm reaction (1 sentence, never start with 'Got it') + lead into: ${nextVoiceQ||"That's everything — amazing!"}\nIf too short/vague: FOLLOWUP + one encouraging nudge.`;
+
+    let reply = "";
+    try {
+      const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 9000));
+      reply = await Promise.race([
+        callClaude([{ role:"user", content:userPrompt }], sysPrompt),
+        timeout,
+      ]);
+    } catch(_) {
+      const fallbacks = ["Love that answer! Moving on. ", "Perfect. ", "That's great. "];
+      reply = "ACCEPT " + fallbacks[Math.floor(Math.random() * fallbacks.length)] + (nextVoiceQ || t.voiceDone);
+    }
+
+    const isAccept = reply.trim().toUpperCase().startsWith("ACCEPT");
+    const msg = reply.replace(/^ACCEPT\s*/i, "").replace(/^FOLLOWUP\s*/i, "").trim();
+
+    if (isAccept) {
+      // Save answer
+      const id = rerecordId || q.id;
+      stateRef.current.voiceAnswers = { ...stateRef.current.voiceAnswers, [id]: text };
+      stateRef.current.rerecordId = null;
+      setDisplayAnswers({ ...stateRef.current.voiceAnswers });
+      setTranscript("");
+
+      if (isLast) {
+        stateRef.current.busy = false;
+        coachSay(msg || t.voiceDone, () => setUiStatus("done"));
+      } else {
+        // Advance index
+        stateRef.current.qIdx = qIdx + 1;
+        setDisplayQIdx(qIdx + 1);
+        stateRef.current.busy = false;
+        coachSay(msg, () => startMic());
+      }
+    } else {
+      // FOLLOWUP — ask them to try again
+      stateRef.current.busy = false;
+      coachSay(msg, () => startMic());
+    }
+  }
+
+  function handleStart() {
+    // Skip already-answered questions
+    const firstUnanswered = ALL_QUESTIONS.findIndex(q => !stateRef.current.voiceAnswers[q.id]);
+    const idx = firstUnanswered === -1 ? 0 : firstUnanswered;
+    stateRef.current.qIdx = idx;
+    setDisplayQIdx(idx);
+
+    const q = ALL_QUESTIONS[idx];
+    const isResuming = idx > 0;
     const firstQ = q.voiceQ || q.hint;
     const intro = isResuming
-      ? (lang === "es" ? "Bienvenido de vuelta! Continuemos. " + firstQ : "Hey, welcome back! Let's pick up right where we left off. " + firstQ)
-      : (lang === "es" ? "Perfecto! Empecemos. " + firstQ : "Alright, let's build your story! Just talk to me like you're catching up with a friend. Here we go: " + firstQ);
-    coachSay(intro, () => openMic());
-  };
-  const handleRerecord = id => {
-    setRerecordId(id); rerecordIdRef.current = id;
+      ? (lang === "es" ? "Bienvenido de vuelta! Continuemos. " + firstQ : "Hey, welcome back! Let's pick up where we left off. " + firstQ)
+      : (lang === "es" ? "Perfecto! Empecemos. " + firstQ : "Alright! Let's build your story. Talk to me like you're catching up with a friend. Here we go: " + firstQ);
+
+    coachSay(intro, () => startMic());
+  }
+
+  function handleRerecord(id) {
+    stateRef.current.rerecordId = id;
     const q = ALL_QUESTIONS.find(x => x.id === id);
     const vq = q.voiceQ || q.hint;
     const msg = lang === "es" ? "Claro, repitamos. " + vq : "No problem, let's redo that one. " + vq;
-    setTranscript(""); coachSay(msg, () => openMic());
-  };
+    setTranscript("");
+    coachSay(msg, () => startMic());
+  }
+
+  const answeredCount = Object.values(displayAnswers).filter(v => v && v.trim()).length;
+  const activeQ = stateRef.current.rerecordId
+    ? ALL_QUESTIONS.find(x => x.id === stateRef.current.rerecordId)
+    : ALL_QUESTIONS[displayQIdx];
   const chapterLabel = activeQ ? { ch1:"Chapter 1", ch2:"Chapter 2", ch3:"Chapter 3" }[activeQ.chapter] : "";
-  const isListening = status === "listening", isThinking = status === "thinking", isSpeaking = status === "speaking";
+  const isListening = uiStatus === "listening";
+  const isThinking = uiStatus === "thinking";
+  const isSpeaking = uiStatus === "speaking";
 
   return (
     <div>
+      {/* Coach bubble */}
       <Card style={{ background:NAVY, marginBottom:16 }}>
         <div style={{ display:"flex", gap:12, alignItems:"flex-start" }}>
           <div style={{ background:YELLOW, borderRadius:"50%", width:40, height:40, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, color:NAVY, fontSize:14, flexShrink:0 }}>AI</div>
           <div style={{ flex:1 }}>
-            {isThinking ? <p style={{ color:GRAY400, fontSize:14, margin:0, fontStyle:"italic" }}>{t.processing}</p> : <p style={{ color:WHITE, fontSize:16, margin:0, lineHeight:1.8 }}>{coachMsg}</p>}
+            {isThinking
+              ? <p style={{ color:GRAY400, fontSize:14, margin:0, fontStyle:"italic" }}>{t.processing}</p>
+              : <p style={{ color:WHITE, fontSize:16, margin:0, lineHeight:1.8 }}>{coachMsg}</p>}
           </div>
         </div>
       </Card>
-      {status !== "idle" && status !== "done" && (
+
+      {/* Mic panel */}
+      {uiStatus !== "idle" && uiStatus !== "done" && (
         <Card>
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:14, paddingTop:8, paddingBottom:8 }}>
             <div style={{ position:"relative" }}>
-              <button type="button" onClick={isListening ? closeMic : openMic} disabled={isThinking || isSpeaking}
+              <button type="button"
+                onClick={isListening ? stopMic : startMic}
+                disabled={isThinking || isSpeaking}
                 style={{ background:isListening?RED:isSpeaking||isThinking?GRAY400:GRAY200, border:"none", borderRadius:"50%", width:80, height:80, cursor:isThinking||isSpeaking?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:isListening?"0 0 0 10px rgba(239,68,68,0.15)":"none", transition:"all 0.3s" }}>
                 <svg width="32" height="32" viewBox="0 0 24 24" fill={isListening?WHITE:GRAY600}><path d="M12 1a4 4 0 0 1 4 4v7a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4zm-6 10a6 6 0 0 0 12 0h2a8 8 0 0 1-7 7.93V21h-2v-2.07A8 8 0 0 1 4 11h2z"/></svg>
               </button>
@@ -499,24 +577,37 @@ function VoiceMode({ onComplete, lang }) {
             {micErr && <span style={{ fontSize:12, color:RED, textAlign:"center", maxWidth:280 }}>{micErr}</span>}
             {transcript && (
               <div style={{ background:"#F0F7FF", border:"2px solid "+NAVY, borderRadius:10, padding:"10px 14px", width:"100%", boxSizing:"border-box", fontSize:14, color:GRAY800, lineHeight:1.7 }}>
-                <div style={{ fontSize:11, color:GRAY400, marginBottom:4, fontWeight:600 }}>YOU SAID:</div>{transcript}
+                <div style={{ fontSize:11, color:GRAY400, marginBottom:4, fontWeight:600 }}>YOU SAID:</div>
+                {transcript}
               </div>
             )}
           </div>
           {activeQ && (
             <details style={{ marginTop:8 }}>
-              <summary style={{ fontSize:12, color:GRAY400, cursor:"pointer", userSelect:"none" }}>{chapterLabel} · Q{activeQ.num} of {ALL_QUESTIONS.length} · <span style={{ textDecoration:"underline" }}>{t.seeQuestion}</span></summary>
-              <div style={{ marginTop:8, padding:"10px 14px", background:GRAY50, borderRadius:10, fontSize:13, color:GRAY600, lineHeight:1.6 }}><strong style={{ color:NAVY }}>{activeQ.label}</strong><br />{activeQ.hint}</div>
+              <summary style={{ fontSize:12, color:GRAY400, cursor:"pointer", userSelect:"none" }}>
+                {chapterLabel} · Q{activeQ.num} of {ALL_QUESTIONS.length} · <span style={{ textDecoration:"underline" }}>{t.seeQuestion}</span>
+              </summary>
+              <div style={{ marginTop:8, padding:"10px 14px", background:GRAY50, borderRadius:10, fontSize:13, color:GRAY600, lineHeight:1.6 }}>
+                <strong style={{ color:NAVY }}>{activeQ.label}</strong><br />{activeQ.hint}
+              </div>
             </details>
           )}
         </Card>
       )}
-      {status !== "idle" && <div style={{ marginBottom:12 }}><ProgressBar current={answeredCount} total={ALL_QUESTIONS.length} /></div>}
-      {status === "idle" && <div style={{ textAlign:"center", marginTop:8 }}><Btn onClick={handleStart}>{t.voiceStart}</Btn></div>}
+
+      {uiStatus !== "idle" && (
+        <div style={{ marginBottom:12 }}><ProgressBar current={answeredCount} total={ALL_QUESTIONS.length} /></div>
+      )}
+
+      {uiStatus === "idle" && (
+        <div style={{ textAlign:"center", marginTop:8 }}><Btn onClick={handleStart}>{t.voiceStart}</Btn></div>
+      )}
+
+      {/* Answers so far */}
       {answeredCount > 0 && (
         <Card>
           <h3 style={{ color:NAVY, margin:"0 0 16px", fontSize:16 }}>📝 {t.answeredSoFar}</h3>
-          {ALL_QUESTIONS.filter(q => voiceAnswers[q.id]).map(q => (
+          {ALL_QUESTIONS.filter(q => displayAnswers[q.id]).map(q => (
             <div key={q.id} style={{ marginBottom:14, paddingBottom:14, borderBottom:"1px solid "+GRAY200 }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
                 <div style={{ flex:1 }}>
@@ -524,7 +615,7 @@ function VoiceMode({ onComplete, lang }) {
                     <span style={{ background:NAVY, color:YELLOW, borderRadius:6, padding:"1px 6px", fontSize:11, fontWeight:700 }}>Q{q.num}</span>
                     <span style={{ fontWeight:700, color:NAVY, fontSize:13 }}>{(lang==="es"&&Q_ES[q.id]) ? Q_ES[q.id].label : q.label}</span>
                   </div>
-                  <p style={{ margin:0, fontSize:13, color:GRAY800, lineHeight:1.6 }}>{voiceAnswers[q.id]}</p>
+                  <p style={{ margin:0, fontSize:13, color:GRAY800, lineHeight:1.6 }}>{displayAnswers[q.id]}</p>
                 </div>
                 <button onClick={() => handleRerecord(q.id)} style={{ background:GRAY100, border:"none", borderRadius:8, padding:"4px 10px", fontSize:12, color:GRAY600, cursor:"pointer", flexShrink:0, whiteSpace:"nowrap" }}>{t.rerecord}</button>
               </div>
@@ -532,7 +623,12 @@ function VoiceMode({ onComplete, lang }) {
           ))}
         </Card>
       )}
-      {status === "done" && <div style={{ marginTop:8 }}><Btn onClick={() => onComplete(voiceAnswers)}>{t.voiceContinue}</Btn></div>}
+
+      {uiStatus === "done" && (
+        <div style={{ marginTop:8 }}>
+          <Btn onClick={() => onComplete(displayAnswers)}>{t.voiceContinue}</Btn>
+        </div>
+      )}
     </div>
   );
 }
@@ -1032,24 +1128,20 @@ export default function App() {
   const [manualCity, setManualCity] = useState("");
   const [postCount, setPostCount] = useState(0);
   const [tenDone, setTenDone] = useState(false);
-  const [watched, setWatched] = useState(false);
   const [showCoachLogin, setShowCoachLogin] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState("");
   const [passcodeError, setPasscodeError] = useState(false);
   const [completedSections, setCompletedSections] = useState([]);
+  const [autoSaved, setAutoSaved] = useState(false);
   const topRef = useRef(null);
 
-  const [autoSaved, setAutoSaved] = useState(false);
-
-  // Auto-save indicator whenever answers or post changes
   useEffect(() => {
     if (Object.keys(answers).length === 0) return;
     setAutoSaved(false);
     const t = setTimeout(() => setAutoSaved(true), 800);
     return () => clearTimeout(t);
   }, [answers, post]);
-  const devFill = () => setAnswers(SAMPLE_ANSWERS);
 
   useEffect(() => { if (topRef.current) topRef.current.scrollIntoView({ behavior:"smooth" }); }, [appPhase]);
 
@@ -1120,6 +1212,7 @@ export default function App() {
         </div>
       )}
 
+      {/* Header */}
       <div style={{ background:NAVY, padding:"16px 24px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:100, boxShadow:"0 2px 12px rgba(0,0,0,0.2)" }}>
         <div style={{ display:"flex", alignItems:"center", gap:14 }}>
           <div style={{ background:YELLOW, borderRadius:10, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, color:NAVY, fontSize:18 }}>H</div>
@@ -1141,6 +1234,7 @@ export default function App() {
       <div ref={topRef} style={{ maxWidth:960, margin:"0 auto", padding:"28px 32px 60px" }}>
         <PhaseNav current={appPhase} onNavigate={id => setAppPhase(id)} completedSections={completedSections} />
 
+        {/* HOME */}
         {appPhase === "lane" && (
           <div>
             <div style={{ background:NAVY, borderRadius:16, padding:32, marginBottom:20, textAlign:"center" }}>
@@ -1152,13 +1246,12 @@ export default function App() {
               </div>
             </div>
 
-            {/* Continue CTA */}
             <button onClick={() => {
-              const answeredCount = ALL_QUESTIONS.filter(q => wordCount(answers[q.id]) >= q.minWords).length;
-              if (answeredCount === 0) { setAppPhase("writechoice"); }
-              else if (!post) { setAppPhase("getpost"); }
-              else if (postCount < 9) { setAppPhase("replicate"); }
-              else { setAppPhase("leads"); }
+              const n = ALL_QUESTIONS.filter(q => wordCount(answers[q.id]) >= q.minWords).length;
+              if (n === 0) setAppPhase("writechoice");
+              else if (!post) setAppPhase("getpost");
+              else if (postCount < 9) setAppPhase("replicate");
+              else setAppPhase("leads");
             }} style={{ width:"100%", background:YELLOW, border:"none", borderRadius:14, padding:"18px 24px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", marginBottom:24, boxShadow:"0 4px 20px rgba(254,183,5,0.35)" }}>
               <div style={{ textAlign:"left" }}>
                 <div style={{ fontSize:11, fontWeight:700, color:NAVY, opacity:0.6, marginBottom:3, textTransform:"uppercase", letterSpacing:"0.05em" }}>Continue where you left off</div>
@@ -1180,27 +1273,15 @@ export default function App() {
             <h3 style={{ color:NAVY, fontSize:15, fontWeight:800, margin:"0 0 12px" }}>Your Week 1 Checklist</h3>
             <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:24 }}>
               {[
-                {
-                  phase:"writechoice", icon:"✍️", bg:NAVY, title:"Write Post",
-                  desc:"Answer 15 questions. AI writes your trust-building post.",
-                  time:"~8 min",
-                  progress: (() => { const n = ALL_QUESTIONS.filter(q => wordCount(answers[q.id]) >= q.minWords).length; return n+" of 15 answered"; })(),
-                  status: (() => { const n = ALL_QUESTIONS.filter(q => wordCount(answers[q.id]) >= q.minWords).length; if (n===0) return {label:"Not Started",bg:GRAY100,fg:GRAY400}; if (n<15) return {label:"In Progress",bg:"#FEF9EC",fg:"#92400E"}; return {label:"Done",bg:"#D1FAE5",fg:"#065F46"}; })(),
-                },
-                {
-                  phase:"groups", icon:"📣", bg:NAVY_LIGHT, title:"Post in Groups",
-                  desc:"Find local Facebook groups and replicate your post to 10.",
-                  time:"~15 min",
+                { phase:"writechoice", icon:"✍️", bg:NAVY, title:"Write Post", desc:"Answer 15 questions. AI writes your trust-building post.", time:"~8 min",
+                  progress:(() => { const n = ALL_QUESTIONS.filter(q => wordCount(answers[q.id]) >= q.minWords).length; return n+" of 15 answered"; })(),
+                  status:(() => { const n = ALL_QUESTIONS.filter(q => wordCount(answers[q.id]) >= q.minWords).length; if (n===0) return {label:"Not Started",bg:GRAY100,fg:GRAY400}; if (n<15) return {label:"In Progress",bg:"#FEF9EC",fg:"#92400E"}; return {label:"Done",bg:"#D1FAE5",fg:"#065F46"}; })() },
+                { phase:"groups", icon:"📣", bg:NAVY_LIGHT, title:"Post in Groups", desc:"Find local Facebook groups and replicate your post to 10.", time:"~15 min",
                   progress:(postCount+1)+" of 10 groups posted",
-                  status: postCount===9 ? {label:"Done",bg:"#D1FAE5",fg:"#065F46"} : postCount>0 ? {label:"In Progress",bg:"#FEF9EC",fg:"#92400E"} : {label:"Not Started",bg:GRAY100,fg:GRAY400},
-                },
-                {
-                  phase:"leads", icon:"🔥", bg:"#065F46", title:"Work Leads",
-                  desc:"Turn every like, comment, share, and DM into a booked job.",
-                  time:"~5 min",
+                  status:postCount===9?{label:"Done",bg:"#D1FAE5",fg:"#065F46"}:postCount>0?{label:"In Progress",bg:"#FEF9EC",fg:"#92400E"}:{label:"Not Started",bg:GRAY100,fg:GRAY400} },
+                { phase:"leads", icon:"🔥", bg:"#065F46", title:"Work Leads", desc:"Turn every like, comment, share, and DM into a booked job.", time:"~5 min",
                   progress:"Scripts for every engagement type",
-                  status:{label:"Not Started",bg:GRAY100,fg:GRAY400},
-                },
+                  status:{label:"Not Started",bg:GRAY100,fg:GRAY400} },
               ].map(item => (
                 <div key={item.phase} onClick={() => setAppPhase(item.phase)} style={{ background:WHITE, borderRadius:16, boxShadow:"0 2px 12px rgba(0,41,66,0.06)", overflow:"hidden", cursor:"pointer", display:"flex" }}>
                   <div style={{ background:item.bg, width:56, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:22 }}>{item.icon}</div>
@@ -1216,21 +1297,7 @@ export default function App() {
                 </div>
               ))}
             </div>
-
             <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:12 }}><LangToggle lang={lang} setLang={setLang} /></div>
-
-            {isDev() && (
-              <div style={{ background:"#FEF9EC", border:"1.5px dashed "+YELLOW, borderRadius:10, padding:"10px 16px" }}>
-                <div style={{ fontSize:13, color:GRAY600, marginBottom:8 }}>🧪 <strong>Dev shortcuts</strong></div>
-                <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                  {[
-                    { label:"Fill Sample Answers", fn:() => { devFill(); setAppPhase("ch1"); } },
-                    { label:"Skip to Groups",      fn:() => { devFill(); setAppPhase("groups"); saveSubmission(SAMPLE_ANSWERS,"sample post","Post Generated"); } },
-                    { label:"Skip to Leads",       fn:() => { devFill(); setAppPhase("leads"); setWatched(true); saveSubmission(SAMPLE_ANSWERS,"sample post","10 Groups Done"); } },
-                  ].map((b,i) => <button key={i} onClick={b.fn} style={{ background:NAVY, color:YELLOW, border:"none", borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>{b.label}</button>)}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -1430,20 +1497,12 @@ export default function App() {
         )}
 
         {appPhase === "leads" && (
-          <LeadEngagement
-            onBack={() => setAppPhase("replicate")}
-            onAmplify={() => setAppPhase("amplify")}
-          />
+          <LeadEngagement onBack={() => setAppPhase("replicate")} onAmplify={() => setAppPhase("amplify")} />
         )}
 
         {appPhase === "amplify" && (
-          <AmplifyScreen
-            onBack={() => setAppPhase("leads")}
-            city={city}
-            totalPosted={postCount + 1}
-          />
+          <AmplifyScreen onBack={() => setAppPhase("leads")} city={city} totalPosted={postCount + 1} />
         )}
-
       </div>
     </div>
   );
