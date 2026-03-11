@@ -789,7 +789,7 @@ function TypeMode({ onComplete, lang, savedAnswers, onAnswerChange }) {
     if (inspirationExamples.length > 0) return;
     setInspirationLoading(true);
     try {
-      const reply = await callClaude([{ role: "user", content: "Give 2 short vivid example answers for this question from a home service business owner:\n\nQuestion: " + q.label + "\nContext: " + q.hint + "\n\nReturn ONLY a JSON array of 2 strings: [\"example 1\",\"example 2\"]. Authentic, specific, different styles." }]);
+      const reply = await callClaude([{ role: "user", content: "Give 3 short vivid example answers for this question from a home service business owner:\n\nQuestion: " + q.label + "\nContext: " + q.hint + "\nDefault example already shown to user: " + q.placeholder + "\n\nReturn ONLY a JSON array of 3 strings: [\"example 1\",\"example 2\",\"example 3\"]. Each must be clearly different from the default example above — different industry, different detail, different style. Authentic and specific." }]);
       const cleaned = reply.replace(/```json|```/g, "").trim();
       const match = cleaned.match(/\[[\s\S]*\]/);
       if (match) { const p = JSON.parse(match[0]); setInspirationExamples(Array.isArray(p) ? p : []); }
