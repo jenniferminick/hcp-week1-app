@@ -216,7 +216,7 @@ async function callClaude(messages, system) {
   return (d.content || []).filter(b => b.type === "text").map(b => b.text).join("") || "";
 }
 
-async function ttsSpeak(text, lang, onEnd) {
+async function ttsSpeak(text, lang, onEnd, audioRef) {
   const done = () => { if (onEnd) onEnd(); };
   try {
     const res = await fetch("/api/tts", {
@@ -228,8 +228,9 @@ async function ttsSpeak(text, lang, onEnd) {
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
-    audio.onended = () => { URL.revokeObjectURL(url); done(); };
-    audio.onerror = () => { URL.revokeObjectURL(url); done(); };
+    if (audioRef) audioRef.current = audio;
+    audio.onended = () => { URL.revokeObjectURL(url); if (audioRef) audioRef.current = null; done(); };
+    audio.onerror = () => { URL.revokeObjectURL(url); if (audioRef) audioRef.current = null; done(); };
     await audio.play();
     return;
   } catch(e) {}
@@ -437,6 +438,7 @@ function VoiceMode({ onComplete, lang }) {
   const t = T[lang] || T.en;
   const ttsLang = lang === "es" ? "es-ES" : "en-US";
   const S = useRef({ qIdx: 0, answers: {}, rerecordId: null, busy: false, wantMic: false });
+  const currentAudioRef = useRef(null);
   const [displayQIdx, setDisplayQIdx] = useState(0);
   const [displayAnswers, setDisplayAnswers] = useState({});
   const [coachMsg, setCoachMsg] = useState(t.voiceIntro);
@@ -467,12 +469,18 @@ function VoiceMode({ onComplete, lang }) {
       S.current.busy = false;
       if (afterSpeak) afterSpeak();
       else openMic();
-    });
+    }, currentAudioRef);
   }
 
   function pauseSession() {
     setPaused(true);
     closeMic();
+    // Stop OpenAI TTS audio immediately
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+    // Stop browser TTS fallback
     if (window.speechSynthesis) window.speechSynthesis.cancel();
     S.current.busy = false;
     S.current.wantMic = false;
@@ -1545,8 +1553,8 @@ export default function App() {
             <VoiceMode
               onComplete={va => {
                 setAnswers(va);
+                handleGeneratePost(va);
                 setAppPhase("getpost");
-                setTimeout(() => handleGeneratePost(va), 50);
               }}
               lang={lang}
             />
