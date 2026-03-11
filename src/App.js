@@ -283,13 +283,16 @@ async function ttsSpeak(text, lang, onEnd) {
 async function findFacebookGroups(city, count) {
   const reply = await callClaude([{
     role: "user",
-    content: "Generate " + count + " realistic Facebook group names for the " + city + " area that a home service contractor could post in. Sort Public first.\n\nReturn ONLY a raw JSON array with no markdown, no code fences:\n[{\"name\":\"group name\",\"type\":\"Community or Homeowners or Family or Buy/Sell or Neighborhood\",\"members\":\"e.g. 4.2K\",\"privacy\":\"Public or Private\"}]",
+    content: "Generate " + count + " realistic Facebook group names for the " + city + " area that a home service contractor could post in. Sort Public groups first.\n\nYou MUST return ONLY a valid JSON array. No markdown. No code fences. No explanation. Just the raw JSON array starting with [ and ending with ].\n\nFormat:\n[{\"name\":\"group name\",\"type\":\"Community or Homeowners or Family or Buy/Sell or Neighborhood\",\"members\":\"e.g. 4.2K\",\"privacy\":\"Public or Private\"}]",
   }]);
-  const cleaned = reply.replace(/```json|```/g, "").trim();
-  const match = cleaned.match(/\[[\s\S]*\]/);
-  if (!match) return [];
+  // Strip any possible markdown fences and whitespace
+  const cleaned = reply.replace(/```json/gi, "").replace(/```/g, "").trim();
+  // Find the outermost JSON array
+  const start = cleaned.indexOf("[");
+  const end = cleaned.lastIndexOf("]");
+  if (start === -1 || end === -1) return [];
   try {
-    const p = JSON.parse(match[0]);
+    const p = JSON.parse(cleaned.slice(start, end + 1));
     return Array.isArray(p)
       ? p.filter(g => g.name).map(g => ({ ...g, url: "https://www.facebook.com/search/groups/?q=" + encodeURIComponent(g.name) })).sort((a, b) => a.privacy === "Public" ? -1 : 1)
       : [];
@@ -536,12 +539,29 @@ function VoiceMode({ onComplete, lang }) {
       : null;
 
     const sysPrompt = lang === "es"
-      ? "Eres un coach de negocios cálido y alentador. SIEMPRE responde completamente en español. Respuestas cortas, naturales. Sin listas."
-      : "You are a warm encouraging business coach like a supportive friend. NEVER start with 'Got it'. Vary acknowledgments. 2-3 short sentences max. No bullet points.";
+      ? "Eres un coach de negocios cálido y alentador. SIEMPRE responde completamente en español. Respuestas cortas, naturales, como una conversación entre amigos. Sin listas. Nunca empieces con 'Perfecto' o 'Genial' repetidamente — varía tus reacciones."
+      : `You are a warm, real friend helping someone tell their story — not a form validator or a hype bot.
+Talk like a real person. Be genuinely curious. React naturally to what they say.
+NEVER start with "Got it", "Perfect", "Great", or "Awesome" — those sound fake. 
+Instead react to the actual content: "Oh that's a good one", "Ha, I can relate to that", "Okay that's real", "That's exactly the kind of thing people connect with", "I love that", "Yeah that tracks", etc.
+Keep it short — 2 sentences max before asking the next question.
+Sound like a friend sitting across from them at a coffee shop, not a chatbot running through a checklist.`;
 
     const userPrompt = lang === "es"
-      ? "Pregunta: " + qLabel + " (" + qHint + ")\nRespuesta: \"" + text + "\"\nMínimo: " + q.minWords + " palabras\n\nSi específica y cumple mínimo: ACCEPT + reacción cálida + pregunta: " + (nextVoiceQ || "Eso es todo.") + "\nSi vaga o corta: FOLLOWUP + una pregunta amigable."
-      : "Question: " + qLabel + "\nLooking for: " + qHint + "\nAnswer: \"" + text + "\"\nMin words: " + q.minWords + "\n\nIf specific and meets word count:\n→ Start with ACCEPT\n→ React warmly (never 'Got it')\n→ Lead into: " + (nextVoiceQ || "That's everything — you did amazing!") + "\n\nIf too short or vague:\n→ Start with FOLLOWUP\n→ One short friendly nudge";
+      ? "Pregunta: " + qLabel + " (" + qHint + ")\nRespuesta: \"" + text + "\"\nMínimo: " + q.minWords + " palabras\n\nSi específica y cumple mínimo: ACCEPT + reacción cálida y variada + pregunta natural: " + (nextVoiceQ || "Eso es todo.") + "\nSi vaga o corta: FOLLOWUP + una pregunta amigable para sacar más detalles."
+      : `What they were asked: ${qLabel}
+What we need: ${qHint}
+What they said: "${text}"
+Minimum words needed: ${q.minWords}
+
+If their answer is specific enough and meets the word count:
+→ Start your reply with ACCEPT
+→ React genuinely to what they actually said (1 sentence, sound like a real person — NOT "Great!" or "Perfect!")
+→ Then naturally lead into the next question: ${nextVoiceQ || "That's everything — you crushed it!"}
+
+If their answer is too short or too vague:
+→ Start with FOLLOWUP  
+→ Ask one natural follow-up question to draw out more detail — sound curious, not robotic`;
 
     let reply = "";
     try {
@@ -577,7 +597,7 @@ function VoiceMode({ onComplete, lang }) {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { setMicErr("Speech recognition not supported."); return; }
     const r = new SR();
-    r.continuous = false;
+    r.continuous = true;
     r.interimResults = false;
     r.lang = ttsLang;
     r.onresult = e => {
@@ -1551,7 +1571,7 @@ export default function App() {
 
         {appPhase === "voice" && (
           <>
-            <VoiceMode onComplete={va => { setAnswers(va); setAppPhase("groups"); }} lang={lang} />
+            <VoiceMode onComplete={va => { setAnswers(va); setAppPhase("getpost"); }} lang={lang} />
             <BottomNav onBack={() => setAppPhase("writechoice")} />
             <NavSpacer />
           </>
