@@ -539,29 +539,31 @@ function VoiceMode({ onComplete, lang }) {
       : null;
 
     const sysPrompt = lang === "es"
-      ? "Eres un coach de negocios cálido y alentador. SIEMPRE responde completamente en español. Respuestas cortas, naturales, como una conversación entre amigos. Sin listas. Nunca empieces con 'Perfecto' o 'Genial' repetidamente — varía tus reacciones."
-      : `You are a warm, real friend helping someone tell their story — not a form validator or a hype bot.
-Talk like a real person. Be genuinely curious. React naturally to what they say.
-NEVER start with "Got it", "Perfect", "Great", or "Awesome" — those sound fake. 
-Instead react to the actual content: "Oh that's a good one", "Ha, I can relate to that", "Okay that's real", "That's exactly the kind of thing people connect with", "I love that", "Yeah that tracks", etc.
-Keep it short — 2 sentences max before asking the next question.
-Sound like a friend sitting across from them at a coffee shop, not a chatbot running through a checklist.`;
+      ? "Eres un coach de negocios cálido y alentador. SIEMPRE responde completamente en español. Respuestas cortas, naturales, como una conversación entre amigos. NUNCA uses frases genéricas como 'Perfecto' o 'Genial'. Reacciona específicamente a lo que dijeron."
+      : `You are having a real, warm conversation — like a close friend who genuinely cares about this person's story.
+
+CRITICAL RULES:
+- NEVER use filler affirmations like "Perfect!", "Love that!", "Great!", "Awesome!", "Got it!", "Amazing!" — these sound fake and robotic.
+- You MUST reference something SPECIFIC from what they just said. If they mention a Ford truck, say something about the truck. If they mention Christmas Eve, acknowledge Christmas Eve. If they describe an emotional moment, reflect that emotion back.
+- Sound like a real human reacting in real time — surprised, curious, moved, or amused by the actual content.
+- Keep it SHORT: one genuine reaction sentence, then smoothly ask the next question.
+- Examples of good reactions: "Oh a 67 Bronco, that's a serious project.", "Man, Christmas Eve — that had to hit different.", "Walking out like that takes guts.", "Ha, okay so you're basically the drain whisperer.", "That moment with her grabbing your hand — that's the whole story right there."`;
 
     const userPrompt = lang === "es"
-      ? "Pregunta: " + qLabel + " (" + qHint + ")\nRespuesta: \"" + text + "\"\nMínimo: " + q.minWords + " palabras\n\nSi específica y cumple mínimo: ACCEPT + reacción cálida y variada + pregunta natural: " + (nextVoiceQ || "Eso es todo.") + "\nSi vaga o corta: FOLLOWUP + una pregunta amigable para sacar más detalles."
-      : `What they were asked: ${qLabel}
-What we need: ${qHint}
+      ? "Pregunta: " + qLabel + " (" + qHint + ")\nRespuesta: \"" + text + "\"\nMínimo: " + q.minWords + " palabras\n\nSi específica y cumple mínimo: ACCEPT + reacción específica a lo que dijeron (¡no genérica!) + pregunta natural: " + (nextVoiceQ || "Eso es todo.") + "\nSi vaga o corta: FOLLOWUP + una pregunta curiosa para sacar más detalles."
+      : `Question being answered: ${qLabel}
+What a good answer looks like: ${qHint}
 What they said: "${text}"
-Minimum words needed: ${q.minWords}
+Minimum words required: ${q.minWords}
 
-If their answer is specific enough and meets the word count:
-→ Start your reply with ACCEPT
-→ React genuinely to what they actually said (1 sentence, sound like a real person — NOT "Great!" or "Perfect!")
-→ Then naturally lead into the next question: ${nextVoiceQ || "That's everything — you crushed it!"}
+If their answer is specific and meets the word count:
+→ Reply starting with ACCEPT
+→ React to something SPECIFIC they actually said — mirror their words back, show genuine curiosity or emotion about the actual content
+→ Then naturally transition: ${nextVoiceQ || "And that's everything — you just gave me so much to work with."}
 
-If their answer is too short or too vague:
-→ Start with FOLLOWUP  
-→ Ask one natural follow-up question to draw out more detail — sound curious, not robotic`;
+If too short or vague:
+→ Reply starting with FOLLOWUP
+→ Ask one specific follow-up question about what they mentioned — be genuinely curious, not robotic`;
 
     let reply = "";
     try {
@@ -589,7 +591,11 @@ If their answer is too short or too vague:
       setDisplayAnswers({ ...S.current.answers });
       setTranscript("");
       if (isLast) {
-        coachSay(msg || t.voiceDone, () => setUiStatus("done"));
+        const finalAnswers = { ...S.current.answers };
+        coachSay(msg || t.voiceDone, () => {
+          setUiStatus("done");
+          setDisplayAnswers(finalAnswers);
+        });
       } else {
         S.current.qIdx = qIdx + 1;
         setDisplayQIdx(qIdx + 1);
@@ -764,7 +770,7 @@ If their answer is too short or too vague:
 
       {uiStatus === "done" && (
         <div style={{ marginTop: 8 }}>
-          <Btn onClick={() => onComplete(displayAnswers)}>{t.voiceContinue}</Btn>
+          <Btn onClick={() => onComplete({ ...S.current.answers })}>{t.voiceContinue}</Btn>
         </div>
       )}
     </div>
@@ -1589,7 +1595,14 @@ export default function App() {
 
         {appPhase === "voice" && (
           <>
-            <VoiceMode onComplete={va => { setAnswers(va); setAppPhase("getpost"); }} lang={lang} />
+            <VoiceMode
+              onComplete={va => {
+                setAnswers(va);
+                handleGeneratePost(va);
+                setAppPhase("getpost");
+              }}
+              lang={lang}
+            />
             <BottomNav onBack={() => setAppPhase("writechoice")} />
             <NavSpacer />
           </>
