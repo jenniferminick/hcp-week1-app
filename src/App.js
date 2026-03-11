@@ -207,7 +207,7 @@ function wordCount(s) {
 async function callClaude(messages, system) {
   const body = { model: "claude-sonnet-4-20250514", max_tokens: 2000, messages };
   if (system) body.system = system;
-  const r = await fetch("https://api.anthropic.com/v1/messages", {
+  const r = await fetch("/api/claude", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -686,7 +686,7 @@ function VoiceMode({ onComplete, lang }) {
       {uiStatus === "idle" && !paused && (
         <div style={{ textAlign: "center", marginTop: 8, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
           <Btn onClick={handleStart}>{t.voiceStart}</Btn>
-          {(window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.search.includes("dev=1")) && (
+          {new URLSearchParams(window.location.search).get("dev") === "1" && (
             <button
               onClick={() => {
                 S.current.answers = { ...SAMPLE_ANSWERS };
@@ -733,7 +733,56 @@ function VoiceMode({ onComplete, lang }) {
   );
 }
 
-// ── Type Mode ──────────────────────────────────────────────────────────────────
+// ── Get Post ───────────────────────────────────────────────────────────────────
+
+function GetPost({ allCh3Met, post, postLoading, postError, answers, onGenerate, onSetPost, onNext, onBack, onWritePost }) {
+  // Auto-trigger generation when arriving with answers already filled (e.g. from voice mode)
+  useEffect(() => {
+    if (allCh3Met && !post && !postLoading) {
+      onGenerate(answers);
+    }
+  }, []);
+
+  return (
+    <>
+      <Card>
+        <SectionHeader emoji="✍️" title="Step 2 - Get Your Post" />
+        {allCh3Met && !post && !postLoading && (
+          <>
+            <p style={{ color: GRAY600, fontSize: 14, lineHeight: 1.7, marginBottom: 20 }}>Your story answers are ready. Tap the button below and we will write your post for you.</p>
+            {postError && <div style={{ background: "#FEF2F2", borderRadius: 10, padding: 14, marginBottom: 16, color: RED, fontSize: 13 }}>{postError}</div>}
+            <Btn onClick={() => onGenerate(answers)}>Generate My Post</Btn>
+          </>
+        )}
+        {postLoading && (
+          <div style={{ textAlign: "center", padding: 40 }}>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>✨</div>
+            <p style={{ color: GRAY600, fontSize: 14 }}>Writing your post...</p>
+          </div>
+        )}
+        {!allCh3Met && !post && (
+          <>
+            <div style={{ background: "#FEF9EC", border: "1.5px solid " + YELLOW, borderRadius: 10, padding: 16, marginBottom: 20 }}>
+              <p style={{ fontWeight: 700, color: NAVY, fontSize: 14, margin: "0 0 6px" }}>You will need a post to continue.</p>
+              <p style={{ color: GRAY600, fontSize: 13, lineHeight: 1.7, margin: "0 0 14px" }}>Go back to Write Post to build your story, or paste an existing post below.</p>
+              <Btn onClick={onWritePost}>Write My Post</Btn>
+            </div>
+            <textarea value={post} onChange={e => onSetPost(e.target.value)} rows={10} placeholder="Paste your Facebook post here..."
+              style={{ width: "100%", boxSizing: "border-box", border: "2px solid " + (post ? NAVY : GRAY200), borderRadius: 12, padding: 16, fontSize: 14, lineHeight: 1.8, color: GRAY800, fontFamily: "inherit", resize: "vertical", background: post ? "#F0F7FF" : GRAY50, outline: "none" }} />
+          </>
+        )}
+        {post && !postLoading && <p style={{ color: GREEN, fontWeight: 700, fontSize: 14, marginTop: 12 }}>Your post is ready!</p>}
+        {postError && !postLoading && allCh3Met && (
+          <div style={{ background: "#FEF2F2", borderRadius: 10, padding: 14, marginTop: 16, color: RED, fontSize: 13 }}>
+            {postError} <button onClick={() => onGenerate(answers)} style={{ marginLeft: 8, background: "none", border: "none", color: NAVY, fontWeight: 700, cursor: "pointer", textDecoration: "underline", fontSize: 13 }}>Try again</button>
+          </div>
+        )}
+      </Card>
+      <BottomNav onBack={onBack} onNext={post && !postLoading ? onNext : undefined} nextDisabled={!post || postLoading} />
+      <NavSpacer />
+    </>
+  );
+}
 
 function TypeMode({ onComplete, lang, savedAnswers, onAnswerChange }) {
   const [qIdx, setQIdx] = useState(() => {
@@ -1553,7 +1602,6 @@ export default function App() {
             <VoiceMode
               onComplete={va => {
                 setAnswers(va);
-                handleGeneratePost(va);
                 setAppPhase("getpost");
               }}
               lang={lang}
@@ -1601,31 +1649,18 @@ export default function App() {
 
         {appPhase === "getpost" && (
           <>
-            <Card>
-              <SectionHeader emoji="✍️" title="Step 2 - Get Your Post" />
-              {allCh3Met && !post && !postLoading && (
-                <>
-                  <p style={{ color: GRAY600, fontSize: 14, lineHeight: 1.7, marginBottom: 20 }}>Your story answers are ready. Tap the button below and we will write your post for you.</p>
-                  {postError && <div style={{ background: "#FEF2F2", borderRadius: 10, padding: 14, marginBottom: 16, color: RED, fontSize: 13 }}>{postError}</div>}
-                  <Btn onClick={() => handleGeneratePost()}>Generate My Post</Btn>
-                </>
-              )}
-              {postLoading && <div style={{ textAlign: "center", padding: 40 }}><div style={{ fontSize: 32, marginBottom: 12 }}>✨</div><p style={{ color: GRAY600, fontSize: 14 }}>Writing your post...</p></div>}
-              {!allCh3Met && !post && (
-                <>
-                  <div style={{ background: "#FEF9EC", border: "1.5px solid " + YELLOW, borderRadius: 10, padding: 16, marginBottom: 20 }}>
-                    <p style={{ fontWeight: 700, color: NAVY, fontSize: 14, margin: "0 0 6px" }}>You will need a post to continue.</p>
-                    <p style={{ color: GRAY600, fontSize: 13, lineHeight: 1.7, margin: "0 0 14px" }}>Go back to Write Post to build your story, or paste an existing post below.</p>
-                    <Btn onClick={() => setAppPhase("writechoice")}>Write My Post</Btn>
-                  </div>
-                  <textarea value={post} onChange={e => setPost(e.target.value)} rows={10} placeholder="Paste your Facebook post here..."
-                    style={{ width: "100%", boxSizing: "border-box", border: "2px solid " + (post ? NAVY : GRAY200), borderRadius: 12, padding: 16, fontSize: 14, lineHeight: 1.8, color: GRAY800, fontFamily: "inherit", resize: "vertical", background: post ? "#F0F7FF" : GRAY50, outline: "none" }} />
-                </>
-              )}
-              {post && !postLoading && <p style={{ color: GREEN, fontWeight: 700, fontSize: 14, marginTop: 12 }}>Your post is ready!</p>}
-            </Card>
-            <BottomNav onBack={() => setAppPhase("groups")} onNext={post && !postLoading ? () => setAppPhase("copypost") : undefined} nextDisabled={!post || postLoading} />
-            <NavSpacer />
+            <GetPost
+              allCh3Met={allCh3Met}
+              post={post}
+              postLoading={postLoading}
+              postError={postError}
+              answers={answers}
+              onGenerate={handleGeneratePost}
+              onSetPost={setPost}
+              onNext={() => setAppPhase("copypost")}
+              onBack={() => setAppPhase("groups")}
+              onWritePost={() => setAppPhase("writechoice")}
+            />
           </>
         )}
 
