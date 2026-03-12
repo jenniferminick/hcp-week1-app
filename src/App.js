@@ -99,8 +99,20 @@ function validateAnswer(q,text){
   const t=text.trim(),words=t.split(/\s+/).filter(Boolean);
   if(FILLER_REGEX.test(t)) return {ok:false,reason:"filler"};
   if(words.length<q.minWords) return {ok:false,reason:"short"};
-  if(q.validate==="name"){const nw=t.replace(/[^a-zA-Z\s'-]/g,"").trim().split(/\s+/).filter(Boolean);if(nw.length<2)return {ok:false,reason:"not_a_name"};if(/\b(timer|alarm|minute|second|siri|google|alexa|cancel|stop)\b/i.test(t))return {ok:false,reason:"not_a_name"};}
-  if(q.validate==="area"){if(!/\b(\d+\s*(year|yr|month|decade)|for\s+\d+|going on|almost|over|nearly|new to|just moved|building our life)/i.test(t))return {ok:false,reason:"missing_duration"};}
+  if(q.validate==="name"){
+    const nw=t.replace(/[^a-zA-Z\s'-]/g,"").trim().split(/\s+/).filter(Boolean);
+    if(nw.length<2) return {ok:false,reason:"not_a_name"};
+    // Reject if it contains non-name phrases — timer sounds, device wake words, etc.
+    if(/\b(timer|alarm|minute|second|siri|google|alexa|cancel|stop|setting|set a|for a)\b/i.test(t)) return {ok:false,reason:"not_a_name"};
+    // Must have at least one word that looks like a proper name (capitalized or all letters, 2+ chars)
+    const hasProperName = nw.some(w => w.length >= 2 && /^[A-Za-z]+$/.test(w));
+    if(!hasProperName) return {ok:false,reason:"not_a_name"};
+  }
+  if(q.validate==="area"){
+    // Match duration patterns: "11 years", "for 11 years", "going on 11", "8 months", etc.
+    const hasDuration = /\b(\d+\s*(year|yr|years|month|months|decade)|for\s+\d+|going on\s+\d+|almost\s+\d+|over\s+\d+|nearly\s+\d+|new to|just moved|building our life|\d+\+?\s*year)/i.test(t);
+    if(!hasDuration) return {ok:false,reason:"missing_duration"};
+  }
   if(q.validate==="localFlavor"){if(words.length<6)return {ok:false,reason:"needs_more"};}
   if(q.validate==="hero"){if(words.length<25)return {ok:false,reason:"short"};}
   return {ok:true};
@@ -135,7 +147,7 @@ async function findFacebookGroups(city,count){
   const cleaned=reply.replace(/```json/gi,"").replace(/```/g,"").trim();
   const s=cleaned.indexOf("["),e=cleaned.lastIndexOf("]");
   if(s===-1||e===-1)return [];
-  try{const p=JSON.parse(cleaned.slice(s,e+1));return Array.isArray(p)?p.filter(g=>g.name).map(g=>({...g,url:"https://www.facebook.com/groups/search/?q="+encodeURIComponent(g.name)})).sort((a,b)=>a.privacy==="Public"?-1:1):[];}catch(e){return [];}
+  try{const p=JSON.parse(cleaned.slice(s,e+1));return Array.isArray(p)?p.filter(g=>g.name).map(g=>({...g,url:"https://www.facebook.com/groups/search/?q="+encodeURIComponent(g.name)+"&filters=groups"})).sort((a,b)=>a.privacy==="Public"?-1:1):[];}catch(e){return [];}
 }
 async function generateAIPost(ans){
   const city=(ans.area||"").split(/[,\.]/)[0].trim()||"my city";
@@ -159,12 +171,33 @@ function PhaseNav({current,onNavigate,completedSections}){
   const currentSubIdx=subPhases.indexOf(current);
   return(<div style={{marginBottom:24}}><div style={{display:"flex",gap:10,alignItems:"stretch"}}>{NAV_SECTIONS.map(section=>{const sectionActive=section.phases.includes(current);const sectionDone=completedSections.includes(section.id);return(<div key={section.id} style={{flex:1,minWidth:0}}><div onClick={()=>onNavigate&&onNavigate(section.phases[0])} style={{background:sectionDone?GREEN:sectionActive?NAVY:GRAY200,color:sectionDone?WHITE:sectionActive?YELLOW:GRAY600,borderRadius:sectionActive&&!isWrite?"10px 10px 0 0":10,padding:"10px 14px",fontSize:13,fontWeight:800,textAlign:"center",cursor:"pointer",userSelect:"none"}}>{sectionDone?"✓ ":""}{section.label}</div>{sectionActive&&!isWrite&&(<div style={{background:GRAY50,border:"1px solid "+GRAY200,borderTop:"none",borderRadius:"0 0 10px 10px",padding:"8px 10px",display:"flex",flexDirection:"column",gap:5}}>{subPhases.map((p,i)=>{const isDone=i<currentSubIdx,isActive=p===current;return(<div key={p} onClick={e=>{e.stopPropagation();onNavigate&&onNavigate(p);}} style={{padding:"3px 10px",borderRadius:99,fontSize:11,fontWeight:600,background:isDone?"#D1FAE5":isActive?YELLOW:GRAY200,color:isDone?"#065F46":isActive?NAVY:GRAY400,cursor:"pointer",textAlign:"center",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{isDone?"✓ ":""}{PHASE_LABELS[p]||p}</div>);})}</div>)}</div>);})}</div></div>);
 }
-function GroupTable({groups,showNum}){return(<div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}><thead><tr style={{background:NAVY}}>{(showNum?["#"]:[]).concat(["Group Name","Privacy","Members","Type"]).map(h=><th key={h} style={{padding:"10px 12px",color:YELLOW,textAlign:"left",fontWeight:700}}>{h}</th>)}</tr></thead><tbody>{groups.map((g,i)=>(<tr key={i} style={{background:i%2===0?WHITE:GRAY50,borderBottom:"1px solid "+GRAY200}}>{showNum&&<td style={{padding:"10px 12px",color:GRAY400,fontWeight:700,fontSize:12}}>{i+2}</td>}<td style={{padding:"10px 12px"}}><a href={g.url} target="_blank" rel="noopener noreferrer" style={{color:NAVY,fontWeight:600,textDecoration:"underline"}}>{g.name}</a><span style={{display:"block",fontSize:11,marginTop:2,color:GRAY400}}>Opens Facebook search</span></td><td style={{padding:"10px 12px",color:GRAY600}}>{g.privacy||"—"}</td><td style={{padding:"10px 12px",color:GRAY600}}>{g.members||"—"}</td><td style={{padding:"10px 12px"}}><span style={{background:NAVY_LIGHT,color:YELLOW,borderRadius:99,padding:"2px 8px",fontSize:11,fontWeight:700}}>{g.type}</span></td></tr>))}</tbody></table></div>);}
+function GroupTable({groups,showNum}){
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+      {groups.map((g,i)=>(
+        <div key={i} style={{background:i%2===0?WHITE:GRAY50,border:"1px solid "+GRAY200,borderRadius:12,padding:"12px 16px",display:"flex",alignItems:"center",gap:12}}>
+          {showNum&&<div style={{color:GRAY400,fontWeight:700,fontSize:12,minWidth:24}}>{i+2}</div>}
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:700,color:NAVY,fontSize:14,marginBottom:2}}>{g.name}</div>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              <span style={{background:g.privacy==="Public"?"#D1FAE5":"#FEF9EC",color:g.privacy==="Public"?"#065F46":"#92400E",borderRadius:99,padding:"1px 8px",fontSize:11,fontWeight:700}}>{g.privacy||"—"}</span>
+              <span style={{fontSize:11,color:GRAY400}}>{g.members||""} {g.type}</span>
+            </div>
+          </div>
+          <a href={g.url} target="_blank" rel="noopener noreferrer" style={{background:"#1877F2",color:WHITE,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:700,textDecoration:"none",whiteSpace:"nowrap",flexShrink:0,display:"inline-flex",alignItems:"center",gap:6}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+            Open in Facebook
+          </a>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // ── Voice Mode ────────────────────────────────────────────────────────────────
 function VoiceMode({onComplete,lang}){
   const t=T[lang]||T.en,ttsLang=lang==="es"?"es-ES":"en-US";
-  const S=useRef({qIdx:0,answers:{},rerecordId:null,busy:false,wantMic:false,followupCount:0,partialAnswers:{},forcedAccept:null});
+  const S=useRef({qIdx:0,answers:{},rerecordId:null,busy:false,wantMic:false,followupCount:0,partialAnswers:{},forcedAccept:null,paused:false});
   const currentAudioRef=useRef(null);
   const [displayQIdx,setDisplayQIdx]=useState(0);
   const [displayAnswers,setDisplayAnswers]=useState({});
@@ -200,9 +233,11 @@ function VoiceMode({onComplete,lang}){
     const finalText=forcedAccept||(partial&&!partial.includes(text.trim())?partial+" "+text:text);
     if(S.current.partialAnswers[q.id])delete S.current.partialAnswers[q.id];
     if(S.current.forcedAccept)S.current.forcedAccept=null;
-    const nextVoiceQ=nextQ?(nextQ.voiceQ||nextQ.hint):null;
-    const sysPrompt="You are a warm conversational business coach. NEVER use filler words: Perfect, Love that, Great, Awesome, Got it, Amazing, Wonderful. React to ONE specific detail. 1-2 sentences max. Ask EXACTLY: "+(nextVoiceQ||"[end]")+". NEVER introduce new subjects. Start with ACCEPT.";
-    const userPrompt="They answered Q"+q.num+" ("+q.label+").\nAnswer: \""+finalText+"\"\n"+(isLast?"Last question. Start with ACCEPT then say: "+t.voiceDone:"Start with ACCEPT, react briefly, then ask: "+nextVoiceQ);
+    const nextVoiceQ = rerecordId
+      ? null  // re-record: no "next question" to ask, coach just confirms
+      : (nextQ?(nextQ.voiceQ||nextQ.hint):null);
+    const sysPrompt="You are a warm conversational business coach. NEVER use filler words: Perfect, Love that, Great, Awesome, Got it, Amazing, Wonderful. React to ONE specific detail. 1-2 sentences max. "+(rerecordId?"Confirm their answer is saved and move on naturally.":("Ask EXACTLY: "+(nextVoiceQ||"[end]")+". NEVER introduce new subjects."))+" Start with ACCEPT.";
+    const userPrompt="They answered Q"+q.num+" ("+q.label+").\nAnswer: \""+finalText+"\"\n"+(isLast?"Last question. Start with ACCEPT then say: "+t.voiceDone:rerecordId?"Re-recorded answer. Start with ACCEPT, briefly confirm it sounds good.":"Start with ACCEPT, react briefly, then ask: "+nextVoiceQ);
     let reply="";
     try{const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),9000));reply=await Promise.race([callClaude([{role:"user",content:userPrompt}],sysPrompt),timeout]);}catch(_){reply="ACCEPT "+(nextVoiceQ||t.voiceDone);}
     if(!reply){S.current.busy=false;openMic();return;}
@@ -210,9 +245,20 @@ function VoiceMode({onComplete,lang}){
     const id=rerecordId||q.id;
     S.current.answers={...S.current.answers,[id]:finalText};
     if(id==="localFlavor"){S.current.answers.localPlace=finalText;S.current.answers.localActivity=finalText;}
-    S.current.rerecordId=null;setDisplayAnswers({...S.current.answers});setTranscript("");
-    if(isLast){const fa={...S.current.answers};coachSay(msg||t.voiceDone,()=>{setUiStatus("done");setDisplayAnswers(fa);});}
-    else{S.current.qIdx=qIdx+1;setDisplayQIdx(qIdx+1);coachSay(msg,()=>openMic());}
+    S.current.rerecordId=null;
+    setDisplayAnswers({...S.current.answers});
+    setTranscript("");
+    if(isLast){
+      const fa={...S.current.answers};
+      coachSay(msg||t.voiceDone,()=>{setUiStatus("done");setDisplayAnswers(fa);});
+    } else if(rerecordId) {
+      // Re-record: don't advance qIdx, just continue from where we were
+      coachSay(msg,()=>openMic());
+    } else {
+      S.current.qIdx=qIdx+1;
+      setDisplayQIdx(qIdx+1);
+      coachSay(msg,()=>openMic());
+    }
   }
   useEffect(()=>{
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -221,7 +267,7 @@ function VoiceMode({onComplete,lang}){
     try{r.speechTimeout=5000;}catch(_){}try{r.endpointerType="SMART";}catch(_){}
     r.onresult=e=>{const latest=e.results[e.results.length-1];const it=latest[0].transcript;setTranscript(it);if(!latest.isFinal)return;if(!it.trim()||S.current.busy)return;S.current.busy=true;S.current.wantMic=false;setUiStatus("thinking");handleAnswer(it.trim());};
     r.onerror=e=>{if(e.error==="no-speech"){if(S.current.wantMic&&!S.current.busy)try{r.start();}catch(_){}return;}S.current.wantMic=false;setMicErr(e.error==="not-allowed"?"Mic blocked.":"Mic error: "+e.error);setUiStatus("idle");};
-    r.onend=()=>{if(S.current.wantMic&&!S.current.busy){setTimeout(()=>{if(S.current.wantMic&&!S.current.busy)try{r.start();}catch(_){}},400);}else{setUiStatus(u=>u==="listening"?"idle":u);}};
+    r.onend=()=>{if(S.current.wantMic&&!S.current.busy&&!S.current.paused){setTimeout(()=>{if(S.current.wantMic&&!S.current.busy&&!S.current.paused)try{r.start();}catch(_){}},800);}else{setUiStatus(u=>u==="listening"?"idle":u);}};
     recogRef.current=r;
     return()=>{
       S.current.wantMic=false;
@@ -269,7 +315,23 @@ function VoiceMode({onComplete,lang}){
       {transcript&&(<div style={{background:"#F0F7FF",border:"2px solid "+NAVY,borderRadius:10,padding:"10px 14px",width:"100%",boxSizing:"border-box",fontSize:14,color:GRAY800,lineHeight:1.7}}><div style={{fontSize:11,color:GRAY400,marginBottom:4,fontWeight:600}}>YOU SAID:</div>{transcript}</div>)}
       <button onClick={pauseSession} style={{marginTop:4,background:"none",border:"1.5px solid "+GRAY300,borderRadius:8,padding:"6px 18px",fontSize:12,color:GRAY600,cursor:"pointer",fontWeight:600}}>Pause Session</button>
     </div>
-    {activeQ&&(<details style={{marginTop:8}}><summary style={{fontSize:12,color:GRAY400,cursor:"pointer",userSelect:"none"}}>Q{activeQ.num} of {ALL_QUESTIONS.length} — <span style={{textDecoration:"underline"}}>{t.seeQuestion}</span></summary><div style={{marginTop:8,padding:"10px 14px",background:GRAY50,borderRadius:10,fontSize:13,color:GRAY600,lineHeight:1.6}}><strong style={{color:NAVY}}>{activeQ.label}</strong><br/>{activeQ.hint}</div></details>)}
+              {activeQ&&(
+            <div style={{marginTop:12,padding:"12px 14px",background:GRAY50,borderRadius:10}}>
+              <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:6}}>
+                <span style={{background:NAVY,color:YELLOW,borderRadius:6,padding:"1px 6px",fontSize:11,fontWeight:700}}>Q{activeQ.num}</span>
+                <span style={{fontWeight:700,color:NAVY,fontSize:13}}>{activeQ.label}</span>
+              </div>
+              <p style={{fontSize:12,color:GRAY600,margin:"0 0 8px",lineHeight:1.5}}>{activeQ.hint}</p>
+              {activeQ.examples&&activeQ.examples.length>0&&(
+                <div style={{borderTop:"1px solid "+GRAY200,paddingTop:8}}>
+                  <p style={{fontSize:10,fontWeight:700,color:GRAY400,margin:"0 0 6px",textTransform:"uppercase",letterSpacing:"0.06em"}}>Examples</p>
+                  {activeQ.examples.map((ex,i)=>(
+                    <p key={i} style={{fontSize:12,color:GRAY800,margin:"0 0 4px",lineHeight:1.5,fontStyle:"italic"}}>"{ex}"</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
     </Card>)}
     {!paused&&uiStatus!=="idle"&&<div style={{marginBottom:12,marginTop:8}}><div style={{background:GRAY200,borderRadius:99,height:6,overflow:"hidden"}}><div style={{background:YELLOW,borderRadius:99,height:6,width:Math.round((answeredCount/ALL_QUESTIONS.length)*100)+"%",transition:"width 0.4s"}}/></div></div>}
     {uiStatus==="idle"&&!paused&&(<div style={{textAlign:"center",marginTop:8,display:"flex",flexDirection:"column",alignItems:"center",gap:10}}><Btn onClick={handleStart}>{t.voiceStart}</Btn><button onClick={()=>{S.current.answers={...SAMPLE_ANSWERS};S.current.qIdx=ALL_QUESTIONS.length-1;setDisplayAnswers({...SAMPLE_ANSWERS});setDisplayQIdx(ALL_QUESTIONS.length-1);setCoachMsg("Dev mode - all answers filled.");setUiStatus("done");}} style={{background:"#1a1a2e",color:YELLOW,border:"1.5px dashed "+YELLOW,borderRadius:8,padding:"6px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Dev: Auto-fill all answers</button></div>)}
@@ -330,6 +392,12 @@ function TypeMode({onComplete,lang,savedAnswers,onAnswerChange}){
       <div style={{background:GRAY100,borderRadius:99,height:18,overflow:"hidden",position:"relative"}}><div style={{background:pct===100?GREEN:"linear-gradient(90deg,#FEB705,#f5a800)",borderRadius:99,height:"100%",width:pct+"%",transition:"width 0.5s ease",position:"relative"}}>{pct>8&&<span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",fontSize:11,fontWeight:800,color:NAVY}}>{pct}%</span>}</div></div>
     </div>
     <div style={{background:WHITE,borderRadius:16,padding:28,boxShadow:"0 4px 24px rgba(0,41,66,0.08)",marginBottom:16}}>
+      {/* Inspiration above question */}
+      <div style={{marginBottom:16}}>
+        <button onClick={handleInspiration} style={{background:"transparent",border:"2px dashed "+GRAY300,borderRadius:10,padding:"7px 16px",fontSize:13,color:GRAY600,cursor:"pointer",fontWeight:600,display:"inline-flex",alignItems:"center",gap:6}}>💡 {showInspiration?"Hide inspiration":"Need inspiration?"}</button>
+        {showInspiration&&(<div style={{marginTop:10,background:"#FFFBEB",border:"1.5px solid "+YELLOW,borderRadius:12,padding:18}}><p style={{fontSize:11,fontWeight:700,color:GRAY600,margin:"0 0 12px",textTransform:"uppercase",letterSpacing:"0.06em"}}>Example answers — use as a guide only</p>{inspirationLoading?<p style={{fontSize:13,color:GRAY400,fontStyle:"italic",margin:0}}>Loading...</p>:(inspirationExamples.length>0?inspirationExamples:q.examples||[]).map((ex,i,arr)=>(<div key={i} style={{marginBottom:i<arr.length-1?12:0}}><p style={{fontSize:13,color:GRAY800,margin:0,lineHeight:1.7,fontStyle:"italic"}}>"{ex}"</p>{i<arr.length-1&&<div style={{borderTop:"1px solid "+GRAY200,marginTop:12}}/>}</div>))}</div>)}
+      </div>
+
       <div style={{display:"flex",alignItems:"flex-start",gap:12,marginBottom:10}}><span style={{background:NAVY,color:YELLOW,borderRadius:8,padding:"5px 12px",fontSize:13,fontWeight:800,flexShrink:0,marginTop:2}}>Q{q.num}</span><span style={{fontWeight:800,color:NAVY,fontSize:18,lineHeight:1.4}}>{q.question}</span></div>
       <p style={{fontSize:14,color:GRAY600,margin:"0 0 16px",lineHeight:1.7}}>{q.hint}</p>
       {q.fearChips&&(<div style={{marginBottom:16}}><p style={{fontSize:11,fontWeight:700,color:GRAY400,margin:"0 0 8px",textTransform:"uppercase",letterSpacing:"0.06em"}}>Pick the fear you focus on</p><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{q.fearChips.map((chip,i)=>{const selected=value.toLowerCase().includes(chip.toLowerCase());return(<button key={i} onClick={()=>{if(!value.toLowerCase().includes(chip.toLowerCase()))onAnswerChange(q.id,chip+". "+value);}} style={{background:selected?NAVY:GRAY50,color:selected?YELLOW:GRAY800,border:"2px solid "+(selected?NAVY:GRAY200),borderRadius:99,padding:"7px 16px",fontSize:13,fontWeight:700,cursor:"pointer"}}>{selected?"✓ ":""}{chip}</button>);})}</div></div>)}
@@ -345,10 +413,7 @@ function TypeMode({onComplete,lang,savedAnswers,onAnswerChange}){
         <Btn variant="primary" onClick={handleNext} style={{minWidth:0}}>{isLast?"Generate Post →":"Next →"}</Btn>
       </div>
     </div>
-    <div style={{marginBottom:20}}>
-      <button onClick={handleInspiration} style={{background:"transparent",border:"2px dashed "+GRAY300,borderRadius:10,padding:"9px 20px",fontSize:13,color:GRAY600,cursor:"pointer",fontWeight:600,display:"inline-flex",alignItems:"center",gap:6}}>💡 {showInspiration?"Hide inspiration":"Need inspiration?"}</button>
-      {showInspiration&&(<div style={{marginTop:10,background:"#FFFBEB",border:"1.5px solid "+YELLOW,borderRadius:12,padding:18}}><p style={{fontSize:11,fontWeight:700,color:GRAY600,margin:"0 0 12px",textTransform:"uppercase",letterSpacing:"0.06em"}}>Example answers — use as a guide only</p>{inspirationLoading?<p style={{fontSize:13,color:GRAY400,fontStyle:"italic",margin:0}}>Loading...</p>:(inspirationExamples.length>0?inspirationExamples:q.examples||[]).map((ex,i,arr)=>(<div key={i} style={{marginBottom:i<arr.length-1?12:0}}><p style={{fontSize:13,color:GRAY800,margin:0,lineHeight:1.7,fontStyle:"italic"}}>"{ex}"</p>{i<arr.length-1&&<div style={{borderTop:"1px solid "+GRAY200,marginTop:12}}/>}</div>))}</div>)}
-    </div>
+
   </div>);
 }
 
@@ -372,7 +437,7 @@ function LeadEngagement({onBack,onAmplify}){
   function reset(){setActive(null);setSubtype(null);setLikeCount(1);}
   function ScriptBox({text,idx}){return(<div style={{background:GRAY50,border:"1.5px solid "+GRAY200,borderRadius:12,padding:"14px 16px",marginBottom:10}}><p style={{fontSize:14,color:GRAY800,lineHeight:1.8,margin:"0 0 10px",fontStyle:"italic"}}>"{text}"</p><button onClick={()=>copyText(text,idx)} style={{background:copiedIdx===idx?GREEN:NAVY,color:copiedIdx===idx?WHITE:YELLOW,border:"none",borderRadius:8,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>{copiedIdx===idx?"Copied!":"Copy Script"}</button></div>);}
   function StepNum({n,text}){return(<div style={{display:"flex",gap:10,alignItems:"flex-start",margin:"16px 0 8px"}}><div style={{background:YELLOW,color:NAVY,borderRadius:99,width:24,height:24,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:12,flexShrink:0,marginTop:1}}>{n}</div><div style={{fontWeight:700,color:NAVY,fontSize:14,paddingTop:2}}>{text}</div></div>);}
-  if(!watched){return(<><Card><SectionHeader emoji="🎉" title="Session Complete - Now We Execute" subtitle="Watch this training video before working your leads."/><div style={{background:"#EFF6FF",borderRadius:12,padding:16,marginBottom:16}}><p style={{margin:"0 0 12px",fontSize:14,color:NAVY,fontWeight:600}}>Lead Engagement Training Video</p><div style={{position:"relative",paddingBottom:"56.25%",height:0,borderRadius:10,overflow:"hidden",marginBottom:14}}><iframe src="https://fast.wistia.net/embed/iframe/indqjc1oov?autoPlay=false" title="Lead Engagement Training" allowFullScreen style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none",borderRadius:10}}/></div><Btn onClick={()=>setWatched(true)}>I watched the video - show me the playbook</Btn></div><div style={{borderTop:"1px solid "+GRAY200,paddingTop:12}}><p style={{fontSize:12,color:GRAY400,margin:0}}>Already watched? <button onClick={()=>setWatched(true)} style={{background:"none",border:"none",color:NAVY,fontSize:12,fontWeight:700,cursor:"pointer",textDecoration:"underline",padding:0}}>Skip</button></p></div></Card><BottomNav onBack={onBack}/><NavSpacer/></>);}
+  if(!watched){return(<><Card><SectionHeader emoji="🎉" title="Session Complete - Now We Execute" subtitle="Watch this training video before working your leads."/><div style={{background:"#EFF6FF",borderRadius:12,padding:16,marginBottom:16}}><p style={{margin:"0 0 12px",fontSize:14,color:NAVY,fontWeight:600}}>Lead Engagement Training Video</p><div style={{position:"relative",paddingBottom:"56.25%",height:0,borderRadius:10,overflow:"hidden",marginBottom:14}}><iframe src="https://fast.wistia.net/embed/iframe/indqjc1oov?autoPlay=false" title="Lead Engagement Training" allowFullScreen style={{position:"absolute",top:0,left:0,width:"100%",height:"100%",border:"none",borderRadius:10}}/></div><Btn onClick={()=>setWatched(true)}>I watched the video - show me the playbook</Btn></div><div style={{borderTop:"1px solid "+GRAY200,paddingTop:12}}><p style={{fontSize:12,color:GRAY400,margin:0}}>Already watched? <button onClick={()=>setWatched(true)} style={{background:"none",border:"none",color:NAVY,fontSize:12,fontWeight:700,cursor:"pointer",textDecoration:"underline",padding:0}}>Skip</button></p></div><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:24,paddingTop:20,borderTop:"1px solid "+GRAY100}}><Btn variant="ghost" onClick={onBack}>← Back</Btn><Btn variant="primary" onClick={()=>setWatched(true)}>Next →</Btn></div></Card></>);}
   return(<>
     <Card style={{background:NAVY,marginBottom:16}}>
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
