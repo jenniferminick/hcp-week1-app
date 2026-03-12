@@ -135,7 +135,7 @@ async function findFacebookGroups(city,count){
   const cleaned=reply.replace(/```json/gi,"").replace(/```/g,"").trim();
   const s=cleaned.indexOf("["),e=cleaned.lastIndexOf("]");
   if(s===-1||e===-1)return [];
-  try{const p=JSON.parse(cleaned.slice(s,e+1));return Array.isArray(p)?p.filter(g=>g.name).map(g=>({...g,url:"https://www.facebook.com/search/top/?q="+encodeURIComponent(g.name)+"&type=groups"})).sort((a,b)=>a.privacy==="Public"?-1:1):[];}catch(e){return [];}
+  try{const p=JSON.parse(cleaned.slice(s,e+1));return Array.isArray(p)?p.filter(g=>g.name).map(g=>({...g,url:"https://www.facebook.com/groups/search/?q="+encodeURIComponent(g.name)})).sort((a,b)=>a.privacy==="Public"?-1:1):[];}catch(e){return [];}
 }
 async function generateAIPost(ans){
   const city=(ans.area||"").split(/[,\.]/)[0].trim()||"my city";
@@ -222,10 +222,35 @@ function VoiceMode({onComplete,lang}){
     r.onresult=e=>{const latest=e.results[e.results.length-1];const it=latest[0].transcript;setTranscript(it);if(!latest.isFinal)return;if(!it.trim()||S.current.busy)return;S.current.busy=true;S.current.wantMic=false;setUiStatus("thinking");handleAnswer(it.trim());};
     r.onerror=e=>{if(e.error==="no-speech"){if(S.current.wantMic&&!S.current.busy)try{r.start();}catch(_){}return;}S.current.wantMic=false;setMicErr(e.error==="not-allowed"?"Mic blocked.":"Mic error: "+e.error);setUiStatus("idle");};
     r.onend=()=>{if(S.current.wantMic&&!S.current.busy){setTimeout(()=>{if(S.current.wantMic&&!S.current.busy)try{r.start();}catch(_){}},400);}else{setUiStatus(u=>u==="listening"?"idle":u);}};
-    recogRef.current=r;return()=>{S.current.wantMic=false;try{r.stop();}catch(_){}};
+    recogRef.current=r;
+    return()=>{
+      S.current.wantMic=false;
+      S.current.busy=false;
+      try{r.stop();}catch(_){}
+      if(currentAudioRef.current){currentAudioRef.current.pause();currentAudioRef.current=null;}
+      if(window.speechSynthesis) window.speechSynthesis.cancel();
+    };
   },[lang]);
   function handleStart(){const first=ALL_QUESTIONS.findIndex(q=>!S.current.answers[q.id]);const idx=first===-1?0:first;S.current.qIdx=idx;setDisplayQIdx(idx);S.current.followupCount=0;const q=ALL_QUESTIONS[idx];const firstQ=q.voiceQ||q.hint;const intro=idx>0?"Welcome back! "+firstQ:"Alright, let us build your story! Just talk to me like a friend. Here we go: "+firstQ;coachSay(intro,()=>openMic());}
-  function handleRerecord(id){S.current.rerecordId=id;S.current.followupCount=0;const q=ALL_QUESTIONS.find(x=>x.id===id);setTranscript("");coachSay("No problem, let us redo that one. "+(q.voiceQ||q.hint),()=>openMic());}
+  function handleRerecord(id){
+    // Stop any currently playing audio immediately before starting re-record
+    if(currentAudioRef.current){
+      currentAudioRef.current.pause();
+      currentAudioRef.current=null;
+    }
+    if(window.speechSynthesis) window.speechSynthesis.cancel();
+    S.current.busy=false;
+    S.current.wantMic=false;
+    closeMic();
+    S.current.rerecordId=id;
+    S.current.followupCount=0;
+    const q=ALL_QUESTIONS.find(x=>x.id===id);
+    setTranscript("");
+    // Small delay so audio fully stops before new speech starts
+    setTimeout(()=>{
+      coachSay("No problem, let us redo that one. "+(q.voiceQ||q.hint),()=>openMic());
+    },200);
+  }
   const answeredCount=Object.values(displayAnswers).filter(v=>v&&v.trim()).length;
   const activeQ=(S.current.rerecordId?ALL_QUESTIONS.find(x=>x.id===S.current.rerecordId):ALL_QUESTIONS[displayQIdx])||ALL_QUESTIONS[0];
   const isListening=uiStatus==="listening",isThinking=uiStatus==="thinking",isSpeaking=uiStatus==="speaking";
@@ -554,7 +579,7 @@ export default function App(){
               <span style={{background:"#EF4444",color:"#FFFFFF",borderRadius:99,padding:"5px 18px",fontSize:13,fontWeight:800}}>Advertisement</span>
               <span style={{fontSize:13,color:"#991B1B",fontWeight:600}}>These kill the neighbor feel instantly</span>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:4}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:24}}>
               {[
                 "https://i.imgur.com/l8KAdix.png",
                 "https://i.imgur.com/vCVlGIm.png",
@@ -564,6 +589,11 @@ export default function App(){
                   <img src={url} alt="Advertisement example" style={{width:"100%",height:"100%",objectFit:"cover",display:"block",filter:"grayscale(20%)"}} onError={e=>{e.target.style.display="none";}}/>
                 </div>
               ))}
+            </div>
+
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:20,borderTop:"1px solid "+GRAY100}}>
+              <Btn variant="ghost" onClick={()=>setAppPhase("getpost")}>← Back</Btn>
+              <Btn variant="primary" onClick={()=>setAppPhase("dopost")}>Next →</Btn>
             </div>
           </Card>
   
@@ -620,7 +650,7 @@ export default function App(){
             {postCount===9&&!tenDone&&<Btn variant="success" onClick={()=>{setTenDone(true);setCompletedSections(prev=>prev.includes("grouppost")?prev:[...prev,"grouppost"]);saveSubmission(answers,post,"10 Groups Done");}}>10 Groups Done!</Btn>}
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:24,paddingTop:20,borderTop:"1px solid "+GRAY100}}>
               <Btn variant="ghost" onClick={()=>setAppPhase("approval")}>← Back</Btn>
-              <Btn variant="primary" onClick={()=>setAppPhase("leads")} disabled={!tenDone} style={{opacity:tenDone?1:0.4}}>Next →</Btn>
+              <Btn variant="primary" onClick={()=>setAppPhase("leads")} disabled={postCount<9} style={{opacity:postCount>=9?1:0.4}}>Next →</Btn>
             </div>
           </Card>
           {tenDone&&(<Card style={{background:NAVY,textAlign:"center"}}><div style={{fontSize:48,marginBottom:8}}>🎯</div><h2 style={{color:YELLOW,fontSize:24,margin:"0 0 8px"}}>WEEK 1 GOAL ACHIEVED</h2><p style={{color:WHITE,fontSize:15,lineHeight:1.8,margin:"0 0 20px"}}>10 groups. 10 posts. Mission accomplished.</p><Btn onClick={()=>setAppPhase("leads")}>Open Lead Engagement</Btn></Card>)}
