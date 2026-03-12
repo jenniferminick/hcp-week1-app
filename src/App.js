@@ -135,7 +135,7 @@ async function findFacebookGroups(city,count){
   const cleaned=reply.replace(/```json/gi,"").replace(/```/g,"").trim();
   const s=cleaned.indexOf("["),e=cleaned.lastIndexOf("]");
   if(s===-1||e===-1)return [];
-  try{const p=JSON.parse(cleaned.slice(s,e+1));return Array.isArray(p)?p.filter(g=>g.name).map(g=>({...g,url:"https://www.facebook.com/search/groups/?q="+encodeURIComponent(g.name)})).sort((a,b)=>a.privacy==="Public"?-1:1):[];}catch(e){return [];}
+  try{const p=JSON.parse(cleaned.slice(s,e+1));return Array.isArray(p)?p.filter(g=>g.name).map(g=>({...g,url:"https://www.facebook.com/search/top/?q="+encodeURIComponent(g.name)+"&type=groups"})).sort((a,b)=>a.privacy==="Public"?-1:1):[];}catch(e){return [];}
 }
 async function generateAIPost(ans){
   const city=(ans.area||"").split(/[,\.]/)[0].trim()||"my city";
@@ -265,10 +265,19 @@ function GetPost({allCh3Met,post,postLoading,postError,answers,onGenerate,onSetP
       {!allCh3Met&&(<><p style={{fontSize:13,fontWeight:600,color:NAVY,margin:"0 0 8px"}}>Or paste your existing post here:</p><textarea value={post} onChange={e=>onSetPost(e.target.value)} rows={10} placeholder="Paste your Facebook post here..." style={{width:"100%",boxSizing:"border-box",border:"2px solid "+(post?NAVY:GRAY200),borderRadius:12,padding:16,fontSize:14,lineHeight:1.8,color:GRAY800,fontFamily:"inherit",resize:"vertical",background:post?"#F0F7FF":GRAY50,outline:"none"}}/></>)}
       {postLoading&&(<div style={{textAlign:"center",padding:40}}><div style={{fontSize:32,marginBottom:12}}>✨</div><p style={{color:GRAY600,fontSize:14,marginBottom:4}}>Writing your post...</p><p style={{color:GRAY400,fontSize:13}}>This takes about 15 seconds.</p></div>)}
       {postError&&!postLoading&&(<div style={{background:"#FEF2F2",borderRadius:10,padding:14,marginBottom:16,color:RED,fontSize:13}}>{postError}</div>)}
-      {post&&!postLoading&&(<><textarea value={post} onChange={e=>onSetPost(e.target.value)} rows={16} style={{width:"100%",boxSizing:"border-box",border:"2px solid "+NAVY,borderRadius:12,padding:16,fontSize:14,lineHeight:1.8,color:GRAY800,fontFamily:"inherit",resize:"vertical",background:GRAY50,outline:"none",marginBottom:14}}/><div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}><Btn onClick={handleCopy} variant={copied?"success":"primary"}>{copied?"✓ Copied!":"📋 Copy Post"}</Btn><button onClick={()=>onGenerate(answers)} disabled={postLoading} style={{background:"none",border:"2px solid "+GRAY300,borderRadius:10,padding:"10px 18px",fontSize:13,fontWeight:700,color:GRAY600,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6}}>↺ Regenerate</button></div></>)}
+              {post&&!postLoading&&(<>
+          <textarea value={post} onChange={e=>onSetPost(e.target.value)} rows={16} style={{width:"100%",boxSizing:"border-box",border:"2px solid "+NAVY,borderRadius:12,padding:16,fontSize:14,lineHeight:1.8,color:GRAY800,fontFamily:"inherit",resize:"vertical",background:GRAY50,outline:"none",marginBottom:14}}/>
+          <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center",marginBottom:20}}>
+            <Btn onClick={handleCopy} variant={copied?"success":"primary"}>{copied?"✓ Copied!":"📋 Copy Post"}</Btn>
+            <button onClick={()=>onGenerate(answers)} disabled={postLoading} style={{background:"none",border:"2px solid "+GRAY300,borderRadius:10,padding:"10px 18px",fontSize:13,fontWeight:700,color:GRAY600,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6}}>↺ Regenerate</button>
+          </div>
+        </>)}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8,paddingTop:20,borderTop:"1px solid "+GRAY100}}>
+          <Btn variant="ghost" onClick={onBack}>← Back</Btn>
+          <Btn variant="primary" onClick={copied?onNext:undefined} disabled={!copied} style={{opacity:copied?1:0.4}}>Next: Add Photo →</Btn>
+        </div>
     </Card>
-    <BottomNav onBack={onBack} onNext={copied?onNext:undefined} nextDisabled={!copied} nextLabel="Next: Add Photo →"/>
-    <NavSpacer/>
+
   </>);
 }
 
@@ -345,10 +354,17 @@ function LeadEngagement({onBack,onAmplify}){
         <div><h2 style={{color:YELLOW,fontSize:20,fontWeight:900,margin:"0 0 4px"}}>Work Your Leads</h2><p style={{color:GRAY400,fontSize:13,margin:0}}>Pick the type of engagement. Follow the steps. Book the job.</p></div>
         <div style={{display:"flex",gap:10}}>
           <div style={{background:"rgba(255,255,255,0.08)",borderRadius:12,padding:"10px 16px",textAlign:"center",minWidth:72}}><div style={{color:YELLOW,fontWeight:900,fontSize:24,lineHeight:1}}>{sessionTotal}</div><div style={{color:GRAY400,fontSize:10,marginTop:3}}>this session</div></div>
-          <div style={{background:"rgba(16,185,129,0.15)",border:"1px solid rgba(16,185,129,0.3)",borderRadius:12,padding:"10px 16px",textAlign:"center",minWidth:72,cursor:"pointer"}} onClick={()=>setShowJobEntry(v=>!v)}><div style={{color:GREEN,fontWeight:900,fontSize:24,lineHeight:1}}>{totalJobs}</div><div style={{color:GREEN,fontSize:10,marginTop:3}}>jobs booked</div></div>
+          <div style={{background:"rgba(16,185,129,0.15)",border:"1px solid rgba(16,185,129,0.3)",borderRadius:12,padding:"10px 16px",textAlign:"center",minWidth:72}}>
+            <div style={{color:GREEN,fontWeight:900,fontSize:24,lineHeight:1}}>{totalJobs}</div>
+            <div style={{color:GREEN,fontSize:10,marginTop:3}}>jobs booked</div>
+          </div>
         </div>
       </div>
-      {showJobEntry&&(<div style={{marginTop:14,padding:"14px 16px",background:"rgba(255,255,255,0.06)",borderRadius:10,display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}><span style={{color:WHITE,fontSize:13,fontWeight:600}}>Jobs booked from this post?</span><input type="number" min="1" value={jobsInput} onChange={e=>setJobsInput(e.target.value)} placeholder="e.g. 2" style={{width:72,border:"2px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"7px 10px",fontSize:16,fontWeight:800,color:NAVY,outline:"none",textAlign:"center",background:WHITE}}/><Btn onClick={()=>{const n=parseInt(jobsInput);if(n>0){setTotalJobs(j=>j+n);setJobsInput("");setShowJobEntry(false);}}} disabled={!jobsInput||parseInt(jobsInput)<1} style={{fontSize:13}}>Add</Btn></div>)}
+      <div style={{marginTop:14,padding:"14px 16px",background:"rgba(255,255,255,0.08)",borderRadius:10,display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+        <span style={{color:WHITE,fontSize:13,fontWeight:600}}>+ Log a booked job:</span>
+        <input type="number" min="1" value={jobsInput} onChange={e=>setJobsInput(e.target.value)} placeholder="# of jobs" style={{width:90,border:"2px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"7px 10px",fontSize:15,fontWeight:800,color:NAVY,outline:"none",textAlign:"center",background:WHITE}}/>
+        <Btn onClick={()=>{const n=parseInt(jobsInput);if(n>0){setTotalJobs(j=>j+n);setJobsInput("");}}} disabled={!jobsInput||parseInt(jobsInput)<1} style={{fontSize:13}}>Add Jobs</Btn>
+      </div>
       <div style={{marginTop:14,padding:"12px 16px",background:"rgba(255,255,255,0.06)",borderRadius:10}}><p style={{color:WHITE,fontSize:13,margin:0}}>Time kills deals. First 24-48 hours are everything.</p></div>
     </Card>
     {!active&&(<Card><h3 style={{color:NAVY,fontSize:17,fontWeight:800,margin:"0 0 6px"}}>What kind of engagement did you get?</h3><p style={{color:GRAY600,fontSize:13,margin:"0 0 20px"}}>Tap one to get exact steps and scripts.</p><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>{LEAD_TYPES.map(lt=>(<button key={lt.id} onClick={()=>{setActive(lt.id);setSubtype(null);}} style={{background:lt.color,border:"2px solid "+lt.border,borderRadius:14,padding:"18px 16px",cursor:"pointer",textAlign:"left",display:"flex",flexDirection:"column",gap:6}}><span style={{fontSize:32}}>{lt.emoji}</span><span style={{fontWeight:800,color:NAVY,fontSize:15}}>{lt.label}</span>{sessionCounts[lt.id]>0&&<span style={{fontSize:11,color:GRAY600,fontWeight:600}}>{sessionCounts[lt.id]} this session</span>}</button>))}</div></Card>)}
@@ -470,7 +486,19 @@ export default function App(){
       {appPhase==="voice"&&(<><VoiceMode onComplete={va=>{setAnswers(va);setAppPhase("getpost");}} lang={lang}/><BottomNav onBack={()=>setAppPhase("writechoice")}/><NavSpacer/></>)}
       {(appPhase==="ch1"||appPhase==="ch2"||appPhase==="ch3")&&(<TypeMode onComplete={va=>{setAnswers(va);setAppPhase("getpost");}} lang={lang} savedAnswers={answers} onAnswerChange={(id,val)=>setAnswers(prev=>({...prev,[id]:val}))}/>)}
 
-      {appPhase==="groups"&&(<><Card><SectionHeader emoji="🧭" title="Step 1 - Join a Group" subtitle="Find an active local Facebook group and join it. You only need one to start."/>{!answers.area&&(<div style={{background:"#EFF6FF",borderRadius:10,padding:"12px 16px",marginBottom:16}}><p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:NAVY}}>What city or area do you serve?</p><div style={{display:"flex",gap:8}}><input value={manualCity} onChange={e=>setManualCity(e.target.value)} placeholder="e.g. East Nashville" style={{flex:1,border:"2px solid "+GRAY200,borderRadius:8,padding:"8px 12px",fontSize:14,outline:"none",fontFamily:"inherit"}}/><button onClick={()=>{setGroups5([]);setGroupsError("");}} style={{background:NAVY,color:YELLOW,border:"none",borderRadius:8,padding:"8px 16px",fontWeight:700,fontSize:13,cursor:"pointer"}}>Search</button></div></div>)}{groupsLoading&&<div style={{textAlign:"center",padding:32}}><p style={{color:GRAY600}}>Finding groups near {city}...</p></div>}{groupsError&&<div style={{background:"#FEF2F2",borderRadius:10,padding:14,marginBottom:16,color:RED,fontSize:13}}>{groupsError}</div>}{!groupsLoading&&groups5.length>0&&(<><div style={{background:"#EFF6FF",borderRadius:10,padding:"10px 14px",marginBottom:14,fontSize:13,color:NAVY,lineHeight:1.6}}>Click a group name to open Facebook. Find it, click in, and join.</div><GroupTable groups={groups5} showNum={false}/></>)}</Card><BottomNav onBack={()=>setAppPhase("lane")} onNext={()=>setAppPhase("getpost")}/><NavSpacer/></>)}
+      {appPhase==="groups"&&(
+        <Card>
+          <SectionHeader emoji="🧭" title="Step 1 - Join a Group" subtitle="Find an active local Facebook group and join it. You only need one to start."/>
+          {!answers.area&&(<div style={{background:"#EFF6FF",borderRadius:10,padding:"12px 16px",marginBottom:16}}><p style={{margin:"0 0 8px",fontSize:13,fontWeight:600,color:NAVY}}>What city or area do you serve?</p><div style={{display:"flex",gap:8}}><input value={manualCity} onChange={e=>setManualCity(e.target.value)} placeholder="e.g. East Nashville" style={{flex:1,border:"2px solid "+GRAY200,borderRadius:8,padding:"8px 12px",fontSize:14,outline:"none",fontFamily:"inherit"}}/><button onClick={()=>{setGroups5([]);setGroupsError("");}} style={{background:NAVY,color:YELLOW,border:"none",borderRadius:8,padding:"8px 16px",fontWeight:700,fontSize:13,cursor:"pointer"}}>Search</button></div></div>)}
+          {groupsLoading&&<div style={{textAlign:"center",padding:32}}><p style={{color:GRAY600}}>Finding groups near {city}...</p></div>}
+          {groupsError&&<div style={{background:"#FEF2F2",borderRadius:10,padding:14,marginBottom:16,color:RED,fontSize:13}}>{groupsError}</div>}
+          {!groupsLoading&&groups5.length>0&&(<><div style={{background:"#EFF6FF",borderRadius:10,padding:"10px 14px",marginBottom:14,fontSize:13,color:NAVY,lineHeight:1.6}}>Click a group name to open Facebook. Find it, click in, and join.</div><GroupTable groups={groups5} showNum={false}/></>)}
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:24,paddingTop:20,borderTop:"1px solid "+GRAY100}}>
+            <Btn variant="ghost" onClick={()=>setAppPhase("lane")}>← Back</Btn>
+            <Btn variant="primary" onClick={()=>setAppPhase("getpost")}>Next →</Btn>
+          </div>
+        </Card>
+      )}
 
       {appPhase==="getpost"&&(<GetPost allCh3Met={allCh3Met} post={post} postLoading={postLoading} postError={postError} answers={answers} onGenerate={handleGeneratePost} onSetPost={setPost} onNext={()=>setAppPhase("photo")} onBack={()=>setAppPhase("groups")} onWritePost={()=>setAppPhase("writechoice")}/>)}
 
@@ -489,22 +517,18 @@ export default function App(){
 
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:24}}>
               {[
-                {tier:"Good",bg:"#D1FAE5",fg:"#065F46",rec:false,title:"Solo shot on the job",desc:"You on a job site, in front of your truck, or holding tools. Face clearly visible, natural lighting.",lookFor:"A clear photo of your face on a recent job. Nothing staged."},
-                {tier:"Better",bg:"#DBEAFE",fg:"#1D4ED8",rec:false,title:"You with someone real",desc:"You with a family member, neighbor, or happy customer. Two people equals twice the trust.",lookFor:"You and your kid, your spouse, or a customer after a job well done."},
-                {tier:"Best",bg:"#002942",fg:"#FEB705",rec:true,title:"Photo that proves the post",desc:"A photo matching something in your post — your local spot, your hobby, or a moment from your story.",lookFor:"You at your local spot, with your family, or on a job that connects to your hero story."},
+                {tier:"Good",bg:"#D1FAE5",fg:"#065F46",rec:false,title:"Solo shot on the job",desc:"You on a job site, in front of your truck, or holding tools. Face clearly visible, natural lighting."},
+                {tier:"Better",bg:"#DBEAFE",fg:"#1D4ED8",rec:false,title:"You with someone real",desc:"You with a family member, neighbor, or happy customer. Two people equals twice the trust."},
+                {tier:"Best",bg:"#002942",fg:"#FEB705",rec:true,title:"Photo that proves the post",desc:"A photo matching something in your post — your local spot, your hobby, or a moment from your story."},
               ].map((t,i)=>(
                 <div key={i} style={{borderRadius:14,border:"2px solid "+(t.rec?"#002942":"#E2E8F0"),display:"flex",flexDirection:"column",background:"#FFFFFF",overflow:"hidden",boxShadow:t.rec?"0 6px 24px rgba(0,41,66,0.2)":"none"}}>
                   <div style={{background:t.bg,padding:"11px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                     <span style={{fontWeight:900,color:t.fg,fontSize:15}}>{t.tier}</span>
                     {t.rec&&<span style={{fontSize:10,color:"#FEB705",fontWeight:800,background:"rgba(255,255,255,0.15)",borderRadius:99,padding:"2px 8px"}}>RECOMMENDED</span>}
                   </div>
-                  <div style={{padding:16,flex:1,display:"flex",flexDirection:"column",gap:10}}>
-                    <p style={{fontWeight:800,color:"#002942",fontSize:14,margin:0}}>{t.title}</p>
-                    <p style={{fontSize:13,color:"#475569",margin:0,lineHeight:1.65}}>{t.desc}</p>
-                    <div style={{marginTop:"auto",paddingTop:12,borderTop:"1px dashed #E2E8F0"}}>
-                      <p style={{fontSize:10,fontWeight:800,color:"#94A3B8",margin:"0 0 4px",textTransform:"uppercase",letterSpacing:"0.07em"}}>Look for</p>
-                      <p style={{fontSize:12,color:"#1E293B",margin:0,lineHeight:1.55,fontStyle:"italic"}}>"{t.lookFor}"</p>
-                    </div>
+                  <div style={{padding:16,flex:1}}>
+                    <p style={{fontWeight:800,color:"#002942",fontSize:14,margin:"0 0 8px"}}>{t.title}</p>
+                    <p style={{fontSize:13,color:t.rec?"#94A3B8":"#475569",margin:0,lineHeight:1.65}}>{t.desc}</p>
                   </div>
                 </div>
               ))}
@@ -516,18 +540,12 @@ export default function App(){
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:24}}>
               {[
-                {url:"https://i.imgur.com/F7Ur9Rf.png",label:"You with family",desc:"Real face, natural setting, feels like a neighbor."},
-                {url:"https://i.imgur.com/HWxgfnO.png",label:"You at your local spot",desc:"Connects the post to a real place in the community."},
-                {url:"https://i.imgur.com/Cv43HJt.png",label:"Candid job-site photo",desc:"Shows you working — authentic, no staging needed."},
-              ].map((p,i)=>(
-                <div key={i} style={{borderRadius:12,overflow:"hidden",border:"2px solid #86EFAC",background:"#F0FDF4",display:"flex",flexDirection:"column"}}>
-                  <div style={{position:"relative",aspectRatio:"1",background:"#D1FAE5",overflow:"hidden"}}>
-                    <img src={p.url} alt={p.label} style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>{e.target.style.display="none";}}/>
-                  </div>
-                  <div style={{padding:"10px 12px"}}>
-                    <p style={{fontWeight:800,color:"#065F46",fontSize:13,margin:"0 0 4px"}}>{p.label}</p>
-                    <p style={{fontSize:11,color:"#065F46",margin:0,lineHeight:1.5}}>{p.desc}</p>
-                  </div>
+                "https://i.imgur.com/F7Ur9Rf.png",
+                "https://i.imgur.com/HWxgfnO.png",
+                "https://i.imgur.com/Cv43HJt.png",
+              ].map((url,i)=>(
+                <div key={i} style={{borderRadius:12,overflow:"hidden",border:"2px solid #86EFAC",background:"#D1FAE5",aspectRatio:"1"}}>
+                  <img src={url} alt="Anti-Ad example" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>{e.target.style.display="none";}}/>
                 </div>
               ))}
             </div>
@@ -538,37 +556,76 @@ export default function App(){
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:4}}>
               {[
-                {url:"https://i.imgur.com/l8KAdix.png",label:"Truck or equipment only",desc:"No face, no connection. People buy from people, not vehicles."},
-                {url:"https://i.imgur.com/vCVlGIm.png",label:"Logo, flyer, or graphic",desc:"Looks like an ad. The whole point of this post is that it is NOT an ad."},
-                {url:"https://i.imgur.com/7rvGL6O.png",label:"Dark selfie or sunglasses",desc:"Can't see your eyes. Hard to trust someone you can't really see."},
-              ].map((p,i)=>(
-                <div key={i} style={{borderRadius:12,overflow:"hidden",border:"2px solid #FCA5A5",background:"#FEF2F2",display:"flex",flexDirection:"column"}}>
-                  <div style={{position:"relative",aspectRatio:"1",background:"#FEE2E2",overflow:"hidden"}}>
-                    <img src={p.url} alt={p.label} style={{width:"100%",height:"100%",objectFit:"cover",display:"block",filter:"grayscale(20%)"}} onError={e=>{e.target.style.display="none";}}/>
-                  </div>
-                  <div style={{padding:"10px 12px"}}>
-                    <p style={{fontWeight:800,color:"#991B1B",fontSize:13,margin:"0 0 4px"}}>✕ {p.label}</p>
-                    <p style={{fontSize:11,color:"#991B1B",margin:0,lineHeight:1.5}}>{p.desc}</p>
-                  </div>
+                "https://i.imgur.com/l8KAdix.png",
+                "https://i.imgur.com/vCVlGIm.png",
+                "https://i.imgur.com/7rvGL6O.png",
+              ].map((url,i)=>(
+                <div key={i} style={{borderRadius:12,overflow:"hidden",border:"2px solid #FCA5A5",background:"#FEE2E2",aspectRatio:"1"}}>
+                  <img src={url} alt="Advertisement example" style={{width:"100%",height:"100%",objectFit:"cover",display:"block",filter:"grayscale(20%)"}} onError={e=>{e.target.style.display="none";}}/>
                 </div>
               ))}
             </div>
           </Card>
-          <BottomNav onBack={()=>setAppPhase("getpost")} onNext={()=>setAppPhase("dopost")}/>
+  
           <NavSpacer/>
         </>
       )}
 
-      {appPhase==="dopost"&&(<><Card><SectionHeader emoji="🚀" title="Step 4 - Post It" subtitle="You are ready. Follow these steps exactly in the Facebook group."/>{[{num:1,text:"Open the Facebook group you joined and tap Write something"},{num:2,text:"Paste your copied post"},{num:3,text:"Attach your photo"},{num:4,text:"Tap Post"}].map(s=>(<div key={s.num} style={{display:"flex",gap:14,marginBottom:18,alignItems:"flex-start"}}><div style={{background:YELLOW,color:NAVY,borderRadius:99,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:16,flexShrink:0}}>{s.num}</div><p style={{margin:0,fontSize:15,color:GRAY800,paddingTop:7,lineHeight:1.6}}>{s.text}</p></div>))}</Card><BottomNav onBack={()=>setAppPhase("photo")} onNext={()=>setAppPhase("approval")}/><NavSpacer/></>)}
+      {appPhase==="dopost"&&(
+        <>
+          <Card>
+            <SectionHeader emoji="🚀" title="Step 4 - Post It" subtitle="You are ready. Follow these steps exactly in the Facebook group."/>
+            {[{num:1,text:"Open the Facebook group you joined and tap Write something"},{num:2,text:"Paste your copied post"},{num:3,text:"Attach your photo"},{num:4,text:"Tap Post"}].map(s=>(
+              <div key={s.num} style={{display:"flex",gap:14,marginBottom:18,alignItems:"flex-start"}}>
+                <div style={{background:YELLOW,color:NAVY,borderRadius:99,width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:16,flexShrink:0}}>{s.num}</div>
+                <p style={{margin:0,fontSize:15,color:GRAY800,paddingTop:7,lineHeight:1.6}}>{s.text}</p>
+              </div>
+            ))}
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:24,paddingTop:20,borderTop:"1px solid "+GRAY100}}>
+              <Btn variant="ghost" onClick={()=>setAppPhase("photo")}>← Back</Btn>
+              <Btn variant="primary" onClick={()=>setAppPhase("approval")}>Next →</Btn>
+            </div>
+          </Card>
+        </>
+      )}
 
-      {appPhase==="approval"&&(<><Card><SectionHeader emoji="📋" title="Step 5 - Coach Approval" subtitle="Let your coach know you are ready for your post audit."/><div style={{background:"#EFF6FF",borderRadius:12,padding:24,marginBottom:24,textAlign:"center"}}><div style={{fontSize:48,marginBottom:10}}>👋</div><p style={{color:NAVY,fontWeight:700,fontSize:15,margin:"0 0 8px"}}>Your post is live!</p><p style={{color:GRAY600,fontSize:14,lineHeight:1.7,margin:0}}>Let your coach know you are ready for your audit. Once reviewed and approved, tap Next below.</p></div></Card><BottomNav onBack={()=>setAppPhase("dopost")} onNext={()=>{saveSubmission(answers,post,"Coach Approved");setAppPhase("replicate");}}/><NavSpacer/></>)}
+      {appPhase==="approval"&&(
+        <Card>
+          <SectionHeader emoji="📋" title="Step 5 - Coach Approval" subtitle="Let your coach know you are ready for your post audit."/>
+          <div style={{background:"#EFF6FF",borderRadius:12,padding:24,marginBottom:24,textAlign:"center"}}>
+            <div style={{fontSize:48,marginBottom:10}}>👋</div>
+            <p style={{color:NAVY,fontWeight:700,fontSize:15,margin:"0 0 8px"}}>Your post is live!</p>
+            <p style={{color:GRAY600,fontSize:14,lineHeight:1.7,margin:0}}>Let your coach know you are ready for your audit. Once reviewed and approved, tap Next below.</p>
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:20,borderTop:"1px solid "+GRAY100}}>
+            <Btn variant="ghost" onClick={()=>setAppPhase("dopost")}>← Back</Btn>
+            <Btn variant="primary" onClick={()=>{saveSubmission(answers,post,"Coach Approved");setAppPhase("replicate");}}>Next →</Btn>
+          </div>
+        </Card>
+      )}
 
-      {appPhase==="replicate"&&(<>
-        <Card><SectionHeader emoji="🔁" title="Step 6 - Cross-Post to 9 More Groups" subtitle="Same post. Same photo. No edits. Hit 10 total to complete your Week 1 goal."/><div style={{background:GRAY50,borderRadius:12,padding:16,marginBottom:20}}>{["Use the exact same post - do not change a single word.","Attach the exact same photo.","Do not add your phone number, website, or any contact info.","Public groups: post immediately. Private groups: join and post once approved."].map((s,i)=>(<div key={i} style={{display:"flex",gap:10,marginBottom:8,alignItems:"flex-start"}}><div style={{background:YELLOW,color:NAVY,borderRadius:99,width:22,height:22,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:11,flexShrink:0,marginTop:1}}>{i+1}</div><p style={{margin:0,fontSize:13,color:GRAY800,lineHeight:1.6}}>{s}</p></div>))}</div>{groupsLoading&&<p style={{color:GRAY600,fontSize:14,textAlign:"center"}}>Loading groups...</p>}{!groupsLoading&&groups20.length>0&&<div style={{marginBottom:20}}><GroupTable groups={groups20} showNum={true}/></div>}</Card>
-        <Card><h3 style={{color:NAVY,margin:"0 0 8px",fontSize:18}}>How many additional groups did you post in?</h3><p style={{color:GRAY600,fontSize:13,marginTop:0,marginBottom:16}}>You already posted in 1 - tap how many more you completed.</p><div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>{[1,2,3,4,5,6,7,8,9].map(n=>(<button key={n} onClick={()=>setPostCount(n)} style={{width:48,height:48,borderRadius:10,border:"2px solid "+(postCount===n?NAVY:GRAY200),background:postCount===n?NAVY:WHITE,color:postCount===n?YELLOW:GRAY600,fontWeight:800,fontSize:16,cursor:"pointer"}}>{n}</button>))}</div>{postCount>0&&postCount<9&&<div style={{background:"#FEF9EC",border:"1.5px solid "+YELLOW,borderRadius:10,padding:"12px 16px",marginBottom:16,fontSize:13,color:GRAY800}}>Posted in <strong>{postCount+1} total groups</strong>. <strong>{9-postCount} more to go.</strong></div>}{postCount===9&&!tenDone&&<Btn variant="success" onClick={()=>{setTenDone(true);setCompletedSections(prev=>prev.includes("grouppost")?prev:[...prev,"grouppost"]);saveSubmission(answers,post,"10 Groups Done");}}>10 Groups Done!</Btn>}</Card>
-        {tenDone&&(<Card style={{background:NAVY,textAlign:"center"}}><div style={{fontSize:48,marginBottom:8}}>🎯</div><h2 style={{color:YELLOW,fontSize:24,margin:"0 0 8px"}}>WEEK 1 GOAL ACHIEVED</h2><p style={{color:WHITE,fontSize:15,lineHeight:1.8,margin:"0 0 20px"}}>10 groups. 10 posts. Mission accomplished.</p><Btn onClick={()=>setAppPhase("leads")}>Open Lead Engagement</Btn></Card>)}
-        <BottomNav onBack={()=>setAppPhase("approval")} onNext={tenDone?()=>setAppPhase("leads"):undefined} nextDisabled={!tenDone}/><NavSpacer/>
-      </>)}
+      {appPhase==="replicate"&&(
+        <>
+          <Card>
+            <SectionHeader emoji="🔁" title="Step 6 - Cross-Post to 9 More Groups" subtitle="Same post. Same photo. No edits. Hit 10 total to complete your Week 1 goal."/>
+            <div style={{background:GRAY50,borderRadius:12,padding:16,marginBottom:20}}>{["Use the exact same post - do not change a single word.","Attach the exact same photo.","Do not add your phone number, website, or any contact info.","Public groups: post immediately. Private groups: join and post once approved."].map((s,i)=>(<div key={i} style={{display:"flex",gap:10,marginBottom:8,alignItems:"flex-start"}}><div style={{background:YELLOW,color:NAVY,borderRadius:99,width:22,height:22,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:11,flexShrink:0,marginTop:1}}>{i+1}</div><p style={{margin:0,fontSize:13,color:GRAY800,lineHeight:1.6}}>{s}</p></div>))}</div>
+            {groupsLoading&&<p style={{color:GRAY600,fontSize:14,textAlign:"center"}}>Loading groups...</p>}
+            {!groupsLoading&&groups20.length>0&&<div style={{marginBottom:20}}><GroupTable groups={groups20} showNum={true}/></div>}
+          </Card>
+          <Card>
+            <h3 style={{color:NAVY,margin:"0 0 8px",fontSize:18}}>How many additional groups did you post in?</h3>
+            <p style={{color:GRAY600,fontSize:13,marginTop:0,marginBottom:16}}>You already posted in 1 - tap how many more you completed.</p>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>{[1,2,3,4,5,6,7,8,9].map(n=>(<button key={n} onClick={()=>setPostCount(n)} style={{width:48,height:48,borderRadius:10,border:"2px solid "+(postCount===n?NAVY:GRAY200),background:postCount===n?NAVY:WHITE,color:postCount===n?YELLOW:GRAY600,fontWeight:800,fontSize:16,cursor:"pointer"}}>{n}</button>))}</div>
+            {postCount>0&&postCount<9&&<div style={{background:"#FEF9EC",border:"1.5px solid "+YELLOW,borderRadius:10,padding:"12px 16px",marginBottom:16,fontSize:13,color:GRAY800}}>Posted in <strong>{postCount+1} total groups</strong>. <strong>{9-postCount} more to go.</strong></div>}
+            {postCount===9&&!tenDone&&<Btn variant="success" onClick={()=>{setTenDone(true);setCompletedSections(prev=>prev.includes("grouppost")?prev:[...prev,"grouppost"]);saveSubmission(answers,post,"10 Groups Done");}}>10 Groups Done!</Btn>}
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:24,paddingTop:20,borderTop:"1px solid "+GRAY100}}>
+              <Btn variant="ghost" onClick={()=>setAppPhase("approval")}>← Back</Btn>
+              <Btn variant="primary" onClick={()=>setAppPhase("leads")} disabled={!tenDone} style={{opacity:tenDone?1:0.4}}>Next →</Btn>
+            </div>
+          </Card>
+          {tenDone&&(<Card style={{background:NAVY,textAlign:"center"}}><div style={{fontSize:48,marginBottom:8}}>🎯</div><h2 style={{color:YELLOW,fontSize:24,margin:"0 0 8px"}}>WEEK 1 GOAL ACHIEVED</h2><p style={{color:WHITE,fontSize:15,lineHeight:1.8,margin:"0 0 20px"}}>10 groups. 10 posts. Mission accomplished.</p><Btn onClick={()=>setAppPhase("leads")}>Open Lead Engagement</Btn></Card>)}
+        </>
+      )}
 
       {appPhase==="leads"&&<LeadEngagement onBack={()=>setAppPhase("replicate")} onAmplify={()=>setAppPhase("amplify")}/>}
       {appPhase==="amplify"&&<AmplifyScreen onBack={()=>setAppPhase("leads")} city={city} totalPosted={postCount+1}/>}
