@@ -41,16 +41,125 @@ const SAMPLE_ANSWERS = {
 };
 
 const ALL_QUESTIONS = [
-  { id:"name",        num:1,  chapter:"ch1", minWords:2,  validate:"name",       label:"Your Name",             question:"What's your first and last name?",                                                                                                          hint:"Write it exactly how you want it shown publicly.",                                                                                                                    examples:["Daniel Reyes","Taryn Sinnen"],                                                                                                                               voiceQ:"What is your first and last name, exactly how you want it shown publicly?",                placeholder:"e.g. Daniel Reyes" },
-  { id:"business",    num:2,  chapter:"ch1", minWords:1,  validate:"business",   label:"Business Name",         question:"What's your business name as it appears online?",                                                                                          hint:"Use the exact spelling and spacing people would see on Google or Facebook.",                                                                                          examples:["Reyes Heating and Air","Zach's Mobile Repair"],                                                                                                              voiceQ:"What is your business name exactly as it appears online?",                                 placeholder:"e.g. Reyes Heating and Air" },
-  { id:"area",        num:3,  chapter:"ch1", minWords:6,  validate:"area",       label:"Service Area",          question:"What's your service area, and how long have you been serving it?",                                                                         hint:"List your main city plus nearby areas. Then add how long you've served there.",                                                                                       examples:["Nashville, Donelson, Mt. Juliet. 14 years.","Mesa, Gilbert, Chandler. 8 years."],      voiceQ:"What is your service area and how long have you been serving it?",                         placeholder:"e.g. Nashville, Donelson, Mt. Juliet. 14 years." },
-  { id:"fear",        num:4,  chapter:"ch1", minWords:12, validate:"fear",       label:"Customer Fear You Fix", question:"Homeowners' biggest fears when hiring a contractor are getting overcharged, being left with a mess, or lack of communication. Which fear do you focus on overcoming most, and what's the one thing you do every job so customers never feel that fear?", hint:"Pick ONE fear, then give ONE habit you do every job.", examples:["Lack of communication. I send a quick update any time something changes.","Getting overcharged. I show prices before I start and the invoice always matches.","Being left with a mess. I wear shoe covers and do a final walk-through."], voiceQ:"Homeowners have three big fears: getting overcharged, being left with a mess, or lack of communication. Which do you focus on, and what is one thing you do every job to prevent it?", placeholder:"e.g. Lack of communication. I send a quick update any time something changes.", fearChips:["Getting overcharged","Being left with a mess","Lack of communication"] },
-  { id:"humanDetail", num:5,  chapter:"ch2", minWords:6,                         label:"Real Life Detail",      question:"What's one specific \"real life\" detail about you that neighbors would relate to?",                                                          hint:"Pick ONE and be specific. Family moment, hobby, weekend routine, or something you're weirdly into.",                                                                  examples:["Most Saturdays I'm on the sidelines at 10U softball with a cooler and way too much sunscreen.","I'm restoring a 1991 candy-green Chevy with my son.","I'm training for a half marathon — if you see me jogging before sunrise, I'm working off my donut habit."], voiceQ:"Tell me one specific real life detail about you that neighbors would relate to.", placeholder:"e.g. Most Saturdays I'm on the sidelines at my kid's game with a cooler and way too much sunscreen." },
-  { id:"localFlavor", num:6,  chapter:"ch2", minWords:8,  validate:"localFlavor",label:"Local Flavor",          question:"What's one specific local place you love, and what do you do there or always get there?",                                                    hint:"Park, trail, market, gym, church, coffee shop, bakery, or restaurant. Use the real name.",                                                                            examples:["Shelby Bottoms Greenway, we ride bikes to the overlook then get ice cream.","Five Daughters Bakery, maple bacon donut and coffee, every time, no regrets."],    voiceQ:"What is one specific local place you love? Give me the real name and tell me what you always do or get there.",                                                    placeholder:"e.g. Five Daughters Bakery, maple bacon donut and coffee, every time, no regrets." },
-  { id:"mission",     num:7,  chapter:"ch2", minWords:1,                         label:"Mission Fill-in",       question:"Fill in the blank: \"I'm on a mission to find the best ________. Any suggestions?\"",                                                        hint:"Choose something people have strong opinions on. Keep it short.",                                                                                                     examples:["tacos","pizza","breakfast spot","coffee","donuts","BBQ"],                              voiceQ:"Finish this: I am on a mission to find the best blank in my city. What is it?",           placeholder:"e.g. tacos", missionChips:["donuts","pizza","breakfast spot","coffee","tacos","BBQ"] },
-  { id:"whyStarted",  num:8,  chapter:"ch3", minWords:12,                        label:"Why You Started",       question:"What's the real moment that pushed you to start your own business?",                                                                        hint:"Tell it like you'd tell a friend. Include what you felt in that moment.",                                                                                             examples:["I remember sitting in my truck after a call feeling sick, because my old company wanted me to push a job the homeowner didn't need.","I missed one too many dinners and my kid asked if I was working again."], voiceQ:"Tell me the real moment that pushed you to start your own business.", placeholder:"e.g. I remember sitting in my truck feeling sick because my old company wanted me to push a job the homeowner didn't need." },
-  { id:"whatChanged", num:9,  chapter:"ch3", minWords:10,                        label:"What Changed After",    question:"After you started your business, what's one real-life thing you can do now that you couldn't before?",                                        hint:"Make it something a neighbor can picture in one sentence.",                                                                                                           examples:["I'm home to eat dinner with my family instead of coming in after everyone's asleep.","I can coach my kid's team on weeknights and I don't miss games anymore."], voiceQ:"After starting your business, what is one real thing you can do now that you could not before?", placeholder:"e.g. I'm home to eat dinner with my family instead of coming in after everyone's asleep." },
-  { id:"heroMoment",  num:10, chapter:"ch3", minWords:25, validate:"hero",       label:"Hero Moment",           question:"Tell one \"Hero Moment\" story where you helped a customer. What was happening, what did you do, and what did they say or do after?",         hint:"Tell it like a short scene. Include one detail you remember so it feels real.",                                                                                       examples:["A single mom had no AC during a heat wave. I found it was a capacitor, fixed it fast, and she exhaled and said Thank you for not scaring me.","An older homeowner smelled gas and was scared. I shut everything down, found the leak, made it safe, and he kept saying Nobody's ever explained it to me like that."], voiceQ:"Tell me one Hero Moment. What was happening, what did you do, and what did they say or do after?", placeholder:"What was happening…\nWhat did you do…\nWhat did they say or do after…", heroFollowUps:["What was happening when they called you?","What did you actually do to help?","What did they say or do after?","One specific detail you still remember?"] },
+  {
+    id:"name", num:1, chapter:"ch1", minWords:2, validate:"name",
+    label:"Your Name",
+    question:"What's your first and last name?",
+    hint:"Write it exactly how you want it shown publicly.",
+    examples:["Daniel Reyes","Taryn Sinnen"],
+    voiceQ:"What is your first and last name, exactly how you want it shown publicly?",
+    placeholder:"e.g. Daniel Reyes",
+  },
+  {
+    id:"business", num:2, chapter:"ch1", minWords:1, validate:"business",
+    label:"Business Name",
+    question:"What's your business name as it appears online?",
+    hint:"Use the exact spelling and spacing people would see on Google or Facebook.",
+    examples:["Reyes Heating and Air","Zach's Mobile Repair"],
+    voiceQ:"What is your business name exactly as it appears on Google or Facebook?",
+    placeholder:"e.g. Reyes Heating and Air",
+  },
+  {
+    id:"area", num:3, chapter:"ch1", minWords:6, validate:"area",
+    label:"Service Area",
+    question:"What's your service area, and how long have you been serving it?",
+    hint:"List your main city plus nearby areas. Then add how long you've served there. If less than 1 year, add one short line on why you chose this area.",
+    examples:["Nashville, Donelson, Mt. Juliet. 14 years.","Mesa, Gilbert, Chandler. 8 years.","New to the area, but my kids go to school here and we're building our life here."],
+    voiceQ:"What is your service area — your main city plus nearby areas — and how long have you been serving it?",
+    placeholder:"e.g. Nashville, Donelson, Mt. Juliet. 14 years.",
+  },
+  {
+    id:"fear", num:4, chapter:"ch1", minWords:12, validate:"fear",
+    label:"Customer Fear You Fix",
+    question:"Homeowners' biggest fears when hiring a contractor are getting overcharged, being left with a mess, or lack of communication. Which fear do you focus on overcoming most, and what's the one thing you do every job so customers never feel that fear?",
+    hint:"Pick ONE fear, then give ONE habit you do every job. Keep it simple and real.",
+    examples:[
+      "Lack of communication. I use Housecall Pro's on my way text with the tech photo and name, then I send a quick update if anything changes so nobody is left wondering.",
+      "Getting overcharged. I show options and prices before I start, I get approval in writing, and the final invoice always matches what we agreed to.",
+      "Being left with a mess. I wear shoe covers, use drop cloths, and I do a final walk-through so the customer sees the home is cleaner than we found it.",
+    ],
+    voiceQ:"Homeowners have three big fears when hiring a contractor: getting overcharged, being left with a mess, or lack of communication. Which one do you focus on overcoming most, and what is one specific thing you do every single job so customers never feel that fear?",
+    placeholder:"e.g. Lack of communication. I send a quick update any time something changes.",
+    fearChips:["Getting overcharged","Being left with a mess","Lack of communication"],
+  },
+  {
+    id:"humanDetail", num:5, chapter:"ch2", minWords:6,
+    label:"Real Life Detail",
+    question:"What's one specific \"real life\" detail about you that neighbors would relate to?",
+    hint:"Pick ONE and be specific. Family moment, hobby, weekend routine, a goal you're working on, or something you're weirdly into.",
+    examples:[
+      "Most Saturdays I'm on the sidelines at 10U softball with a cooler and way too much sunscreen, cheering like it's the World Series.",
+      "I'm restoring a 1991 candy-green Chevy with my son, and we're slowly learning that \"one quick fix\" is always a lie.",
+      "I'm training for a half marathon, so if you see me jogging before sunrise, just know I'm working off my weekend donut habit.",
+    ],
+    voiceQ:"Tell me one specific real life detail about you that neighbors would relate to. A family moment, a hobby, a weekend routine, a goal you're working toward, or something you're just weirdly into.",
+    placeholder:"e.g. Most Saturdays I'm on the sidelines at 10U softball with a cooler and way too much sunscreen.",
+  },
+  {
+    id:"localFlavor", num:6, chapter:"ch2", minWords:8, validate:"localFlavor",
+    label:"Local Place You Love",
+    question:"What's one specific local place you love, and what do you do there or always get there?",
+    hint:"This can be a park, trail, farmers market, school event, gym, church, festival, coffee shop, bakery, or restaurant. Use the real name.",
+    examples:[
+      "Shelby Bottoms Greenway, we ride bikes to the overlook, then reward ourselves with ice cream on the way back.",
+      "The Saturday farmers market downtown, I grab apple cider donuts first, then I actually shop like an adult.",
+      "East High Friday night football, home side, kickoff to final whistle, no excuses.",
+      "Five Daughters Bakery, maple bacon donut and coffee, every time, no regrets.",
+    ],
+    voiceQ:"What is one specific local place you genuinely love? Give me the real name — a park, restaurant, market, whatever — and tell me what you always do or get there.",
+    placeholder:"e.g. Five Daughters Bakery, maple bacon donut and coffee, every time, no regrets.",
+  },
+  {
+    id:"mission", num:7, chapter:"ch2", minWords:1,
+    label:"Mission Fill-in",
+    question:"Fill in the blank with the specific thing you want locals to recommend, \"I'm on a mission to find the best ________. Any suggestions?\"",
+    hint:"Choose something people have strong opinions on. Keep it short.",
+    examples:["tacos","pizza","breakfast spot","coffee","donuts","BBQ","burgers","wings"],
+    voiceQ:"Fill in this blank for me: I am on a mission to find the best blank in my city. What is it? Just say the thing — tacos, pizza, coffee, whatever people around you have strong opinions on.",
+    placeholder:"e.g. tacos",
+    missionChips:["donuts","pizza","breakfast spot","coffee","tacos","BBQ"],
+  },
+  {
+    id:"whyStarted", num:8, chapter:"ch3", minWords:12,
+    label:"Why You Started",
+    question:"What's the real moment that pushed you to start your own business?",
+    hint:"Tell it like you'd tell a friend. Include what you felt in that moment.",
+    examples:[
+      "I remember sitting in my truck after a call feeling sick, because my old company wanted me to push a bigger job the homeowner didn't need. I drove home thinking, I can't build a life doing this.",
+      "I missed one too many dinners and my kid asked if I was \"working again.\" That one question hit me harder than anything, and I decided to build a business that let me show up at home and still take care of people.",
+      "I watched homeowners get talked down to and left in the dark, and it bothered me more than I can explain. I wanted to run a business where customers feel respected, informed, and in control.",
+    ],
+    voiceQ:"Tell me the real moment that pushed you to start your own business. Tell it like you'd tell a friend, and include what you actually felt in that moment.",
+    placeholder:"e.g. I remember sitting in my truck after a call feeling sick, because my old company wanted me to push a job the homeowner didn't need.",
+  },
+  {
+    id:"whatChanged", num:9, chapter:"ch3", minWords:10,
+    label:"What Changed After",
+    question:"After you started your business, what's one real-life thing you can do now that you couldn't before?",
+    hint:"Make it something a neighbor can picture in one sentence.",
+    examples:[
+      "I'm home to eat dinner with my family instead of coming in after everyone's asleep.",
+      "I can coach my kid's team on weeknights, and I don't miss games anymore.",
+      "I can finally take Sundays off, and we do pancakes and church without me being on my phone.",
+      "I'm not being pushed to upsell people, and I sleep better knowing I'm doing things the right way.",
+    ],
+    voiceQ:"After starting your own business, what is one real thing you can do now that you could not do before? Make it something a neighbor could picture in one sentence.",
+    placeholder:"e.g. I'm home to eat dinner with my family instead of coming in after everyone's asleep.",
+  },
+  {
+    id:"heroMoment", num:10, chapter:"ch3", minWords:25, validate:"hero",
+    label:"Hero Moment",
+    question:"Tell one \"Hero Moment\" story where you helped a customer. What was happening, what did you do, and what did they say or do after?",
+    hint:"Tell it like a short scene. Include one detail you remember so it feels real.",
+    examples:[
+      "A single mom had no AC during a heat wave and thought she needed a full replacement. I found it was a capacitor, showed her the price before I touched anything, fixed it fast, and she just exhaled and said, \"Thank you for not scaring me.\"",
+      "An older homeowner smelled gas and was scared to stay inside. I shut everything down, found the leak, made it safe, and he kept repeating, \"Nobody's ever explained it to me like that.\"",
+      "A customer was told they needed a new system, but it was a simple part I had on the truck. When it turned back on, they laughed, then admitted they were five minutes away from tears before I showed up.",
+    ],
+    voiceQ:"Tell me one Hero Moment story — a time you went above and beyond for a customer. What was happening, what did you do, and what did they say or do after? Include one specific detail you still remember.",
+    placeholder:"What was happening…\nWhat did you do…\nWhat did they say or do after…",
+    heroFollowUps:["What was happening when they called you?","What did you actually do to help them?","What did they say or do after you were done?","What is one specific detail from that moment you still remember?"],
+  },
 ];
 
 const ch1Qs = ALL_QUESTIONS.filter(q=>q.chapter==="ch1");
@@ -336,7 +445,15 @@ function VoiceMode({onComplete,lang}){
     {!paused&&uiStatus!=="idle"&&<div style={{marginBottom:12,marginTop:8}}><div style={{background:GRAY200,borderRadius:99,height:6,overflow:"hidden"}}><div style={{background:YELLOW,borderRadius:99,height:6,width:Math.round((answeredCount/ALL_QUESTIONS.length)*100)+"%",transition:"width 0.4s"}}/></div></div>}
     {uiStatus==="idle"&&!paused&&(<div style={{textAlign:"center",marginTop:8,display:"flex",flexDirection:"column",alignItems:"center",gap:10}}><Btn onClick={handleStart}>{t.voiceStart}</Btn><button onClick={()=>{S.current.answers={...SAMPLE_ANSWERS};S.current.qIdx=ALL_QUESTIONS.length-1;setDisplayAnswers({...SAMPLE_ANSWERS});setDisplayQIdx(ALL_QUESTIONS.length-1);setCoachMsg("Dev mode - all answers filled.");setUiStatus("done");}} style={{background:"#1a1a2e",color:YELLOW,border:"1.5px dashed "+YELLOW,borderRadius:8,padding:"6px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Dev: Auto-fill all answers</button></div>)}
     {answeredCount>0&&!paused&&(<Card><h3 style={{color:NAVY,margin:"0 0 16px",fontSize:16}}>📝 {t.answeredSoFar}</h3>{ALL_QUESTIONS.filter(q=>displayAnswers[q.id]).map(q=>(<div key={q.id} style={{marginBottom:14,paddingBottom:14,borderBottom:"1px solid "+GRAY200}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}><div style={{flex:1}}><div style={{display:"flex",gap:6,alignItems:"center",marginBottom:4}}><span style={{background:NAVY,color:YELLOW,borderRadius:6,padding:"1px 6px",fontSize:11,fontWeight:700}}>Q{q.num}</span><span style={{fontWeight:700,color:NAVY,fontSize:13}}>{q.label}</span></div><p style={{margin:0,fontSize:13,color:GRAY800,lineHeight:1.6}}>{displayAnswers[q.id]}</p></div><button onClick={()=>handleRerecord(q.id)} style={{background:GRAY100,border:"none",borderRadius:8,padding:"4px 10px",fontSize:12,color:GRAY600,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>{t.rerecord}</button></div></div>))}</Card>)}
-    {uiStatus==="done"&&<div style={{marginTop:8}}><Btn onClick={()=>onComplete({...S.current.answers})}>{t.voiceContinue}</Btn></div>}
+          {uiStatus==="done"&&(
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
+          <Btn variant="ghost" onClick={()=>{
+            // Allow going back to review — populate displayAnswers fully
+            setDisplayAnswers({...S.current.answers});
+          }}>← Review Answers</Btn>
+          <Btn variant="primary" onClick={()=>onComplete({...S.current.answers})}>Next →</Btn>
+        </div>
+      )}
   </div>);
 }
 
@@ -573,7 +690,14 @@ export default function App(){
 
       {appPhase==="writechoice"&&(<><Card><SectionHeader emoji="✍️" title={ht.writePostTitle} subtitle={ht.howStart}/><LangToggle lang={lang} setLang={setLang}/><div style={{display:"flex",flexDirection:"column",gap:12,marginTop:8}}><button onClick={()=>setAppPhase("ch1")} style={{background:WHITE,border:"2px solid "+NAVY,borderRadius:14,padding:20,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16}}><div style={{fontSize:32,flexShrink:0}}>⌨️</div><div><div style={{fontWeight:800,color:NAVY,fontSize:15,marginBottom:4}}>{ht.typeTitle}</div><div style={{fontSize:13,color:GRAY600,lineHeight:1.5}}>{ht.typeDesc}</div></div></button><button onClick={()=>setAppPhase("voice")} style={{background:NAVY,border:"2px solid "+NAVY,borderRadius:14,padding:20,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:16}}><div style={{fontSize:32,flexShrink:0}}>🎤</div><div><div style={{fontWeight:800,color:YELLOW,fontSize:15,marginBottom:4}}>{ht.voiceTitle}</div><div style={{fontSize:13,color:GRAY400,lineHeight:1.5}}>{ht.voiceDesc}</div></div></button></div></Card><BottomNav onBack={()=>setAppPhase("lane")}/><NavSpacer/></>)}
 
-      {appPhase==="voice"&&(<><VoiceMode onComplete={va=>{setAnswers(va);setAppPhase("groups");}} lang={lang}/><BottomNav onBack={()=>setAppPhase("writechoice")}/><NavSpacer/></>)}
+      {appPhase==="voice"&&(
+        <>
+          <VoiceMode onComplete={va=>{setAnswers(va);setAppPhase("groups");}} lang={lang} savedAnswers={answers}/>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:16}}>
+            <Btn variant="ghost" onClick={()=>setAppPhase("writechoice")}>← Back</Btn>
+          </div>
+        </>
+      )}
       {(appPhase==="ch1"||appPhase==="ch2"||appPhase==="ch3")&&(<TypeMode onComplete={va=>{setAnswers(va);setAppPhase("getpost");}} lang={lang} savedAnswers={answers} onAnswerChange={(id,val)=>setAnswers(prev=>({...prev,[id]:val}))}/>)}
 
       {appPhase==="groups"&&(
