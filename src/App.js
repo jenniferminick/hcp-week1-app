@@ -239,12 +239,184 @@ const FOLLOWUP_TEMPLATES = {
   heroMoment:["Add one more detail — what did they say, what did you see, or what do you still remember?"],
 };
 
-async function callClaude(messages,system){
-  const body={model:"claude-sonnet-4-20250514",max_tokens:2000,messages};
-  if(system) body.system=system;
-  const r=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-  const d=await r.json();
+// ── Streaming Claude call ─────────────────────────────────────────────────────
+async function callClaude(messages, system) {
+  const body = { model:"claude-sonnet-4-20250514", max_tokens:2000, messages };
+  if (system) body.system = system;
+  const r = await fetch("/api/claude", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(body),
+  });
+  const d = await r.json();
   return (d.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("")||"";
+}
+
+// ── Streaming Claude call that returns full text (used for voice) ─────────────
+async function callClaudeStream(messages, system, onChunk, onDone) {
+  const body = {
+    model:"claude-sonnet-4-20250514",
+    max_tokens:300,
+    stream:true,
+    messages,
+  };
+  if (system) body.system = system;
+
+  const r = await fetch("/api/claude", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify(body),
+  });
+
+  if (!r.ok || !r.body) {
+    // Fallback to non-streaming
+    const d = await r.json();
+    const text = (d.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("")||"";
+    onChunk(text);
+    onDone(text);
+    return;
+  }
+
+  const reader = r.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let fullText = "";
+  let chunkBuffer = "";
+
+  // Chunk boundaries — split at sentence/clause endings around 50-100 chars
+  const CHUNK_BOUNDARY = /([.!?,;])\s+/g;
+  const MIN_CHUNK = 50;
+
+  function flushChunk(force = false) {
+    if (!chunkBuffer.trim()) return;
+    if (force || chunkBuffer.length >= MIN_CHUNK) {
+      onChunk(chunkBuffer.trim());
+      chunkBuffer = "";
+    }
+  }
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      if (!line.startsWith("data:")) continue;
+      const data = line.slice(5).trim();
+      if (data === "[DONE]") continue;
+      try {
+        const parsed = JSON.parse(data);
+        // Handle both Anthropic and OpenAI SSE formats
+        const delta =
+          parsed?.delta?.text ||                        // Anthropic stream
+          parsed?.choices?.[0]?.delta?.content ||       // OpenAI stream
+          "";
+        if (!delta) continue;
+        fullText += delta;
+        chunkBuffer += delta;
+
+        // Look for a natural break point at 50–100 chars
+        if (chunkBuffer.length >= MIN_CHUNK) {
+          const match = CHUNK_BOUNDARY.exec(chunkBuffer);
+          if (match) {
+            const splitAt = match.index + match[0].length;
+            onChunk(chunkBuffer.slice(0, splitAt).trim());
+            chunkBuffer = chunkBuffer.slice(splitAt);
+            CHUNK_BOUNDARY.lastIndex = 0;
+          } else if (chunkBuffer.length >= 100) {
+            // No boundary found, flush at hard limit
+            onChunk(chunkBuffer.trim());
+            chunkBuffer = "";
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
+  // Flush any remaining text
+  if (chunkBuffer.trim()) onChunk(chunkBuffer.trim());
+  onDone(fullText);
+}
+
+// ── Sequential TTS chunk player ───────────────────────────────────────────────
+function playChunksSequentially(chunks, lang, audioRef, onAllDone) {
+  let idx = 0;
+  function playNext() {
+    if (idx >= chunks.length) { onAllDone(); return; }
+    const chunk = chunks[idx++];
+    if (!chunk.trim()) { playNext(); return; }
+    ttsSpeak(chunk, lang, playNext, audioRef);
+  }
+  playNext();
+}
+
+// ── Streaming voice response helper ──────────────────────────────────────────
+async function streamVoiceResponse(messages, system, lang, audioRef, isPaused, onSayText, onDone) {
+  const chunks = [];
+  let ttsStarted = false;
+  let fullText = "";
+  let pendingChunks = [];
+  let ttsPlaying = false;
+
+  function maybeStartTTS() {
+    if (ttsPlaying || isPaused()) return;
+    if (pendingChunks.length === 0) return;
+    ttsPlaying = true;
+    const chunk = pendingChunks.shift();
+    ttsSpeak(chunk, lang === "es" ? "es-ES" : "en-US", () => {
+      ttsPlaying = false;
+      maybeStartTTS();
+    }, audioRef);
+  }
+
+  try {
+    await callClaudeStream(
+      messages,
+      system,
+      (chunk) => {
+        // Only speak the <say> content, not the <data> JSON
+        if (fullText.includes("</say>")) return;
+        const combined = fullText + chunk;
+        const sayStart = combined.indexOf("<say>");
+        const sayEnd = combined.indexOf("</say>");
+        let speakable = chunk;
+        if (sayStart !== -1 && sayEnd === -1) {
+          // Inside <say> block
+          const afterTag = combined.slice(sayStart + 5);
+          speakable = afterTag.slice(fullText.length > sayStart + 5 ? fullText.length - sayStart - 5 : 0);
+        } else if (sayStart === -1 && sayEnd === -1 && fullText.length < 10) {
+          // Before tags appear, might just be direct text (non-structured response)
+          speakable = chunk;
+        } else {
+          speakable = "";
+        }
+        fullText += chunk;
+        if (speakable.trim()) {
+          pendingChunks.push(speakable.trim());
+          if (!ttsStarted) { ttsStarted = true; }
+          maybeStartTTS();
+        }
+      },
+      (total) => {
+        fullText = total;
+        // Extract <say> block for display
+        const sayMatch = total.match(/<say>([\s\S]*?)<\/say>/i);
+        const sayText = sayMatch ? sayMatch[1].trim().replace(/^[\s.,!?]+/, "") : total.trim();
+        onSayText(sayText);
+        // Wait for TTS queue to drain before calling onDone
+        function waitForTTS() {
+          if (pendingChunks.length === 0 && !ttsPlaying) { onDone(total); }
+          else setTimeout(waitForTTS, 100);
+        }
+        waitForTTS();
+      }
+    );
+  } catch(_) {
+    onDone(fullText || "");
+  }
 }
 async function ttsSpeak(text,lang,onEnd,audioRef){
   const done=()=>{if(onEnd)onEnd();};
@@ -460,6 +632,15 @@ function VoiceMode({onComplete,lang}){
 // ── Get & Copy Post ───────────────────────────────────────────────────────────
 function GetPost({allCh3Met,post,postLoading,postError,answers,onGenerate,onSetPost,onNext,onBack,onWritePost}){
   const [copied,setCopied]=useState(false);
+  const textareaRef=useRef(null);
+
+  useEffect(()=>{
+    if(textareaRef.current&&post){
+      textareaRef.current.style.height="auto";
+      textareaRef.current.style.height=textareaRef.current.scrollHeight+"px";
+    }
+  },[post]);
+
   const handleCopy=()=>{if(!post)return;try{const el=document.createElement("textarea");el.value=post;el.style.position="fixed";el.style.opacity="0";document.body.appendChild(el);el.select();document.execCommand("copy");document.body.removeChild(el);}catch(e){navigator.clipboard&&navigator.clipboard.writeText(post);}setCopied(true);setTimeout(()=>setCopied(false),2500);};
   useEffect(()=>{if(allCh3Met&&!post&&!postLoading)onGenerate(answers);},[]);
   return(<>
@@ -470,7 +651,7 @@ function GetPost({allCh3Met,post,postLoading,postError,answers,onGenerate,onSetP
       {postLoading&&(<div style={{textAlign:"center",padding:40}}><div style={{fontSize:32,marginBottom:12}}>✨</div><p style={{color:GRAY600,fontSize:14,marginBottom:4}}>Writing your post...</p><p style={{color:GRAY400,fontSize:13}}>This takes about 15 seconds.</p></div>)}
       {postError&&!postLoading&&(<div style={{background:"#FEF2F2",borderRadius:10,padding:14,marginBottom:16,color:RED,fontSize:13}}>{postError}</div>)}
               {post&&!postLoading&&(<>
-          <textarea value={post} onChange={e=>onSetPost(e.target.value)} rows={16} style={{width:"100%",boxSizing:"border-box",border:"2px solid "+NAVY,borderRadius:12,padding:16,fontSize:14,lineHeight:1.8,color:GRAY800,fontFamily:"inherit",resize:"vertical",background:GRAY50,outline:"none",marginBottom:14}}/>
+                      <textarea ref={textareaRef} value={post} onChange={e=>{onSetPost(e.target.value);e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}} style={{width:"100%",boxSizing:"border-box",border:"2px solid "+NAVY,borderRadius:12,padding:16,fontSize:14,lineHeight:1.8,color:GRAY800,fontFamily:"inherit",resize:"none",background:GRAY50,outline:"none",marginBottom:14,overflow:"hidden",display:"block"}}/>
           <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center",marginBottom:20}}>
             <Btn onClick={handleCopy} variant={copied?"success":"primary"}>{copied?"✓ Copied!":"📋 Copy Post"}</Btn>
             <button onClick={()=>onGenerate(answers)} disabled={postLoading} style={{background:"none",border:"2px solid "+GRAY300,borderRadius:10,padding:"10px 18px",fontSize:13,fontWeight:700,color:GRAY600,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6}}>↺ Regenerate</button>
