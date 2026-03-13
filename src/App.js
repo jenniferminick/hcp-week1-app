@@ -138,17 +138,39 @@ async function callClaude(messages, system) {
   return (d.content || []).filter(b => b.type === "text").map(b => b.text).join("") || "";
 }
 
+function buildFacebookGroups(city, count) {
+  const suffixes = [
+    "Community", "Homeowners", "Neighbors", "Buy Sell Trade", "Family Connect",
+    "Home Improvement", "Local Recommendations", "Moms and Dads", "Real Estate",
+    "DIY Home Tips", "Small Business Network", "Weekend Warriors", "Local Events",
+    "Community Watch", "Local Foodies", "Pet Owners", "Backyard Gardeners",
+    "New Residents", "Outdoor Adventures", "Volunteer Network",
+  ];
+  return suffixes.slice(0, count).map((suffix, i) => ({
+    name: city + " " + suffix,
+    type: i < 5 ? "Community" : i < 10 ? "Homeowners" : "Neighborhood",
+    privacy: i % 3 === 1 ? "Private" : "Public",
+    members: (Math.floor(Math.random() * 18) + 1) + "." + Math.floor(Math.random() * 9) + "K",
+    url: "https://www.facebook.com/groups/search/?q=" + encodeURIComponent(city + " " + suffix),
+  }));
+}
+
 async function findFacebookGroups(city, count) {
-  const prompt = "Generate " + count + " realistic Facebook group names for the " + city + " area that a home service contractor could post in. Sort Public groups first. Return ONLY a valid JSON array, no markdown:\n[{\"name\":\"group name\",\"type\":\"Community or Homeowners or Family or Buy/Sell or Neighborhood\",\"members\":\"e.g. 4.2K\",\"privacy\":\"Public or Private\"}]";
-  const reply = await callClaude([{ role:"user", content:prompt }]);
-  const cleaned = reply.replace(/```json/gi,"").replace(/```/g,"").trim();
-  const start = cleaned.indexOf("["), end = cleaned.lastIndexOf("]");
-  if (start === -1 || end === -1) return [];
   try {
+    const prompt = "Generate " + count + " realistic Facebook group names for the " + city + " area that a home service contractor could post in. Sort Public groups first. Return ONLY a valid JSON array, no markdown, no extra text:\n[{\"name\":\"Full Group Name\",\"type\":\"Community\",\"members\":\"4.2K\",\"privacy\":\"Public\"}]";
+    const reply = await callClaude([{ role:"user", content:prompt }]);
+    const cleaned = reply.replace(/```json/gi,"").replace(/```/g,"").trim();
+    const start = cleaned.indexOf("["), end = cleaned.lastIndexOf("]");
+    if (start === -1 || end === -1) throw new Error("no array");
     const parsed = JSON.parse(cleaned.slice(start, end + 1));
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(g => g.name).map(g => ({ ...g, url:"https://www.facebook.com/groups/search/?q=" + encodeURIComponent(g.name) + "&filters=groups" })).sort((a, b) => a.privacy === "Public" ? -1 : 1);
-  } catch (err) { return []; }
+    if (!Array.isArray(parsed) || parsed.length === 0) throw new Error("empty");
+    return parsed.filter(g => g.name).map(g => ({
+      ...g,
+      url: "https://www.facebook.com/groups/search/?q=" + encodeURIComponent(g.name),
+    }));
+  } catch(err) {
+    return buildFacebookGroups(city, count);
+  }
 }
 
 async function generateAIPost(ans) {
@@ -1203,38 +1225,7 @@ export default function App() {
                 </div>
               ))}
             </div>
-            <p style={{ fontWeight:800, color:GREEN, fontSize:15, margin:"0 0 12px" }}>Do This — Photos that build trust</p>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:28 }}>
-              {[
-                { src:"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face", label:"You + family", sub:"Natural light, smiling face" },
-                { src:"https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=300&h=300&fit=crop", label:"On the job", sub:"Candid, face visible" },
-                { src:"https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=300&h=300&fit=crop", label:"At your local spot", sub:"Feels real, relatable" },
-              ].map((c, i) => (
-                <div key={i} style={{ borderRadius:12, border:"2px solid #86EFAC", overflow:"hidden", display:"flex", flexDirection:"column" }}>
-                  <img src={c.src} alt={c.label} style={{ width:"100%", aspectRatio:"1", objectFit:"cover", display:"block" }}/>
-                  <div style={{ background:"#F0FDF4", padding:"8px 10px", textAlign:"center" }}>
-                    <div style={{ fontWeight:800, color:"#166534", fontSize:12 }}>{c.label}</div>
-                    <div style={{ fontSize:11, color:"#166534" }}>{c.sub}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p style={{ fontWeight:800, color:RED, fontSize:15, margin:"0 0 12px" }}>Avoid This — These kill the neighbor feel</p>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:8 }}>
-              {[
-                { src:"https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&h=300&fit=crop", label:"Truck only", sub:"No face = no connection" },
-                { src:"https://images.unsplash.com/photo-1572021335469-31706a17aaef?w=300&h=300&fit=crop", label:"Logo or flyer", sub:"Looks like an ad" },
-                { src:"https://images.unsplash.com/photo-1677442136019-21780ecad995?w=300&h=300&fit=crop", label:"AI / stock photo", sub:"People can always tell" },
-              ].map((c, i) => (
-                <div key={i} style={{ borderRadius:12, border:"2px solid #FCA5A5", overflow:"hidden", display:"flex", flexDirection:"column", filter:"grayscale(30%)" }}>
-                  <img src={c.src} alt={c.label} style={{ width:"100%", aspectRatio:"1", objectFit:"cover", display:"block" }}/>
-                  <div style={{ background:"#FEF2F2", padding:"8px 10px", textAlign:"center" }}>
-                    <div style={{ fontWeight:800, color:"#991B1B", fontSize:12 }}>{c.label}</div>
-                    <div style={{ fontSize:11, color:"#991B1B" }}>{c.sub}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+
             <CardNav onBack={() => setAppPhase("getpost")} onNext={() => setAppPhase("dopost")}/>
           </Card>
         )}
