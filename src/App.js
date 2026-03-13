@@ -133,9 +133,28 @@ const FOLLOWUP_TEMPLATES = {
 async function callClaude(messages, system) {
   const body = { model:"claude-sonnet-4-20250514", max_tokens:2000, messages };
   if (system) body.system = system;
-  const r = await fetch("https://api.anthropic.com/v1/messages", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+  const isDeployed = typeof window !== "undefined" && window.location.hostname !== "localhost" && !window.location.hostname.includes("claude.ai");
+  const url = isDeployed ? "/api/claude" : "https://api.anthropic.com/v1/messages";
+  const r = await fetch(url, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
   const d = await r.json();
   return (d.content || []).filter(b => b.type === "text").map(b => b.text).join("") || "";
+}
+
+async function findFacebookGroups(city, count) {
+  const isDeployed = typeof window !== "undefined" && window.location.hostname !== "localhost" && !window.location.hostname.includes("claude.ai");
+  if (isDeployed) {
+    try {
+      const prompt = "Generate " + count + " realistic Facebook group names for the " + city + " area that a home service contractor could post in. Sort Public groups first. Return ONLY a valid JSON array, no markdown:\n[{\"name\":\"Full Group Name\",\"type\":\"Community\",\"members\":\"4.2K\",\"privacy\":\"Public or Private\"}]";
+      const reply = await callClaude([{ role:"user", content:prompt }]);
+      const cleaned = reply.replace(/```json/gi,"").replace(/```/g,"").trim();
+      const start = cleaned.indexOf("["), end = cleaned.lastIndexOf("]");
+      if (start === -1 || end === -1) throw new Error("no array");
+      const parsed = JSON.parse(cleaned.slice(start, end + 1));
+      if (!Array.isArray(parsed) || parsed.length === 0) throw new Error("empty");
+      return parsed.filter(g => g.name).map(g => ({ ...g, url:"https://www.facebook.com/groups/search/?q=" + encodeURIComponent(g.name) }));
+    } catch(err) {}
+  }
+  return buildFacebookGroups(city, count);
 }
 
 function buildFacebookGroups(city, count) {
@@ -155,22 +174,8 @@ function buildFacebookGroups(city, count) {
   }));
 }
 
-async function findFacebookGroups(city, count) {
-  try {
-    const prompt = "Generate " + count + " realistic Facebook group names for the " + city + " area that a home service contractor could post in. Sort Public groups first. Return ONLY a valid JSON array, no markdown, no extra text:\n[{\"name\":\"Full Group Name\",\"type\":\"Community\",\"members\":\"4.2K\",\"privacy\":\"Public\"}]";
-    const reply = await callClaude([{ role:"user", content:prompt }]);
-    const cleaned = reply.replace(/```json/gi,"").replace(/```/g,"").trim();
-    const start = cleaned.indexOf("["), end = cleaned.lastIndexOf("]");
-    if (start === -1 || end === -1) throw new Error("no array");
-    const parsed = JSON.parse(cleaned.slice(start, end + 1));
-    if (!Array.isArray(parsed) || parsed.length === 0) throw new Error("empty");
-    return parsed.filter(g => g.name).map(g => ({
-      ...g,
-      url: "https://www.facebook.com/groups/search/?q=" + encodeURIComponent(g.name),
-    }));
-  } catch(err) {
-    return buildFacebookGroups(city, count);
-  }
+function findFacebookGroups(city, count) {
+  return Promise.resolve(buildFacebookGroups(city, count));
 }
 
 async function generateAIPost(ans) {
