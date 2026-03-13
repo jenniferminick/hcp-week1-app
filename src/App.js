@@ -174,9 +174,7 @@ function buildFacebookGroups(city, count) {
   }));
 }
 
-function findFacebookGroups(city, count) {
-  return Promise.resolve(buildFacebookGroups(city, count));
-}
+
 
 async function generateAIPost(ans) {
   const city = (ans.area || "").split(/[,.]/)[0].trim() || "my city";
