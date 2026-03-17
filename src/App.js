@@ -49,7 +49,7 @@ const SAMPLE_ANSWERS = {
 const ALL_QUESTIONS = [
   { id:"name", num:1, chapter:"ch1", minWords:2, validate:"name", label:"Your Name", question:"What is your first and last name?", hint:"Write it exactly how you want it shown publicly.", examples:["Daniel Reyes","Taryn Sinnen"], voiceQ:"What is your first and last name, exactly how you want it shown publicly?", placeholder:"e.g. Daniel Reyes" },
   { id:"business", num:2, chapter:"ch1", minWords:1, validate:"business", label:"Business Name", question:"What is your business name as it appears online?", hint:"Use the exact spelling and spacing people would see on Google or Facebook.", examples:["Reyes Heating and Air","Zach's Mobile Repair"], voiceQ:"What is your business name exactly as it appears on Google or Facebook?", placeholder:"e.g. Reyes Heating and Air" },
-  { id:"area", num:3, chapter:"ch1", minWords:6, validate:"area", label:"Service Area", question:"What city, state, and surrounding areas do you serve — and how long have you been serving them?", hint:"Include your main city, state, and any nearby neighborhoods or towns. Then add how long you have been in the area.", examples:["Nashville, TN — Donelson, Mt. Juliet, Hermitage. 14 years.","Mesa, AZ — Gilbert, Chandler, Tempe. 8 years."], voiceQ:"What city and state do you serve, plus any surrounding areas — and how long have you been there?", placeholder:"e.g. Nashville, TN — Donelson, Mt. Juliet, Hermitage. 14 years." },
+  { id:"area", num:3, chapter:"ch1", minWords:6, validate:"area", label:"Service Area", question:"What city, state/province, and surrounding areas do you serve — and how long have you been serving them?", hint:"Include your main city, state or province (e.g. TN, ON), and any nearby neighborhoods or towns. Then add how long you have been in the area.", examples:["Nashville, TN — Donelson, Mt. Juliet, Hermitage. 14 years.","Mesa, AZ — Gilbert, Chandler, Tempe. 8 years.","Toronto, ON — Scarborough, North York, Etobicoke. 6 years."], voiceQ:"What city and state or province do you serve, plus any surrounding areas — and how long have you been there?", placeholder:"e.g. Nashville, TN — Donelson, Mt. Juliet, Hermitage. 14 years." },
   { id:"fear", num:4, chapter:"ch1", minWords:12, validate:"fear", label:"Customer Fear You Fix", question:"Which homeowner fear do you focus on overcoming, and what is the one thing you do every job so customers never feel that fear?", hint:"Pick ONE fear, then give ONE habit you do every job.", examples:["Lack of communication. I send a quick update if anything changes so nobody is left wondering.","Getting overcharged. I show options and prices before I start and the final invoice always matches what we agreed to."], voiceQ:"Which homeowner fear do you focus on overcoming, and what is one specific thing you do every job so customers never feel that fear?", placeholder:"e.g. Lack of communication. I send a quick update any time something changes.", fearChips:["Getting overcharged","Being left with a mess","Lack of communication"] },
   { id:"humanDetail", num:5, chapter:"ch2", minWords:6, label:"Real Life Detail", question:"What is one specific real life detail about you that neighbors would relate to?", hint:"Pick ONE and be specific. Family moment, hobby, weekend routine.", examples:["Most Saturdays I am on the sidelines at 10U softball with a cooler and way too much sunscreen.","I am restoring a 1991 candy-green Chevy with my son."], voiceQ:"Tell me one specific real life detail about you that neighbors would relate to.", placeholder:"e.g. Most Saturdays I am on the sidelines at 10U softball with a cooler and way too much sunscreen." },
   { id:"localFlavor", num:6, chapter:"ch2", minWords:8, validate:"localFlavor", label:"Local Place You Love", question:"What is one specific local place you love, and what do you do there or always get there?", hint:"Use the real name. Park, bakery, restaurant, market — anything local.", examples:["Five Daughters Bakery, maple bacon donut and coffee, every time, no regrets.","Shelby Bottoms Greenway, we ride bikes to the overlook, then reward ourselves with ice cream."], voiceQ:"What is one specific local place you genuinely love? Give me the real name and tell me what you always do or get there.", placeholder:"e.g. Five Daughters Bakery, maple bacon donut and coffee, every time, no regrets." },
@@ -318,7 +318,7 @@ function VoiceMode({ onComplete }) {
       const isAdd=["area","heroMoment","humanDetail","localFlavor","whyStarted","whatChanged","fear"].includes(q.id);
       if(isAdd&&text.trim().length>3&&v.reason!=="filler"&&v.reason!=="not_a_name") S.current.partialAnswers[q.id]=ep?ep+" "+text:text;
       const tmpl=FOLLOWUP_TEMPLATES[q.id];
-      const retry=q.id==="area"&&v.reason==="missing_duration"?tmpl.missing_duration[0]:(Array.isArray(tmpl)?tmpl[0]:(tmpl.default?tmpl.default[0]:q.voiceQ));
+      const retry=q.id==="area"&&v.reason==="missing_duration"?tmpl.missing_duration[0]:q.id==="area"&&v.reason==="missing_state"?tmpl.missing_state[0]:(Array.isArray(tmpl)?tmpl[0]:(tmpl.default?tmpl.default[0]:q.voiceQ));
       S.current.followupCount=(S.current.followupCount||0)+1;
       if(S.current.followupCount>=2){ const c=ep?ep+" "+text:text; if(c.trim().length<=3){S.current.busy=false;openMic();return;} }
       else { setTranscript(""); coachSay(retry,()=>openMic()); return; }
@@ -369,7 +369,7 @@ function GetPost({ allCh3Met, post, postLoading, postError, answers, onGenerate,
   useEffect(()=>{if(allCh3Met&&!post&&!postLoading)onGenerate(answers);},[]);
   return (
     <Card>
-      <SectionHeader emoji="✍️" title="Step 2 — Generate Post" subtitle="We will write your post from your answers. Read it over, edit anything off, then copy it."/>
+      <SectionHeader emoji="✍️" title="Step 2 — Generate Post"/>
       {!allCh3Met&&!post&&(<div style={{background:"#FEF9EC",border:"1.5px solid "+YELLOW,borderRadius:10,padding:16,marginBottom:20}}><p style={{fontWeight:700,color:NAVY,fontSize:14,margin:"0 0 6px"}}>You will need a post to continue.</p><p style={{color:GRAY600,fontSize:13,lineHeight:1.7,margin:"0 0 14px"}}>Go back to Write Post to build your story, or paste an existing post below.</p><Btn onClick={onWritePost}>Write My Post</Btn></div>)}
       {!allCh3Met&&(<><p style={{fontSize:13,fontWeight:600,color:NAVY,margin:"0 0 8px"}}>Or paste your existing post here:</p><textarea value={post} onChange={e=>onSetPost(e.target.value)} rows={10} placeholder="Paste your Facebook post here..." style={{width:"100%",boxSizing:"border-box",border:"2px solid "+(post?NAVY:GRAY200),borderRadius:12,padding:16,fontSize:14,lineHeight:1.8,color:GRAY800,fontFamily:"inherit",resize:"vertical",background:post?"#F0F7FF":GRAY50,outline:"none"}}/></>)}
       {postLoading&&<div style={{textAlign:"center",padding:40}}><div style={{fontSize:32,marginBottom:12}}>✨</div><p style={{color:GRAY600,fontSize:14}}>Writing your post... about 15 seconds.</p></div>}
@@ -474,10 +474,183 @@ function CoachDashboard({ onClose }) {
 }
 
 // ── Celebration ───────────────────────────────────────────────────────────────
-function CelebrationScreen({ onNext }) {
+function CelebrationScreen({ onNext, onBack }) {
   const msgs=[{h:"🏆 Achievement Unlocked!",s:"10 groups. 1 post. Zero sales pitches. Let's go!"},{h:"🎯 Mission Complete!",s:"You showed up as a neighbor. That's the whole game."},{h:"🔥 Week 1 = Done!",s:"Anti-Ad strategy executed. Leads incoming."}];
   const [msg]=useState(()=>msgs[Math.floor(Math.random()*msgs.length)]);
-  return(<div><div style={{background:"linear-gradient(135deg,#002942,#003a5c)",borderRadius:20,padding:"40px 32px",marginBottom:20,textAlign:"center"}}><div style={{fontSize:72,marginBottom:16,lineHeight:1}}>🎯</div><h1 style={{color:YELLOW,fontSize:28,fontWeight:900,margin:"0 0 12px"}}>{msg.h}</h1><p style={{color:WHITE,fontSize:18,margin:0,fontWeight:600}}>{msg.s}</p></div><Card><h3 style={{color:NAVY,fontSize:17,fontWeight:800,margin:"0 0 16px"}}>Here is what you executed this week:</h3>{[{emoji:"👥",title:"Joined 10 local Facebook groups",desc:"You are now inside the conversations happening in your city."},{emoji:"✍️",title:"Created a trust-first intro post",desc:"No sales pitch. No contact info. Just your story."},{emoji:"📣",title:"Posted across 10 groups",desc:"Your face and your story are now in front of thousands of local homeowners."},{emoji:"👤",title:"Posted as a neighbor, not a business",desc:"Personal account. Real story. That is exactly why this works."}].map((item,i)=>(<div key={i} style={{display:"flex",gap:14,alignItems:"flex-start",background:GRAY50,borderRadius:12,padding:"14px 16px",marginBottom:10}}><span style={{fontSize:24,flexShrink:0}}>{item.emoji}</span><div><div style={{fontWeight:800,color:NAVY,fontSize:14,marginBottom:3}}>{item.title}</div><div style={{fontSize:13,color:GRAY600,lineHeight:1.5}}>{item.desc}</div></div></div>))}<div style={{background:NAVY,borderRadius:14,padding:20,marginBottom:24,marginTop:8}}><p style={{color:YELLOW,fontWeight:900,fontSize:15,margin:"0 0 8px"}}>You joined the groups. You wrote the post. You executed the Anti-Ad strategy.</p><p style={{color:WHITE,fontSize:14,margin:0,lineHeight:1.8}}>You showed up as a neighbor, not a salesperson. Your leads are already coming in.</p></div><div style={{display:"flex",justifyContent:"flex-end",paddingTop:20,borderTop:"1px solid "+GRAY100}}><button onClick={onNext} style={{border:"none",borderRadius:10,fontWeight:700,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",minHeight:56,padding:"0 28px",background:YELLOW,color:NAVY}}>Next</button></div></Card></div>);
+  return(<div><div style={{background:"linear-gradient(135deg,#002942,#003a5c)",borderRadius:20,padding:"40px 32px",marginBottom:20,textAlign:"center"}}><div style={{fontSize:72,marginBottom:16,lineHeight:1}}>🎯</div><h1 style={{color:YELLOW,fontSize:28,fontWeight:900,margin:"0 0 12px"}}>{msg.h}</h1><p style={{color:WHITE,fontSize:18,margin:0,fontWeight:600}}>{msg.s}</p></div><Card><h3 style={{color:NAVY,fontSize:17,fontWeight:800,margin:"0 0 16px"}}>Here is what you executed this week:</h3>{[{emoji:"👥",title:"Joined 10 local Facebook groups",desc:"You are now inside the conversations happening in your city."},{emoji:"✍️",title:"Created a trust-first intro post",desc:"No sales pitch. No contact info. Just your story."},{emoji:"📣",title:"Posted across 10 groups",desc:"Your face and your story are now in front of thousands of local homeowners."},{emoji:"👤",title:"Posted as a neighbor, not a business",desc:"Personal account. Real story. That is exactly why this works."}].map((item,i)=>(<div key={i} style={{display:"flex",gap:14,alignItems:"flex-start",background:GRAY50,borderRadius:12,padding:"14px 16px",marginBottom:10}}><span style={{fontSize:24,flexShrink:0}}>{item.emoji}</span><div><div style={{fontWeight:800,color:NAVY,fontSize:14,marginBottom:3}}>{item.title}</div><div style={{fontSize:13,color:GRAY600,lineHeight:1.5}}>{item.desc}</div></div></div>))}        <div style={{background:NAVY,borderRadius:14,padding:20,marginBottom:24,marginTop:8}}><p style={{color:YELLOW,fontWeight:900,fontSize:15,margin:"0 0 8px"}}>You joined the groups. You wrote the post. You executed the Anti-Ad strategy.</p><p style={{color:WHITE,fontSize:14,margin:0,lineHeight:1.8}}>You showed up as a neighbor, not a salesperson. Your leads are already coming in.</p></div>        <CardNav onBack={onBack} onNext={onNext} nextLabel="Next"/></Card></div>);
+}
+
+// ── Approval Step ─────────────────────────────────────────────────────────────
+const AUDIT_ITEMS = [
+  { label:"Posted from a personal account", doThis:"Your personal Facebook profile", notThat:"Your business page or a brand account", tip:"Facebook's algorithm shows personal posts to far more people than business pages. This is one of the most important rules." },
+  { label:"Post has a hook, story, and closing question", doThis:"Starts with something real, tells a moment, ends with your mission question", notThat:"A list of services, a promo, or generic intro text", tip:"The hook grabs attention, the story builds trust, and the closing question drives comments — which drives reach." },
+  { label:"Nothing was added to the post", doThis:"Exact post as generated — word for word", notThat:"Phone number, email, website, or booking link added", tip:"Adding contact info turns it into an ad. The whole strategy depends on it feeling like a neighbor post, not a sales pitch." },
+  { label:"Nothing was removed from the post", doThis:"Full post intact including the mission question at the end", notThat:"Trimmed, shortened, or missing sections", tip:"Every part of the post structure has a purpose. The mission question at the end is what drives comments and engagement." },
+  { label:"Appropriate photo attached", doThis:"Real photo of your face — candid, natural, personal", notThat:"Stock photo, logo, truck only, AI-generated image, or dark selfie", tip:"The photo is the first thing people see. A real face builds instant connection. Anything else signals 'ad' and people scroll past." },
+];
+
+function ApprovalStep({ onBack, onNext }) {
+  return (
+    <Card>
+      <SectionHeader emoji="📋" title="Step 5 — Coach Approval"/>
+      <div style={{ background:"#EFF6FF", borderRadius:12, padding:20, marginBottom:24, textAlign:"center" }}>
+        <div style={{ fontSize:48, marginBottom:10 }}>👋</div>
+        <p style={{ color:NAVY, fontWeight:700, fontSize:15, margin:"0 0 8px" }}>Your post is live!</p>
+        <p style={{ color:GRAY600, fontSize:14, lineHeight:1.7, margin:0 }}>Let your coach know you are ready for your audit. Here is exactly what they will be checking.</p>
+      </div>
+      <div style={{ marginBottom:24 }}>
+        <div style={{ fontWeight:800, color:NAVY, fontSize:15, marginBottom:4 }}>🔍 The Coach Audit — 5 Things We Check</div>
+        <p style={{ fontSize:13, color:GRAY600, margin:"0 0 16px" }}>Tap any row to see why it matters.</p>
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {AUDIT_ITEMS.map((item, i) => <AuditRow key={i} item={item}/>)}
+        </div>
+      </div>
+      <CardNav onBack={onBack} onNext={onNext}/>
+    </Card>
+  );
+}
+
+// ── Audit Row ─────────────────────────────────────────────────────────────────
+function AuditRow({ item, index }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ border:"1.5px solid "+GRAY200, borderRadius:12, overflow:"hidden" }}>
+      {/* Main row */}
+      <div style={{ display:"flex", alignItems:"flex-start", gap:12, padding:"14px 16px", background:WHITE }}>
+        <div style={{ background:GRAY100, borderRadius:6, width:22, height:22, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, marginTop:1 }}>
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="10" height="10" rx="2" stroke={GRAY400} strokeWidth="1.5"/></svg>
+        </div>
+        <div style={{ flex:1 }}>
+          <div style={{ fontWeight:700, color:NAVY, fontSize:14 }}>{item.label}</div>
+          <div style={{ display:"flex", gap:16, marginTop:8, flexWrap:"wrap" }}>
+            <div style={{ display:"flex", gap:6, alignItems:"flex-start" }}>
+              <span style={{ background:"#D1FAE5", color:"#065F46", borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:800, flexShrink:0, marginTop:1 }}>DO</span>
+              <span style={{ fontSize:12, color:GRAY600, lineHeight:1.5 }}>{item.doThis}</span>
+            </div>
+            <div style={{ display:"flex", gap:6, alignItems:"flex-start" }}>
+              <span style={{ background:"#FEE2E2", color:"#991B1B", borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:800, flexShrink:0, marginTop:1 }}>NOT</span>
+              <span style={{ fontSize:12, color:GRAY600, lineHeight:1.5 }}>{item.notThat}</span>
+            </div>
+          </div>
+        </div>
+        <button onClick={() => setOpen(o => !o)} style={{ background:"none", border:"none", cursor:"pointer", color:GRAY400, fontSize:18, lineHeight:1, flexShrink:0, padding:"0 2px" }} title="Why this matters">
+          {open ? "▲" : "▼"}
+        </button>
+      </div>
+      {/* Expandable tip */}
+      {open && (
+        <div style={{ background:"#FFFBEB", borderTop:"1px solid "+GRAY200, padding:"12px 16px", display:"flex", gap:10, alignItems:"flex-start" }}>
+          <span style={{ fontSize:16, flexShrink:0 }}>💡</span>
+          <p style={{ margin:0, fontSize:13, color:GRAY800, lineHeight:1.6 }}>{item.tip}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Photo Step ────────────────────────────────────────────────────────────────
+const GOOD_PHOTOS = [
+  "https://i.imgur.com/F7Ur9Rf.png",
+  "https://i.imgur.com/HWxgfnO.png",
+  "https://i.imgur.com/Cv43HJt.png",
+];
+const BAD_PHOTOS = [
+  "https://i.imgur.com/l8KAdix.png",
+  "https://i.imgur.com/vCVlGIm.png",
+  "https://i.imgur.com/7rvGL6O.png",
+];
+
+function PhotoStep({ answers, onBack, onNext }) {
+  const [photoIdeas, setPhotoIdeas] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function generate() {
+      setLoading(true);
+      try {
+        const prompt = `A home service business owner filled out these details about themselves:
+- Human detail outside work: ${answers.humanDetail || "not provided"}
+- Local place they love: ${answers.localFlavor || "not provided"}
+- Why they started: ${answers.whyStarted || "not provided"}
+- Hero moment: ${answers.heroMoment || "not provided"}
+
+Give them 3 personalized Facebook photo ideas rated Good, Better, and Best. Each should feel specific to who they are based on the details above.
+
+Return ONLY a valid JSON object, no markdown:
+{
+  "good": {"label": "short title", "desc": "1 sentence why this works"},
+  "better": {"label": "short title", "desc": "1 sentence why this works, tied to their details"},
+  "best": {"label": "short title", "desc": "1 sentence why this is the most trust-building option for them specifically"}
+}`;
+        const reply = await callClaude([{ role:"user", content:prompt }]);
+        const cleaned = reply.replace(/```json/gi,"").replace(/```/g,"").trim();
+        const s = cleaned.indexOf("{"), e = cleaned.lastIndexOf("}");
+        if (s !== -1 && e !== -1) setPhotoIdeas(JSON.parse(cleaned.slice(s, e+1)));
+        else throw new Error("parse error");
+      } catch(_) {
+        setPhotoIdeas({
+          good:   { label:"Any real photo of you", desc:"Face visible, natural light, looks like a real person." },
+          better: { label:"You doing something you love", desc:"A hobby, your kids' game, your local spot — something neighbors relate to." },
+          best:   { label:"A candid moment on the job", desc:"You working, smiling, face clearly visible. Shows who you are and what you do." },
+        });
+      }
+      setLoading(false);
+    }
+    generate();
+  }, []);
+
+  const tiers = [
+    { key:"good",   label:"Good",   color:"#F0FDF4", border:"#86EFAC", textColor:"#166534", badge:"GOOD" },
+    { key:"better", label:"Better", color:"#EFF6FF", border:"#93C5FD", textColor:"#1E40AF", badge:"BETTER" },
+    { key:"best",   label:"Best",   color:"#FEF9EC", border:YELLOW,    textColor:"#92400E", badge:"BEST ⭐" },
+  ];
+
+  return (
+    <Card>
+      <SectionHeader emoji="📸" title="Step 3 — Choose Your Photo" subtitle="Your photo is the first thing people see. The right one doubles your engagement."/>
+
+      {/* Good / Better / Best */}
+      <div style={{ marginBottom:28 }}>
+        <div style={{ fontWeight:700, color:NAVY, fontSize:14, marginBottom:12 }}>📷 Photo ideas based on your story</div>
+        {loading ? (
+          <div style={{ textAlign:"center", padding:24, color:GRAY400, fontSize:13 }}>Generating personalized ideas...</div>
+        ) : (
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:10 }}>
+            {tiers.map(t => (
+              <div key={t.key} style={{ background:t.color, border:"1.5px solid "+t.border, borderRadius:12, padding:"14px 12px", display:"flex", flexDirection:"column", gap:8 }}>
+                <span style={{ background:t.border, color:t.textColor, borderRadius:6, padding:"3px 10px", fontSize:11, fontWeight:800, letterSpacing:"0.04em", alignSelf:"flex-start" }}>{t.badge}</span>
+                <div style={{ fontWeight:800, color:NAVY, fontSize:14, lineHeight:1.3 }}>{photoIdeas[t.key].label}</div>
+                <div style={{ fontSize:12, color:GRAY600, lineHeight:1.5 }}>{photoIdeas[t.key].desc}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Example photos */}
+      <div style={{ marginBottom:20 }}>
+        <div style={{ fontWeight:700, color:GREEN, fontSize:13, marginBottom:10 }}>✅ Anti-Ad photos — these build trust</div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:10, marginBottom:20 }}>
+          {GOOD_PHOTOS.map((src, i) => (
+            <div key={i} style={{ borderRadius:10, overflow:"hidden", border:"2px solid #86EFAC", aspectRatio:"1", background:GRAY100 }}>
+              <img src={src} alt="Good photo example" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}/>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ fontWeight:700, color:RED, fontSize:13, marginBottom:10 }}>❌ Ad photos — these kill trust</div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:10 }}>
+          {BAD_PHOTOS.map((src, i) => (
+            <div key={i} style={{ borderRadius:10, overflow:"hidden", border:"2px solid #FCA5A5", aspectRatio:"1", background:GRAY100 }}>
+              <img src={src} alt="Bad photo example" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}/>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <CardNav onBack={onBack} onNext={onNext}/>
+    </Card>
+  );
 }
 
 // ── Main App ──────────────────────────────────────────────────────────────────
@@ -627,15 +800,15 @@ export default function App() {
 
           {appPhase==="getpost" && <GetPost allCh3Met={allCh3Met} post={post} postLoading={postLoading} postError={postError} answers={answers} onGenerate={handleGeneratePost} onSetPost={setPost} onNext={()=>setAppPhase("photo")} onBack={()=>setAppPhase("groups")} onWritePost={()=>setAppPhase("writechoice")}/>}
 
-          {appPhase==="photo" && (<Card><SectionHeader emoji="📸" title="Step 3 — Choose Your Photo" subtitle="Your photo is the first thing people see. The right one doubles your engagement."/><div style={{ fontWeight:700, color:GREEN, fontSize:13, marginBottom:10 }}>✅ GOOD — choose one of these:</div><div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(155px, 1fr))", gap:10, marginBottom:20 }}>{[{emoji:"😊",label:"You with family",desc:"Smiling face, bright natural light."},{emoji:"☕",label:"You at your local spot",desc:"Candid shot where you hang out."},{emoji:"🔧",label:"Candid job-site photo",desc:"You working, face clearly visible."}].map((g,i)=><div key={i} style={{ background:"#F0FDF4", border:"1.5px solid #86EFAC", borderRadius:12, padding:14, textAlign:"center" }}><div style={{ fontSize:28, marginBottom:6 }}>{g.emoji}</div><div style={{ fontWeight:700, color:"#166534", fontSize:13, marginBottom:4 }}>{g.label}</div><div style={{ fontSize:11, color:"#166534", lineHeight:1.4 }}>{g.desc}</div></div>)}</div><div style={{ fontWeight:700, color:RED, fontSize:13, marginBottom:10 }}>❌ DO NOT use these:</div><div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(155px, 1fr))", gap:10, marginBottom:20 }}>{[{emoji:"🚛",label:"Truck only",desc:"No face = no connection."},{emoji:"🖼️",label:"Logo or flyer",desc:"Looks like an ad."},{emoji:"🕶️",label:"Dark selfie",desc:"Hard to connect with."},{emoji:"🤖",label:"AI or stock photo",desc:"People can tell."}].map((b,i)=><div key={i} style={{ background:"#FEF2F2", border:"1.5px solid #FCA5A5", borderRadius:12, padding:14, textAlign:"center" }}><div style={{ fontSize:28, marginBottom:6 }}>{b.emoji}</div><div style={{ fontWeight:700, color:"#991B1B", fontSize:13, marginBottom:4 }}>{b.label}</div><div style={{ fontSize:11, color:"#991B1B", lineHeight:1.4 }}>{b.desc}</div></div>)}</div><CardNav onBack={()=>setAppPhase("getpost")} onNext={()=>setAppPhase("dopost")}/></Card>)}
+          {appPhase==="photo" && <PhotoStep answers={answers} onBack={()=>setAppPhase("getpost")} onNext={()=>setAppPhase("dopost")}/>}
 
           {appPhase==="dopost" && (<Card><SectionHeader emoji="🚀" title="Step 4 — Post It" subtitle="Follow these steps exactly. Use your personal account, not your business page."/><div style={{ background:"#FEF2F2", border:"1.5px solid "+RED, borderRadius:12, padding:"14px 18px", marginBottom:24, display:"flex", gap:12, alignItems:"flex-start" }}><span style={{ fontSize:20, flexShrink:0 }}>⚠️</span><div><p style={{ fontWeight:800, color:"#991B1B", fontSize:14, margin:"0 0 4px" }}>Post from your PERSONAL account, not your business page.</p><p style={{ fontSize:13, color:"#991B1B", margin:0, lineHeight:1.6 }}>Facebook shows personal posts to way more people. Log in as yourself before you post.</p></div></div>{[{num:1,text:"Open the Facebook group you joined and tap Write something"},{num:2,text:"Paste your copied post"},{num:3,text:"Attach your photo"},{num:4,text:"Tap Post"}].map(s=>(<div key={s.num} style={{ display:"flex", gap:14, marginBottom:18, alignItems:"flex-start" }}><div style={{ background:YELLOW, color:NAVY, borderRadius:99, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:16, flexShrink:0 }}>{s.num}</div><p style={{ margin:0, fontSize:15, color:GRAY800, paddingTop:7, lineHeight:1.6 }}>{s.text}</p></div>))}<CardNav onBack={()=>setAppPhase("photo")} onNext={()=>setAppPhase("approval")}/></Card>)}
 
           {appPhase==="approval" && (<Card><SectionHeader emoji="📋" title="Step 5 — Coach Approval"/><div style={{ background:"#EFF6FF", borderRadius:12, padding:24, marginBottom:24, textAlign:"center" }}><div style={{ fontSize:48, marginBottom:10 }}>👋</div><p style={{ color:NAVY, fontWeight:700, fontSize:15, margin:"0 0 8px" }}>Your post is live!</p><p style={{ color:GRAY600, fontSize:14, lineHeight:1.7, margin:0 }}>Let your coach know you are ready for your audit. Once reviewed and approved, tap Next.</p></div><CardNav onBack={()=>setAppPhase("dopost")} onNext={()=>{saveSubmission(answers,post,"Coach Approved");setAppPhase("joingroups");}}/></Card>)}
 
-          {appPhase==="replicate" && (<Card><SectionHeader emoji="🔁" title="Step 6 — Join and Cross-Post" subtitle="Find 9 more groups, join them, and post in each one. Same post. Same photo. No edits."/><div style={{ background:GRAY50, borderRadius:12, padding:16, marginBottom:24 }}>{["Search for local groups using the links below and join any that look active.","For private groups, request to join — post once approved. Post in public groups immediately.","Use the exact same post — do not change a single word.","Attach the exact same photo. Do not add your phone number, website, or any contact info."].map((s,i)=>(<div key={i} style={{ display:"flex", gap:10, marginBottom:8, alignItems:"flex-start" }}><div style={{ background:YELLOW, color:NAVY, borderRadius:99, width:22, height:22, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:11, flexShrink:0, marginTop:1 }}>{i+1}</div><p style={{ margin:0, fontSize:13, color:GRAY800, lineHeight:1.6 }}>{s}</p></div>))}</div>{groupsLoading&&<p style={{ color:GRAY600, fontSize:14, textAlign:"center" }}>Loading group suggestions...</p>}{!groupsLoading&&groups20.length>0&&<div style={{ marginBottom:20 }}><GroupTable groups={groups20} showNum={false}/></div>}<CardNav onBack={()=>setAppPhase("approval")} onNext={()=>{setCompletedSections(p=>p.includes("grouppost")?p:[...p,"grouppost"]);saveSubmission(answers,post,"10 Groups Done");setAppPhase("celebrate");}} nextLabel="Next"/></Card>)}
+          {appPhase==="replicate" && (<Card><SectionHeader emoji="🔁" title="Step 6 — Join and Cross-Post" subtitle="Find 9 more public groups, join them, and post in each one. Same post. Same photo. No edits."/><div style={{ background:GRAY50, borderRadius:12, padding:16, marginBottom:24 }}>{["Search for local groups using the links below and join 9 more public groups.","Use the exact same post — do not change a single word.","Attach the exact same photo. Do not add your phone number, website, or any contact info.","Post immediately in each public group once you have joined."].map((s,i)=>(<div key={i} style={{ display:"flex", gap:10, marginBottom:8, alignItems:"flex-start" }}><div style={{ background:YELLOW, color:NAVY, borderRadius:99, width:22, height:22, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:11, flexShrink:0, marginTop:1 }}>{i+1}</div><p style={{ margin:0, fontSize:13, color:GRAY800, lineHeight:1.6 }}>{s}</p></div>))}</div>{groupsLoading&&<p style={{ color:GRAY600, fontSize:14, textAlign:"center" }}>Loading group suggestions...</p>}{!groupsLoading&&groups20.length>0&&<div style={{ marginBottom:20 }}><GroupTable groups={groups20} showNum={false}/></div>}<CardNav onBack={()=>setAppPhase("approval")} onNext={()=>{setCompletedSections(p=>p.includes("grouppost")?p:[...p,"grouppost"]);saveSubmission(answers,post,"10 Groups Done");setAppPhase("celebrate");}} nextLabel="Next"/></Card>)}
 
-          {appPhase==="celebrate" && <CelebrationScreen onNext={()=>setAppPhase("leads")}/>}
+          {appPhase==="celebrate" && <CelebrationScreen onNext={()=>setAppPhase("leads")} onBack={()=>setAppPhase("replicate")}/>}
           {appPhase==="leads" && <LeadEngagement onBack={()=>setAppPhase("checklist")} onAmplify={()=>setAppPhase("amplify")}/>}
           {appPhase==="amplify" && <AmplifyScreen onBack={()=>setAppPhase("leads")} city={city}/>}
 
