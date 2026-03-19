@@ -446,24 +446,23 @@ const AUDIT_ITEMS_ES = [
 ];
 
 const NAV_SECTIONS = [
-  { id:"write",     label_en:"Write Post",     label_es:"Escribir",   icon:"✍️", phases:["ch1","ch2","ch3"], noSubs:true },  { id:"grouppost", label_en:"Post in Groups", label_es:"En Grupos",  icon:"📣", phases:["groups","getpost","photo","dopost","approval","replicate"] },
+  { id:"write",     label_en:"Write Post",     label_es:"Escribir",   icon:"✍️", phases:["ch1","ch2","ch3"], noSubs:true },
+  { id:"grouppost", label_en:"Post in Groups", label_es:"En Grupos",  icon:"📣", phases:["dopost","approval","replicate"] },
   { id:"leads",     label_en:"Work Leads",     label_es:"Prospectos", icon:"🔥", phases:["leads"] },
   { id:"amplify",   label_en:"Amplify",        label_es:"Amplificar", icon:"📡", phases:["amplify"] },
 ];
 
 const PHASE_LABELS_EN = {
   ch1:"Chapter 1", ch2:"Chapter 2", ch3:"Chapter 3",
-  groups:"1. Join a Group", getpost:"2. Generate Post",
-  photo:"3. Add Photo", dopost:"4. Post It",
-  approval:"5. Coach Approval", replicate:"6. Cross-Post",
+  dopost:"1. Post It",
+  approval:"2. Coach Approval", replicate:"3. Cross-Post",
   leads:"Work Leads", amplify:"Amplify",
 };
 
 const PHASE_LABELS_ES = {
   ch1:"Capítulo 1", ch2:"Capítulo 2", ch3:"Capítulo 3",
-  groups:"1. Unirse a un Grupo", getpost:"2. Generar Publicación",
-  photo:"3. Agregar Foto", dopost:"4. Publicarlo",
-  approval:"5. Aprobación Coach", replicate:"6. Más Grupos",
+  dopost:"1. Publicarlo",
+  approval:"2. Aprobación Coach", replicate:"3. Más Grupos",
   leads:"Trabajar Prospectos", amplify:"Amplificar",
 };
 
@@ -658,10 +657,42 @@ function GroupTable({ groups, t }) {
   );
 }
 
+const POSTSTEP_LABELS_EN = [
+  "1. Join a group",
+  "2. Tap Join",
+  "3. Open group",
+  "4. Write something",
+  "5. Copy & paste post",
+  "6. Attach photo",
+  "7. Tap Post",
+  "8. Coach Approval",
+  "9. Cross-Post",
+];
+const POSTSTEP_LABELS_ES = [
+  "1. Unirse a un grupo",
+  "2. Tocar Unirse",
+  "3. Abrir grupo",
+  "4. Escribir algo",
+  "5. Copiar y pegar",
+  "6. Adjuntar foto",
+  "7. Publicar",
+  "8. Aprobación Coach",
+  "9. Más Grupos",
+];
+
+// Maps each step index to which appPhase it belongs
+const POSTSTEP_PHASES = [
+  "dopost","dopost","dopost","dopost","dopost","dopost","dopost",
+  "approval","replicate",
+];
+// Maps each step index to which postStepIdx it represents (only meaningful for dopost steps)
+const POSTSTEP_DOPOST_IDX = [0,1,2,3,4,5,6, null, null];
+
 // ── Sidebar ───────────────────────────────────────────────────────────────────
-function SidebarNav({ current, onNavigate, completedSections, lang }) {
+function SidebarNav({ current, onNavigate, completedSections, lang, postStep, onJumpPostStep }) {
   const t = T[lang];
   const PHASE_LABELS = lang === "es" ? PHASE_LABELS_ES : PHASE_LABELS_EN;
+  const POSTSTEP_LABELS = lang === "es" ? POSTSTEP_LABELS_ES : POSTSTEP_LABELS_EN;
   const showNav = !NO_NAV_PHASES.includes(current);
   const activeSection = NAV_SECTIONS.find(s => s.phases.includes(current));
   return (
@@ -682,22 +713,54 @@ function SidebarNav({ current, onNavigate, completedSections, lang }) {
                 <span style={{ fontSize:15, flexShrink:0 }}>{section.icon}</span>
                 <span style={{ fontWeight:800, fontSize:13, flex:1, color:sectionDone?GREEN:sectionActive?YELLOW:GRAY400 }}>{sectionDone?"✓ ":""}{sLabel}</span>
               </button>
-              {sectionActive && !section.noSubs && subPhases.length > 1 && (
+              {sectionActive && !section.noSubs && (
                 <div style={{ marginLeft:36, marginBottom:6, position:"relative" }}>
                   <div style={{ position:"absolute", left:4, top:0, bottom:0, width:2, background:"rgba(255,255,255,0.08)", borderRadius:1 }}/>
-                  {subPhases.map((p,i) => {
-                    const isDone = i < currentSubIdx;
-                    const isActive = p === current;
-                    return (
-                      <button key={p} onClick={() => onNavigate(p)}
-                        style={{ width:"100%", border:"none", background:isActive?"rgba(254,183,5,0.1)":"transparent", display:"flex", alignItems:"center", gap:10, padding:"7px 12px 7px 18px", cursor:"pointer", borderRadius:"0 8px 8px 0", position:"relative" }}
-                        onMouseEnter={e => { if (!isActive) e.currentTarget.style.background="rgba(255,255,255,0.05)"; }}
-                        onMouseLeave={e => { if (!isActive) e.currentTarget.style.background="transparent"; }}>
-                        <span style={{ position:"absolute", left:-1, width:10, height:10, borderRadius:"50%", background:isDone?GREEN:isActive?YELLOW:"#1e3a52", border:isActive?"2px solid "+YELLOW:isDone?"2px solid "+GREEN:"2px solid rgba(255,255,255,0.15)", boxSizing:"border-box" }}/>
-                        <span style={{ fontSize:12, fontWeight:isActive?700:400, color:isActive?YELLOW:isDone?"#6EE7B7":GRAY400 }}>{isDone?"✓ ":""}{PHASE_LABELS[p]||p}</span>
-                      </button>
-                    );
-                  })}
+                  {/* For grouppost section: show all 9 steps as one continuous list */}
+                  {section.id === "grouppost" ? (
+                    POSTSTEP_LABELS.map((label, i) => {
+                      const stepPhase = POSTSTEP_PHASES[i];
+                      const dopostIdx = POSTSTEP_DOPOST_IDX[i];
+                      // Determine active: dopost steps use postStep, others use current phase
+                      const isActive = stepPhase === "dopost"
+                        ? current === "dopost" && postStep === dopostIdx
+                        : current === stepPhase;
+                      // Done: all dopost sub-steps before current, or entire dopost phase done, or phase passed
+                      const isDone = stepPhase === "dopost"
+                        ? (current === "dopost" && dopostIdx < postStep) || (current === "approval" || current === "replicate")
+                        : stepPhase === "approval"
+                          ? current === "replicate"
+                          : false;
+                      return (
+                        <button key={i}
+                          onClick={() => {
+                            if (stepPhase === "dopost") { onJumpPostStep && onJumpPostStep(dopostIdx); onNavigate("dopost"); }
+                            else onNavigate(stepPhase);
+                          }}
+                          style={{ width:"100%", border:"none", background:isActive?"rgba(254,183,5,0.1)":"transparent", display:"flex", alignItems:"center", gap:10, padding:"7px 12px 7px 18px", cursor:"pointer", borderRadius:"0 8px 8px 0", position:"relative" }}
+                          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background="rgba(255,255,255,0.05)"; }}
+                          onMouseLeave={e => { if (!isActive) e.currentTarget.style.background="transparent"; }}>
+                          <span style={{ position:"absolute", left:-1, width:10, height:10, borderRadius:"50%", background:isDone?GREEN:isActive?YELLOW:"#1e3a52", border:isActive?"2px solid "+YELLOW:isDone?"2px solid "+GREEN:"2px solid rgba(255,255,255,0.15)", boxSizing:"border-box" }}/>
+                          <span style={{ fontSize:12, fontWeight:isActive?700:400, color:isActive?YELLOW:isDone?"#6EE7B7":GRAY400 }}>{isDone?"✓ ":""}{label}</span>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    /* Normal phase sub-list for non-grouppost sections */
+                    subPhases.map((p,i) => {
+                      const isDone   = i < currentSubIdx;
+                      const isActive = p === current;
+                      return (
+                        <button key={p} onClick={() => onNavigate(p)}
+                          style={{ width:"100%", border:"none", background:isActive?"rgba(254,183,5,0.1)":"transparent", display:"flex", alignItems:"center", gap:10, padding:"7px 12px 7px 18px", cursor:"pointer", borderRadius:"0 8px 8px 0", position:"relative" }}
+                          onMouseEnter={e => { if (!isActive) e.currentTarget.style.background="rgba(255,255,255,0.05)"; }}
+                          onMouseLeave={e => { if (!isActive) e.currentTarget.style.background="transparent"; }}>
+                          <span style={{ position:"absolute", left:-1, width:10, height:10, borderRadius:"50%", background:isDone?GREEN:isActive?YELLOW:"#1e3a52", border:isActive?"2px solid "+YELLOW:isDone?"2px solid "+GREEN:"2px solid rgba(255,255,255,0.15)", boxSizing:"border-box" }}/>
+                          <span style={{ fontSize:12, fontWeight:isActive?700:400, color:isActive?YELLOW:isDone?"#6EE7B7":GRAY400 }}>{isDone?"✓ ":""}{PHASE_LABELS[p]||p}</span>
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
               )}
             </div>
@@ -715,7 +778,7 @@ function DevShortcuts({ setAnswers, setPost, setAppPhase, t }) {
       <div style={{ fontSize:13, color:GRAY600, marginBottom:8 }}>{t.devShortcuts}</div>
       <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
         <button onClick={() => { setAnswers(SAMPLE_ANSWERS); setAppPhase("ch1"); }} style={{ background:NAVY, color:YELLOW, border:"none", borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>{t.fillSample}</button>
-        <button onClick={() => { setAnswers(SAMPLE_ANSWERS); setAppPhase("getpost"); }} style={{ background:NAVY, color:YELLOW, border:"none", borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>{t.skipGenerate}</button>
+        <button onClick={() => { setAnswers(SAMPLE_ANSWERS); setAppPhase("dopost"); }} style={{ background:NAVY, color:YELLOW, border:"none", borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>{t.skipGenerate}</button>
         <button onClick={() => { setAnswers(SAMPLE_ANSWERS); setPost("Sample post."); setAppPhase("approval"); }} style={{ background:NAVY, color:YELLOW, border:"none", borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>{t.skipStep5}</button>
         <button onClick={() => { setAnswers(SAMPLE_ANSWERS); setPost("Sample post."); setAppPhase("leads"); }} style={{ background:NAVY, color:YELLOW, border:"none", borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>{t.skipLeads}</button>
       </div>
@@ -1636,6 +1699,644 @@ function CelebrationScreen({ onNext, onBack, lang }) {
   );
 }
 
+// ── Cross-Post Step ───────────────────────────────────────────────────────────
+
+// Step 1: Open a group you're in and tap Write something
+function CpFbOpenGroup() {
+  return (
+    <svg viewBox="0 0 400 130" xmlns="http://www.w3.org/2000/svg" style={{ width:"100%", borderRadius:10, display:"block" }}>
+      <rect width="400" height="130" fill="#ffffff" rx="8"/>
+      {/* Group cover */}
+      <rect width="400" height="56" fill="#E4E6EB" rx="8"/>
+      <rect y="48" width="400" height="8" fill="#E4E6EB"/>
+      {/* Group avatar */}
+      <rect x="16" y="32" width="48" height="48" rx="8" fill="#BCC0C4" stroke="white" strokeWidth="3"/>
+      <text x="40" y="63" textAnchor="middle" fontSize="22">🏘️</text>
+      {/* Group name + meta */}
+      <text x="76" y="80" fill="#1C1E21" fontSize="13" fontWeight="700">East Nashville Neighbors</text>
+      <text x="76" y="94" fill="#65676B" fontSize="11">Public group · 6.1K members</text>
+      {/* Write something bar */}
+      <rect x="12" y="102" width="376" height="22" rx="11" fill="#F0F2F5" stroke="#E4E6EB" strokeWidth="1.5"/>
+      <circle cx="30" cy="113" r="9" fill="#E4E6EB"/>
+      <text x="46" y="117" fill="#65676B" fontSize="11">Write something...</text>
+      {/* Arrow */}
+      <polygon points="310,96 302,87 318,87" fill={YELLOW}/>
+      <rect x="230" y="76" width="158" height="18" rx="5" fill={NAVY}/>
+      <text x="309" y="89" textAnchor="middle" fill={YELLOW} fontSize="10" fontWeight="700">Tap Write something</text>
+    </svg>
+  );
+}
+
+// Step 2: The "+ Add groups" button — the KEY step
+function CpFbAddGroups() {
+  return (
+    <svg viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg" style={{ width:"100%", borderRadius:10, display:"block" }}>
+      <rect width="400" height="160" fill="#ffffff" rx="8"/>
+      {/* Modal header */}
+      <text x="200" y="24" textAnchor="middle" fill="#1C1E21" fontSize="14" fontWeight="700">Create post</text>
+      <rect x="368" y="8" width="24" height="24" rx="12" fill="#E4E6EB"/>
+      <text x="380" y="25" textAnchor="middle" fill="#65676B" fontSize="14">✕</text>
+      <rect y="34" width="400" height="1" fill="#E4E6EB"/>
+      {/* Profile row */}
+      <circle cx="30" cy="54" r="16" fill="#E4E6EB"/>
+      <circle cx="30" cy="49" r="7" fill="#BCC0C4"/>
+      <path d="M16 64 Q30 56 44 64" fill="#BCC0C4"/>
+      <text x="52" y="50" fill="#1C1E21" fontSize="12" fontWeight="700">Your Name</text>
+      {/* Private group pill */}
+      <rect x="52" y="56" width="92" height="20" rx="10" fill="#E4E6EB"/>
+      <text x="98" y="70" textAnchor="middle" fill="#65676B" fontSize="10">🏘 Private group</text>
+      {/* Add groups button — the hero element */}
+      <rect x="150" y="56" width="118" height="20" rx="10" fill="white" stroke="#1877F2" strokeWidth="2"/>
+      <text x="209" y="70" textAnchor="middle" fill="#1877F2" fontSize="10" fontWeight="700">+ Add groups  ˅</text>
+      {/* Big callout arrow pointing to it */}
+      <polygon points="209,100 199,88 219,88" fill={YELLOW}/>
+      <rect x="50" y="102" width="300" height="24" rx="7" fill={NAVY}/>
+      <text x="200" y="118" textAnchor="middle" fill={YELLOW} fontSize="12" fontWeight="700">Tap here — select up to 9 more groups</text>
+      {/* Write something placeholder */}
+      <text x="20" y="144" fill="#65676B" fontSize="13">Write something...</text>
+    </svg>
+  );
+}
+
+// Step 3: Group picker dropdown with multiple groups selected
+function CpFbGroupPicker() {
+  return (
+    <svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" style={{ width:"100%", borderRadius:10, display:"block" }}>
+      <rect width="400" height="170" fill="#ffffff" rx="8"/>
+      {/* Dropdown header */}
+      <rect width="400" height="36" fill="#F0F2F5" rx="8"/>
+      <rect y="28" width="400" height="8" fill="#F0F2F5"/>
+      <text x="200" y="22" textAnchor="middle" fill="#1C1E21" fontSize="13" fontWeight="700">Select groups</text>
+      {/* Search bar */}
+      <rect x="12" y="42" width="376" height="28" rx="14" fill="#F0F2F5"/>
+      <text x="30" y="60" fill="#65676B" fontSize="12">🔍  Search your groups</text>
+      {/* Group rows */}
+      {[
+        { name:"East Nashville Neighbors", checked:true,  y:84  },
+        { name:"Nashville Homeowners Hub",  checked:true,  y:108 },
+        { name:"Donelson Community",        checked:true,  y:132 },
+        { name:"Nashville Buy Sell Trade",  checked:false, y:156 },
+      ].map((g,i) => (
+        <g key={i}>
+          <rect x="12" y={g.y-14} width="376" height="22" rx="6" fill={g.checked?"#EFF6FF":"transparent"}/>
+          <rect x="16" y={g.y-12} width="18" height="18" rx="4" fill={g.checked?"#1877F2":"#E4E6EB"} stroke={g.checked?"#1877F2":"#BCC0C4"} strokeWidth="1.5"/>
+          {g.checked && <text x="25" y={g.y+1} textAnchor="middle" fill="white" fontSize="11" fontWeight="900">✓</text>}
+          <text x="42" y={g.y+1} fill="#1C1E21" fontSize="12">{g.name}</text>
+        </g>
+      ))}
+      {/* Bottom hint */}
+      <rect x="0" y="160" width="400" height="10" fill="white"/>
+    </svg>
+  );
+}
+
+// Step 4: Post button with multiple group badges visible
+function CpFbPostToAll() {
+  return (
+    <svg viewBox="0 0 400 140" xmlns="http://www.w3.org/2000/svg" style={{ width:"100%", borderRadius:10, display:"block" }}>
+      <rect width="400" height="140" fill="#ffffff" rx="8"/>
+      {/* Modal header */}
+      <text x="200" y="22" textAnchor="middle" fill="#1C1E21" fontSize="14" fontWeight="700">Create post</text>
+      <rect y="30" width="400" height="1" fill="#E4E6EB"/>
+      {/* Group pills showing selected groups */}
+      <rect x="12" y="38" width="74" height="18" rx="9" fill="#E8F0FE" stroke="#1877F2" strokeWidth="1"/>
+      <text x="49" y="51" textAnchor="middle" fill="#1877F2" fontSize="9" fontWeight="700">🏘 E. Nashville</text>
+      <rect x="92" y="38" width="80" height="18" rx="9" fill="#E8F0FE" stroke="#1877F2" strokeWidth="1"/>
+      <text x="132" y="51" textAnchor="middle" fill="#1877F2" fontSize="9" fontWeight="700">🏘 Homeowners</text>
+      <rect x="178" y="38" width="70" height="18" rx="9" fill="#E8F0FE" stroke="#1877F2" strokeWidth="1"/>
+      <text x="213" y="51" textAnchor="middle" fill="#1877F2" fontSize="9" fontWeight="700">🏘 Donelson</text>
+      <text x="262" y="51" fill="#65676B" fontSize="10">+ 7 more</text>
+      {/* Post text lines */}
+      <rect x="12" y="64" width="300" height="7" rx="3" fill="#E4E6EB"/>
+      <rect x="12" y="76" width="240" height="7" rx="3" fill="#E4E6EB"/>
+      <rect x="12" y="88" width="260" height="7" rx="3" fill="#E4E6EB"/>
+      {/* Photo thumbnail */}
+      <rect x="328" y="60" width="56" height="42" rx="6" fill="#E4E6EB"/>
+      <text x="356" y="86" textAnchor="middle" fontSize="20">🧑</text>
+      {/* Post button */}
+      <rect x="12" y="108" width="376" height="26" rx="6" fill="#1877F2"/>
+      <text x="200" y="125" textAnchor="middle" fill="white" fontSize="13" fontWeight="700">Post</text>
+      {/* Arrow */}
+      <polygon points="200,104 192,96 208,96" fill={YELLOW}/>
+    </svg>
+  );
+}
+
+function CrossPostStep({ onBack, onNext, lang, groups, groupsLoading, t, post, postEn }) {
+  const [stepIdx, setStepIdx] = useState(0);
+  const [copied, setCopied] = useState(false);
+
+  function copyPost() {
+    const textToCopy = (lang === "es" && postEn) ? postEn : post;
+    if (!textToCopy) return;
+    try { const el=document.createElement("textarea"); el.value=textToCopy; el.style.position="fixed"; el.style.opacity="0"; document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el); } catch(e) { navigator.clipboard&&navigator.clipboard.writeText(textToCopy); }
+    setCopied(true); setTimeout(() => setCopied(false), 2500);
+  }
+
+  const steps = [
+    {
+      num: 1,
+      label: lang === "es" ? "Únete a 9 grupos más cerca de ti" : "Join 9 more groups near you",
+      detail: lang === "es"
+        ? "Busca estos grupos en Facebook y únete a todos los que puedas antes de publicar. Grupos públicos — publicas de inmediato. Grupos privados — únete y espera aprobación."
+        : "Search these groups on Facebook and join as many as you can before posting. Public groups — post immediately. Private groups — join and wait for approval.",
+      illustration: null,
+      extra: (!groupsLoading && groups && groups.length > 0) ? (
+        <div style={{ marginTop:4 }}>
+          <GroupTable groups={groups} t={t}/>
+        </div>
+      ) : groupsLoading ? (
+        <p style={{ color:GRAY600, fontSize:14, marginTop:16 }}>{t.loadingGroupSuggestions}</p>
+      ) : null,
+    },
+    {
+      num: 2,
+      label: lang === "es" ? "Abre un grupo y toca \"Escribir algo\"" : "Open a group and tap \"Write something\"",
+      detail: lang === "es"
+        ? "Ve a cualquier grupo de Facebook al que te hayas unido. Toca el cuadro Escribir algo en la parte superior del feed."
+        : "Go to any Facebook group you've joined. Tap the Write something box at the top of the feed.",
+      illustration: <CpFbOpenGroup />,
+    },
+    {
+      num: 3,
+      label: lang === "es" ? "Toca \"+ Agregar grupos\" y selecciona hasta 9 más" : "Tap \"+ Add groups\" and select up to 9 more",
+      detail: lang === "es"
+        ? "Este es el paso clave. Toca el botón + Agregar grupos junto a tu nombre. Selecciona hasta 9 grupos más — tu publicación llegará a todos a la vez."
+        : "This is the key step. Tap the + Add groups button next to your name. Select up to 9 more groups — your post will go to all of them at once.",
+      badge: lang === "es" ? "⭐ Paso clave" : "⭐ Key step",
+      illustration: <CpFbAddGroups />,
+    },
+    {
+      num: 4,
+      label: lang === "es" ? "Elige los grupos en los que quieres publicar" : "Choose which groups to post in",
+      detail: lang === "es"
+        ? "Busca y selecciona grupos de vecinos, propietarios de viviendas y comunidades locales. Marca todos los relevantes para tu área de servicio."
+        : "Search and check off neighbors, homeowners, and local community groups. Check every one relevant to your service area.",
+      illustration: <CpFbGroupPicker />,
+    },
+    {
+      num: 5,
+      label: lang === "es" ? "Pega tu publicación, adjunta tu foto y toca Publicar" : "Paste your post, attach your photo, and tap Post",
+      detail: lang === "es"
+        ? "Pega exactamente la misma publicación. Adjunta la misma foto. Toca el botón azul Publicar — llega a todos los grupos seleccionados de una vez."
+        : "Paste the exact same post. Attach the same photo. Tap the blue Post button — it goes to all selected groups at once.",
+      illustration: <CpFbPostToAll />,
+      extra: (
+        <div style={{ marginTop:16 }}>
+          <button onClick={copyPost} style={{ background:copied?GREEN:NAVY, color:copied?WHITE:YELLOW, border:"none", borderRadius:10, padding:"13px 24px", fontWeight:700, fontSize:15, cursor:"pointer", transition:"all 0.2s", display:"inline-flex", alignItems:"center", gap:8 }}>
+            {copied
+              ? (lang==="es"?"✓ ¡Copiado!":"✓ Copied!")
+              : (lang==="es"?"📋 Copiar publicación de nuevo":"📋 Copy post again")}
+          </button>
+        </div>
+      ),
+    },
+  ];
+
+  const step = steps[stepIdx];
+  const isLast = stepIdx === steps.length - 1;
+
+  return (
+    <Card>
+      {/* Progress bar */}
+      <div style={{ display:"flex", gap:6, marginBottom:20 }}>
+        {steps.map((_,i) => (
+          <div key={i} style={{ flex:1, height:4, borderRadius:99, background:i<=stepIdx?NAVY:GRAY200, transition:"background 0.2s" }}/>
+        ))}
+      </div>
+
+      {/* Step badge */}
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+        <span style={{ background:NAVY, color:YELLOW, borderRadius:6, padding:"3px 10px", fontSize:12, fontWeight:800 }}>
+          {lang==="es"?"PASO ":"STEP "}{step.num} {lang==="es"?"de":"of"} {steps.length}
+        </span>
+        {step.badge && (
+          <span style={{ background:"#EFF6FF", color:"#1877F2", borderRadius:99, padding:"3px 10px", fontSize:11, fontWeight:700 }}>
+            {step.badge}
+          </span>
+        )}
+      </div>
+
+      <h2 style={{ fontSize:20, fontWeight:800, color:NAVY, margin:"0 0 8px", lineHeight:1.3 }}>{step.label}</h2>
+      <p style={{ fontSize:14, color:GRAY600, margin:"0 0 20px", lineHeight:1.7 }}>{step.detail}</p>
+
+      {/* Illustration — only when present */}
+      {step.illustration && (
+        <div style={{ borderRadius:12, overflow:"hidden", border:"1.5px solid "+GRAY200, background:GRAY50 }}>
+          {step.illustration}
+        </div>
+      )}
+
+      {/* Extra content e.g. group suggestions on step 3 */}
+      {step.extra}
+
+      <CardNav
+        onBack={stepIdx === 0 ? onBack : () => setStepIdx(i => i - 1)}
+        onNext={isLast ? onNext : () => setStepIdx(i => i + 1)}
+        nextLabel={isLast ? t.next : (lang==="es"?"Siguiente →":"Next →")}
+        t={t}
+      />
+    </Card>
+  );
+}
+
+// ── Post It Step ─────────────────────────────────────────────────────────────
+
+function FbGroupJoinCard() {
+  return (
+    <svg viewBox="0 0 400 180" xmlns="http://www.w3.org/2000/svg" style={{ width:"100%", borderRadius:10, display:"block" }}>
+      <rect width="400" height="180" fill="#F0F2F5" rx="8"/>
+      <rect x="12" y="12" width="376" height="70" rx="10" fill="white"/>
+      <rect x="20" y="22" width="50" height="50" rx="8" fill="#E4E6EB"/>
+      <text x="45" y="52" textAnchor="middle" fontSize="22">🏘️</text>
+      <text x="82" y="38" fill="#1C1E21" fontSize="13" fontWeight="700">East Nashville Neighbors</text>
+      <text x="82" y="52" fill="#65676B" fontSize="11">Public · 16K members · 80+ posts a day</text>
+      <text x="82" y="66" fill="#65676B" fontSize="10">👥 4 friends are members</text>
+      <rect x="310" y="30" width="66" height="30" rx="6" fill="#E7F3FF"/>
+      <text x="343" y="50" textAnchor="middle" fill="#1877F2" fontSize="13" fontWeight="700">Join</text>
+      <polygon points="304,45 290,37 290,53" fill="#10B981"/>
+      <rect x="188" y="36" width="98" height="18" rx="5" fill="#10B981"/>
+      <text x="237" y="49" textAnchor="middle" fill="white" fontSize="10" fontWeight="700">Tap Join</text>
+      <rect x="12" y="96" width="376" height="70" rx="10" fill="white"/>
+      <rect x="20" y="106" width="50" height="50" rx="8" fill="#E4E6EB"/>
+      <text x="45" y="136" textAnchor="middle" fontSize="22">❤️</text>
+      <text x="82" y="122" fill="#1C1E21" fontSize="13" fontWeight="700">East Nashville/Inglewood Community</text>
+      <text x="82" y="136" fill="#65676B" fontSize="11">Public · 4.1K members · 6 posts a day</text>
+      <rect x="310" y="114" width="66" height="30" rx="6" fill="#E7F3FF"/>
+      <text x="343" y="134" textAnchor="middle" fill="#1877F2" fontSize="13" fontWeight="700">Join</text>
+    </svg>
+  );
+}
+
+function FbGroupOpen() {
+  return (
+    <svg viewBox="0 0 400 140" xmlns="http://www.w3.org/2000/svg" style={{ width:"100%", borderRadius:10, display:"block" }}>
+      <rect width="400" height="140" fill="#ffffff" rx="8"/>
+      <rect width="400" height="56" fill="#E4E6EB" rx="8"/>
+      <rect y="48" width="400" height="8" fill="#E4E6EB"/>
+      <rect x="16" y="32" width="48" height="48" rx="8" fill="#BCC0C4" stroke="white" strokeWidth="3"/>
+      <text x="40" y="63" textAnchor="middle" fontSize="22">🏘️</text>
+      <text x="76" y="80" fill="#1C1E21" fontSize="14" fontWeight="700">East Nashville Neighbors</text>
+      <text x="76" y="95" fill="#65676B" fontSize="11">Public group · 16K members</text>
+      <rect x="280" y="72" width="108" height="30" rx="6" fill="#E4E6EB"/>
+      <text x="334" y="91" textAnchor="middle" fill="#1C1E21" fontSize="12" fontWeight="700">Visit group</text>
+      <polygon points="274,87 260,79 260,95" fill={YELLOW}/>
+      <rect x="100" y="110" width="188" height="22" rx="6" fill={NAVY}/>
+      <text x="194" y="125" textAnchor="middle" fill={YELLOW} fontSize="11" fontWeight="700">Tap to open the group</text>
+    </svg>
+  );
+}
+
+function FbComposerWriteSomething() {
+  return (
+    <svg viewBox="0 0 400 130" xmlns="http://www.w3.org/2000/svg" style={{ width:"100%", borderRadius:10, display:"block" }}>
+      <rect width="400" height="130" fill="#ffffff" rx="8"/>
+      <rect width="400" height="36" fill="#F0F2F5" rx="8"/>
+      <rect y="28" width="400" height="8" fill="#F0F2F5"/>
+      <circle cx="22" cy="18" r="10" fill="#E4E6EB"/>
+      <rect x="38" y="10" width="100" height="8" rx="4" fill="#BCC0C4"/>
+      <rect x="38" y="22" width="70" height="6" rx="3" fill="#E4E6EB"/>
+      <rect x="12" y="46" width="376" height="40" rx="20" fill="#F0F2F5" stroke="#E4E6EB" strokeWidth="1.5"/>
+      <circle cx="36" cy="66" r="12" fill="#E4E6EB"/>
+      <circle cx="36" cy="62" r="5" fill="#BCC0C4"/>
+      <path d="M26 74 Q36 68 46 74" fill="#BCC0C4"/>
+      <text x="56" y="70" fill="#65676B" fontSize="13">Write something...</text>
+      <polygon points="224,100 216,88 232,88" fill={YELLOW}/>
+      <rect x="140" y="100" width="190" height="24" rx="6" fill={NAVY}/>
+      <text x="235" y="116" textAnchor="middle" fill={YELLOW} fontSize="11" fontWeight="700">Tap here to start your post</text>
+    </svg>
+  );
+}
+
+function FbComposerPaste() {
+  return (
+    <svg viewBox="0 0 400 160" xmlns="http://www.w3.org/2000/svg" style={{ width:"100%", borderRadius:10, display:"block" }}>
+      <rect width="400" height="160" fill="#ffffff" rx="8"/>
+      <rect width="400" height="44" fill="#ffffff" rx="8"/>
+      <rect y="36" width="400" height="1" fill="#E4E6EB"/>
+      <text x="200" y="27" textAnchor="middle" fill="#1C1E21" fontSize="14" fontWeight="700">Create post</text>
+      <text x="382" y="27" textAnchor="middle" fill="#65676B" fontSize="18">✕</text>
+      <circle cx="26" cy="60" r="12" fill="#E4E6EB"/>
+      <circle cx="26" cy="56" r="5" fill="#BCC0C4"/>
+      <path d="M16 68 Q26 62 36 68" fill="#BCC0C4"/>
+      <text x="44" y="57" fill="#1C1E21" fontSize="12" fontWeight="700">Your Name</text>
+      <rect x="12" y="76" width="376" height="52" rx="8" fill="#F9F9F9" stroke="#E4E6EB" strokeWidth="1"/>
+      <text x="24" y="96" fill="#1C1E21" fontSize="12">I still remember the moment I decided...</text>
+      <rect x="24" y="104" width="280" height="6" rx="3" fill="#E4E6EB" opacity="0.7"/>
+      <rect x="24" y="116" width="220" height="6" rx="3" fill="#E4E6EB" opacity="0.5"/>
+      <rect x="80" y="48" width="110" height="26" rx="6" fill="#1C1E21"/>
+      <text x="92" y="65" fill="white" fontSize="11" fontWeight="700">📋 Paste</text>
+      <polygon points="120,74 112,66 128,66" fill="#1C1E21"/>
+      <polygon points="310,76 302,64 318,64" fill={YELLOW}/>
+      <rect x="226" y="50" width="162" height="20" rx="5" fill={NAVY}/>
+      <text x="307" y="64" textAnchor="middle" fill={YELLOW} fontSize="10" fontWeight="700">Hold + tap Paste</text>
+    </svg>
+  );
+}
+
+function FbComposerAttachPhoto() {
+  return (
+    <svg viewBox="0 0 400 170" xmlns="http://www.w3.org/2000/svg" style={{ width:"100%", borderRadius:10, display:"block" }}>
+      <rect width="400" height="170" fill="#ffffff" rx="8"/>
+      <rect width="400" height="44" fill="#ffffff" rx="8"/>
+      <rect y="36" width="400" height="1" fill="#E4E6EB"/>
+      <text x="200" y="27" textAnchor="middle" fill="#1C1E21" fontSize="14" fontWeight="700">Create post</text>
+      <text x="16" y="62" fill="#1C1E21" fontSize="12">I still remember the moment I decided...</text>
+      <rect x="16" y="70" width="300" height="6" rx="3" fill="#E4E6EB" opacity="0.6"/>
+      <rect x="16" y="82" width="240" height="6" rx="3" fill="#E4E6EB" opacity="0.5"/>
+      <rect x="16" y="94" width="270" height="6" rx="3" fill="#E4E6EB" opacity="0.4"/>
+      <rect x="0" y="110" width="400" height="1" fill="#E4E6EB"/>
+      <rect x="12" y="118" width="376" height="40" rx="8" fill="#F0F2F5"/>
+      <text x="30" y="143" fill="#65676B" fontSize="12" fontWeight="600">Add to your post</text>
+      <rect x="196" y="122" width="32" height="32" rx="6" fill="#E8F5E9" stroke="#45BD62" strokeWidth="2"/>
+      <text x="212" y="143" textAnchor="middle" fontSize="18">🖼️</text>
+      <text x="240" y="143" fill="#F7B928" fontSize="18">😊</text>
+      <text x="268" y="143" fill="#1877F2" fontSize="18">📍</text>
+      <text x="296" y="143" fill="#F02849" fontSize="18">🎬</text>
+      <text x="324" y="143" fill="#65676B" fontSize="16">···</text>
+      <polygon points="212,116 204,106 220,106" fill="#10B981"/>
+      <rect x="60" y="92" width="144" height="20" rx="5" fill="#10B981"/>
+      <text x="132" y="106" textAnchor="middle" fill="white" fontSize="10" fontWeight="700">Tap to attach photo</text>
+    </svg>
+  );
+}
+
+function FbComposerPostButton() {
+  return (
+    <svg viewBox="0 0 400 130" xmlns="http://www.w3.org/2000/svg" style={{ width:"100%", borderRadius:10, display:"block" }}>
+      <rect width="400" height="130" fill="#ffffff" rx="8"/>
+      <rect width="400" height="44" fill="#ffffff" rx="8"/>
+      <rect y="43" width="400" height="1" fill="#E4E6EB"/>
+      <text x="200" y="27" textAnchor="middle" fill="#1C1E21" fontSize="14" fontWeight="700">Create post</text>
+      <text x="382" y="27" textAnchor="middle" fill="#65676B" fontSize="18">✕</text>
+      <rect x="16" y="56" width="300" height="8" rx="4" fill="#E4E6EB" opacity="0.7"/>
+      <rect x="16" y="70" width="240" height="8" rx="4" fill="#E4E6EB" opacity="0.5"/>
+      <rect x="330" y="50" width="56" height="42" rx="6" fill="#E4E6EB"/>
+      <text x="358" y="77" textAnchor="middle" fontSize="20">🧑</text>
+      <rect x="12" y="102" width="376" height="20" rx="6" fill="#E4E6EB" opacity="0.4"/>
+      <rect x="264" y="98" width="120" height="26" rx="6" fill="#1877F2"/>
+      <text x="324" y="115" textAnchor="middle" fill="white" fontSize="13" fontWeight="700">Post</text>
+      <polygon points="258,111 244,103 244,119" fill={YELLOW}/>
+      <rect x="60" y="103" width="180" height="22" rx="6" fill={NAVY}/>
+      <text x="150" y="118" textAnchor="middle" fill={YELLOW} fontSize="11" fontWeight="700">Tap Post — you're done!</text>
+    </svg>
+  );
+}
+
+function PostItStep({ onBack, onNext, lang, post, postEn, postLoading, postError, answers, onGenerate, onSetPost, allCh3Met, groups, groupsLoading, onWritePost, stepIdx, onStepChange }) {
+  const t = T[lang];
+  const [copied, setCopied] = useState(false);
+  const [photoIdeas, setPhotoIdeas] = useState(null);
+  const [photoLoading, setPhotoLoading] = useState(false);
+
+  function goTo(i) { onStepChange(i); setCopied(false); }
+
+  // Auto-generate post when user reaches step 4 (paste step) and no post yet
+  useEffect(() => {
+    if (stepIdx === 4 && allCh3Met && !post && !postLoading) {
+      onGenerate(answers);
+    }
+  }, [stepIdx]);
+
+  // Generate photo ideas when user reaches step 5 (photo step)
+  useEffect(() => {
+    if (stepIdx === 5 && !photoIdeas && !photoLoading) {
+      setPhotoLoading(true);
+      const isEs = lang === "es";
+      const prompt = "A home service business owner filled out these details:\n- Human detail: "+(answers.humanDetail||"not provided")+"\n- Local place: "+(answers.localFlavor||"not provided")+"\n- Why started: "+(answers.whyStarted||"not provided")+"\n- Hero moment: "+(answers.heroMoment||"not provided")+"\n\nGive 3 personalized Facebook photo ideas rated Good, Better, Best. Return ONLY valid JSON"+(isEs?", in Spanish":"")+", no markdown:\n{\"good\":{\"label\":\"short title\",\"desc\":\"1 sentence\"},\"better\":{\"label\":\"short title\",\"desc\":\"1 sentence tied to their details\"},\"best\":{\"label\":\"short title\",\"desc\":\"1 sentence most trust-building for them\"}}";
+      callClaude([{ role:"user", content:prompt }])
+        .then(reply => {
+          const cleaned = reply.replace(/```json/gi,"").replace(/```/g,"").trim();
+          const s=cleaned.indexOf("{"), e=cleaned.lastIndexOf("}");
+          if (s!==-1&&e!==-1) setPhotoIdeas(JSON.parse(cleaned.slice(s,e+1)));
+          else throw new Error("parse");
+        })
+        .catch(() => setPhotoIdeas({ good:{label:lang==="es"?"Foto real tuya":"Any real photo of you",desc:lang==="es"?"Cara visible, luz natural.":"Face visible, natural light."}, better:{label:lang==="es"?"Haciendo algo que amas":"You doing something you love",desc:lang==="es"?"Un hobby, el juego de tus hijos, tu lugar local.":"A hobby, your kids' game, your local spot."}, best:{label:lang==="es"?"Momento candid en el trabajo":"A candid moment on the job",desc:lang==="es"?"Tú trabajando, sonriendo, cara visible.":"You working, smiling, face clearly visible."} }))
+        .finally(() => setPhotoLoading(false));
+    }
+  }, [stepIdx]);
+
+  function copyPost() {
+    const textToCopy = (lang === "es" && postEn) ? postEn : post;
+    if (!textToCopy) return;
+    try { const el=document.createElement("textarea"); el.value=textToCopy; el.style.position="fixed"; el.style.opacity="0"; document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el); } catch(e) { navigator.clipboard&&navigator.clipboard.writeText(textToCopy); }
+    setCopied(true); setTimeout(() => setCopied(false), 2500);
+  }
+
+  const photoTiers = [
+    { key:"good",   badge:"GOOD",    color:"#F0FDF4", border:"#86EFAC", textColor:"#166534" },
+    { key:"better", badge:"BETTER",  color:"#EFF6FF", border:"#93C5FD", textColor:"#1E40AF" },
+    { key:"best",   badge:"BEST ⭐", color:"#FEF9EC", border:YELLOW,    textColor:"#92400E" },
+  ];
+
+  const steps = [
+    // Step 1: Find & join groups
+    {
+      num: 1,
+      label: lang === "es" ? "Únete a un grupo" : "Join a group",
+      detail: lang === "es"
+        ? "Busca uno de estos grupos en Facebook y únete. Si es público puedes publicar de inmediato. Si es privado, espera aprobación."
+        : "Find one of these groups on Facebook and join it. Public groups — you can post right away. Private groups — join and wait for approval.",
+      illustration: null,
+      extra: (!groupsLoading && groups && groups.length > 0) ? (
+        <div style={{ marginTop:8 }}><GroupTable groups={groups} t={t}/></div>
+      ) : groupsLoading ? (
+        <p style={{ color:GRAY600, fontSize:14, marginTop:12 }}>{t.loadingGroupSuggestions}</p>
+      ) : null,
+    },
+    // Step 2: Join
+    {
+      num: 2,
+      label: lang === "es" ? "Toca Unirse en el grupo" : "Tap Join on the group",
+      detail: lang === "es"
+        ? "Una vez que encuentres el grupo, toca el botón azul Unirse."
+        : "Once you find the group, tap the blue Join button.",
+      illustration: <FbGroupJoinCard />,
+    },
+    // Step 3: Open group
+    {
+      num: 3,
+      label: lang === "es" ? "Abre el grupo" : "Open the group",
+      detail: lang === "es"
+        ? "Toca el nombre del grupo para abrirlo y ver el feed."
+        : "Tap the group name to open it and see the group feed.",
+      illustration: <FbGroupOpen />,
+    },
+    // Step 4: Tap Write something
+    {
+      num: 4,
+      label: lang === "es" ? "Toca \"Escribir algo\"" : "Tap \"Write something\"",
+      detail: lang === "es"
+        ? "En la parte superior del feed del grupo, toca el cuadro que dice Escribir algo."
+        : "At the top of the group feed, tap the box that says Write something.",
+      illustration: <FbComposerWriteSomething />,
+    },
+    // Step 5: Copy & paste post — no illustration, post textarea IS the UI
+    {
+      num: 5,
+      label: lang === "es" ? "Copia y pega tu publicación" : "Copy and paste your post",
+      detail: lang === "es"
+        ? "Copia tu publicación aquí abajo, luego pégala en el cuadro de Facebook."
+        : "Copy your post below, then paste it into the Facebook text box.",
+      illustration: null,
+      extra: (
+        <div>
+          {/* Paste tips — bulleted */}
+          <div style={{ background:"#EFF6FF", borderRadius:10, padding:"12px 16px", marginBottom:16, fontSize:13, color:NAVY }}>
+            <p style={{ fontWeight:700, margin:"0 0 8px" }}>{lang==="es"?"Cómo pegar:":"How to paste:"}</p>
+            <ul style={{ margin:0, paddingLeft:18, lineHeight:2 }}>
+              {(lang==="es" ? [
+                "Móvil — mantén presionado el área de texto y toca Pegar",
+                "Mac — ⌘V",
+                "Windows — Ctrl+V",
+                "También puedes hacer clic derecho → Pegar",
+              ] : [
+                "Mobile — long-press the text area and tap Paste",
+                "Mac — ⌘V",
+                "Windows — Ctrl+V",
+                "Or right-click → Paste",
+              ]).map((tip,i) => <li key={i}>{tip}</li>)}
+            </ul>
+          </div>
+          {postLoading && (
+            <div style={{ textAlign:"center", padding:"24px 0", color:GRAY600, fontSize:14 }}>
+              <div style={{ fontSize:28, marginBottom:8 }}>✨</div>
+              {lang==="es"?"Escribiendo tu publicación...":"Writing your post..."}
+            </div>
+          )}
+          {postError && !postLoading && (
+            <div style={{ background:"#FEF2F2", borderRadius:10, padding:"10px 14px", marginBottom:12, color:RED, fontSize:13 }}>
+              {t.couldNotGenerate} <button onClick={() => onGenerate(answers)} style={{ background:"none", border:"none", color:NAVY, fontWeight:700, cursor:"pointer", textDecoration:"underline", fontSize:13 }}>{t.tryAgain}</button>
+            </div>
+          )}
+          {post && !postLoading && (
+            <>
+              <textarea
+                value={post}
+                onChange={e => { onSetPost(e.target.value); setCopied(false); }}
+                rows={12}
+                style={{ width:"100%", boxSizing:"border-box", border:"2px solid "+NAVY, borderRadius:12, padding:16, fontSize:14, lineHeight:1.8, color:GRAY800, fontFamily:"inherit", resize:"vertical", background:GRAY50, outline:"none", marginBottom:14, display:"block" }}
+              />
+              <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
+                <button onClick={copyPost} style={{ background:copied?GREEN:YELLOW, color:copied?WHITE:NAVY, border:"none", borderRadius:10, padding:"13px 24px", fontWeight:700, fontSize:15, cursor:"pointer", transition:"all 0.2s", display:"inline-flex", alignItems:"center", gap:8 }}>
+                  {copied ? (lang==="es"?"✓ ¡Copiado!":"✓ Copied!") : (lang==="es"?"📋 Copiar publicación":"📋 Copy post")}
+                </button>
+                <button onClick={() => { setCopied(false); onGenerate(answers); }} style={{ background:"none", border:"none", fontSize:13, fontWeight:700, color:GRAY600, cursor:"pointer", textDecoration:"underline", padding:0, fontFamily:"inherit" }}>{t.regenerate}</button>
+              </div>
+            </>
+          )}
+          {!post && !postLoading && (
+            <div style={{ background:"#FEF9EC", border:"1.5px solid "+YELLOW, borderRadius:12, padding:20 }}>
+              <p style={{ fontWeight:700, color:NAVY, fontSize:14, margin:"0 0 6px" }}>{t.needPostToContinue}</p>
+              <p style={{ color:GRAY600, fontSize:13, lineHeight:1.7, margin:"0 0 16px" }}>{t.needPostDesc}</p>
+              <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginBottom:16 }}>
+                <button onClick={onWritePost} style={{ background:NAVY, color:YELLOW, border:"none", borderRadius:10, padding:"11px 20px", fontWeight:700, fontSize:13, cursor:"pointer" }}>
+                  ✍️ {lang==="es"?"Escribir mi publicación":"Write My Post"}
+                </button>
+              </div>
+              <p style={{ fontSize:13, fontWeight:600, color:NAVY, margin:"0 0 8px" }}>{t.pastePostLabel}</p>
+              <textarea
+                value={post}
+                onChange={e => onSetPost(e.target.value)}
+                rows={6}
+                placeholder={t.pastePlaceholder}
+                style={{ width:"100%", boxSizing:"border-box", border:"2px solid "+GRAY200, borderRadius:10, padding:14, fontSize:14, lineHeight:1.8, color:GRAY800, fontFamily:"inherit", resize:"vertical", background:WHITE, outline:"none" }}
+              />
+            </div>
+          )}
+        </div>
+      ),
+    },
+    // Step 6: Attach photo
+    {
+      num: 6,
+      label: lang === "es" ? "Adjunta tu foto" : "Attach your photo",
+      detail: lang === "es"
+        ? "Toca el ícono de foto en la barra inferior del compositor y selecciona tu foto."
+        : "Tap the photo icon in the composer toolbar and select your photo.",
+      illustration: <FbComposerAttachPhoto />,
+      extra: (
+        <div style={{ marginTop:16 }}>
+          <p style={{ fontSize:13, fontWeight:700, color:NAVY, margin:"0 0 10px" }}>
+            {lang==="es"?"📷 Ideas de foto para ti":"📷 Photo ideas for you"}
+          </p>
+          {photoLoading ? (
+            <p style={{ fontSize:13, color:GRAY400, fontStyle:"italic" }}>{lang==="es"?"Generando ideas...":"Generating ideas..."}</p>
+          ) : photoIdeas ? (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, marginBottom:16 }}>
+              {photoTiers.map(tier => (
+                <div key={tier.key} style={{ background:tier.color, border:"1.5px solid "+tier.border, borderRadius:10, padding:"10px", display:"flex", flexDirection:"column", gap:6 }}>
+                  <span style={{ background:tier.border, color:tier.textColor, borderRadius:4, padding:"2px 6px", fontSize:10, fontWeight:800, alignSelf:"flex-start" }}>{tier.badge}</span>
+                  <div style={{ fontWeight:700, color:NAVY, fontSize:12, lineHeight:1.3 }}>{photoIdeas[tier.key].label}</div>
+                  <div style={{ fontSize:11, color:GRAY600, lineHeight:1.4 }}>{photoIdeas[tier.key].desc}</div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <div style={{ fontSize:12, fontWeight:700, color:GREEN, marginBottom:8 }}>{t.goodPhotos}</div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, marginBottom:12 }}>
+            {GOOD_PHOTOS.map((src,i) => <div key={i} style={{ borderRadius:8, overflow:"hidden", border:"2px solid #86EFAC", aspectRatio:"1", background:GRAY100 }}><img src={src} alt="" onError={e=>{e.target.style.display="none";e.target.parentNode.innerHTML="<span style='font-size:24px;display:flex;align-items:center;justify-content:center;height:100%'>📸</span>";}} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}/></div>)}
+          </div>
+          <div style={{ fontSize:12, fontWeight:700, color:RED, marginBottom:8 }}>{t.badPhotos}</div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8 }}>
+            {BAD_PHOTOS.map((src,i) => <div key={i} style={{ borderRadius:8, overflow:"hidden", border:"2px solid #FCA5A5", aspectRatio:"1", background:GRAY100 }}><img src={src} alt="" onError={e=>{e.target.style.display="none";e.target.parentNode.innerHTML="<span style='font-size:24px;display:flex;align-items:center;justify-content:center;height:100%'>🚫</span>";}} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}/></div>)}
+          </div>
+        </div>
+      ),
+    },
+    // Step 7: Tap Post
+    {
+      num: 7,
+      label: lang === "es" ? "Toca Publicar" : "Tap Post",
+      detail: lang === "es"
+        ? "Toca el botón azul Publicar. ¡Eso es todo! Tu historia ya está frente a tu comunidad."
+        : "Tap the blue Post button. That's it — your story is now in front of your community.",
+      illustration: <FbComposerPostButton />,
+    },
+  ];
+
+  const step = steps[stepIdx];
+  const isLast = stepIdx === steps.length - 1;
+  const nextBlocked = stepIdx === 4 && !post;
+
+  return (
+    <Card>
+      {/* Flat progress bar across all 7 steps */}
+      <div style={{ display:"flex", gap:4, marginBottom:20 }}>
+        {steps.map((_,i) => (
+          <div key={i} style={{ flex:1, height:4, borderRadius:99, background:i<=stepIdx?NAVY:GRAY200, transition:"background 0.2s" }}/>
+        ))}
+      </div>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+        <span style={{ background:NAVY, color:YELLOW, borderRadius:6, padding:"3px 10px", fontSize:12, fontWeight:800 }}>
+          {lang==="es"?"PASO ":"STEP "}{step.num} {lang==="es"?"de":"of"} {steps.length}
+        </span>
+      </div>
+      <h2 style={{ fontSize:20, fontWeight:800, color:NAVY, margin:"0 0 8px", lineHeight:1.3 }}>{step.label}</h2>
+      <p style={{ fontSize:14, color:GRAY600, margin:"0 0 20px", lineHeight:1.7 }}>{step.detail}</p>
+      {step.illustration && (
+        <div style={{ borderRadius:12, overflow:"hidden", border:"1.5px solid "+GRAY200, background:GRAY50, marginBottom:step.extra?16:0 }}>
+          {step.illustration}
+        </div>
+      )}
+      {step.extra}
+      {nextBlocked && (
+        <p style={{ fontSize:12, color:GRAY400, margin:"16px 0 0", textAlign:"center" }}>
+          {lang==="es"?"Copia tu publicación para continuar":"Copy your post to continue"}
+        </p>
+      )}
+      <CardNav
+        onBack={stepIdx === 0 ? onBack : () => goTo(stepIdx - 1)}
+        onNext={nextBlocked ? undefined : (isLast ? onNext : () => goTo(stepIdx + 1))}
+        nextDisabled={nextBlocked}
+        nextLabel={isLast ? t.next : (lang==="es"?"Siguiente →":"Next →")}
+        t={t}
+      />
+    </Card>
+  );
+}
+
+
 // ── Main App ──────────────────────────────────────────────────────────────────
 export default function App() {
   const isDev = typeof window !== "undefined" && window.location.search.indexOf("dev=true") !== -1;
@@ -1660,6 +2361,7 @@ export default function App() {
   const [passcodeInput, setPasscodeInput]   = useState("");
   const [passcodeError, setPasscodeError]   = useState(false);
   const [completedSections, setCompletedSections] = useState(persisted?.completedSections || []);
+  const [postStepIdx, setPostStepIdx] = useState(0);
   const [leadsLog, setLeadsLog]                   = useState(persisted?.leadsLog || []);
   const [totalJobs, setTotalJobs]                 = useState(persisted?.totalJobs || 0);
   const [saveFlash, setSaveFlash]           = useState(false);
@@ -1679,7 +2381,7 @@ export default function App() {
   const city = answers.area ? answers.area.split(/[,—]/)[0].replace(/[^a-zA-Z\s]/g,"").trim() : manualCity.trim() || "Your City";
 
   useEffect(() => {
-    if (appPhase==="groups" && groups5.length===0 && !groupsLoading) {
+    if (appPhase==="dopost" && groups5.length===0 && !groupsLoading) {
       setGroupsLoading(true); setGroupsError("");
       findFacebookGroups(city,5).then(r=>{setGroups5(r);setGroupsLoading(false);}).catch(()=>{setGroupsLoading(false);setGroupsError(t.searchFailed);});
     }    if (appPhase==="replicate" && groups20.length===0 && !groupsLoading) {
@@ -1786,7 +2488,7 @@ export default function App() {
         </div>
       </div>
 
-      <SidebarNav current={appPhase} onNavigate={setAppPhase} completedSections={completedSections} lang={lang}/>
+      <SidebarNav current={appPhase} onNavigate={setAppPhase} completedSections={completedSections} lang={lang} postStep={postStepIdx} onJumpPostStep={i => setPostStepIdx(i)}/>
 
       <div style={{ paddingTop:HEADER_H, marginLeft:showSidebar?SIDEBAR_W:0, transition:"margin-left 0.2s ease", minHeight:"calc(100vh - "+HEADER_H+"px)" }}>
         <div ref={topRef} style={{ maxWidth:680, margin:"0 auto", padding:"28px 16px 60px" }}>
@@ -1802,7 +2504,7 @@ export default function App() {
                   {t.totalStats.map((s,i) => <div key={i} style={{ background:"rgba(255,255,255,0.08)", borderRadius:10, padding:"10px 18px", fontSize:13, color:WHITE }}>{s}</div>)}
                 </div>
               </div>
-              <button onClick={() => { if(answeredN===0) setAppPhase("ch1"); else if(!post) setAppPhase("getpost"); else setAppPhase("replicate"); }}
+              <button onClick={() => { if(answeredN===0) setAppPhase("ch1"); else if(!post) setAppPhase("dopost"); else setAppPhase("replicate"); }}
                 style={{ width:"100%", background:YELLOW, border:"none", borderRadius:14, padding:"18px 24px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", marginBottom:24, boxShadow:"0 4px 20px rgba(254,183,5,0.35)" }}>
                 <div style={{ textAlign:"left" }}>
                   <div style={{ fontSize:11, fontWeight:700, color:NAVY, opacity:0.6, marginBottom:3, textTransform:"uppercase", letterSpacing:"0.05em" }}>{t.continueWhere}</div>
@@ -1827,7 +2529,7 @@ export default function App() {
                         : {l:t.done, bg:"#D1FAE5", fg:"#065F46"},
                   },
                   {
-                    phase:"groups", icon:"📣", bg:NAVY_LIGHT,
+                    phase:"dopost", icon:"📣", bg:NAVY_LIGHT,
                     title:t.postInGroups, desc:t.postInGroupsDesc, time:t.postInGroupsTime,
                     progress: lang==="es"?"10 publicaciones en grupos":"10 group posts",
                     status: completedSections.includes("grouppost")
@@ -1877,59 +2579,13 @@ export default function App() {
             </div>
           )}
 
-          {appPhase==="voice" && <VoiceMode onComplete={va => { setAnswers(va); setAppPhase("groups"); handleGeneratePost(va); }} lang={lang}/>}
+          {appPhase==="voice" && <VoiceMode onComplete={va => { setAnswers(va); setAppPhase("dopost"); handleGeneratePost(va); }} lang={lang}/>}
 
           {(appPhase==="ch1"||appPhase==="ch2"||appPhase==="ch3") && (
-            <TypeMode onComplete={va => { setAnswers(va); setAppPhase("groups"); }} savedAnswers={answers} onAnswerChange={(id,val) => setAnswers(prev => ({...prev,[id]:val}))} lang={lang} onSwitchToVoice={() => setAppPhase("voice")}/>
+            <TypeMode onComplete={va => { setAnswers(va); setAppPhase("dopost"); }} savedAnswers={answers} onAnswerChange={(id,val) => setAnswers(prev => ({...prev,[id]:val}))} lang={lang} onSwitchToVoice={() => setAppPhase("voice")}/>
           )}
 
-          {appPhase==="groups" && (
-            <Card>
-              <SectionHeader emoji="🧭" title={t.step1Join} subtitle={t.step1Subtitle}/>
-              {!answers.area && !manualCity && (
-                <div style={{ background:"#EFF6FF", borderRadius:10, padding:"12px 16px", marginBottom:16 }}>
-                  <p style={{ margin:"0 0 8px", fontSize:13, fontWeight:600, color:NAVY }}>{t.cityLabel}</p>
-                  <div style={{ display:"flex", gap:8 }}>
-                    <input value={manualCity} onChange={e=>setManualCity(e.target.value)} placeholder={t.cityPlaceholder} style={{ flex:1, border:"2px solid "+GRAY200, borderRadius:8, padding:"8px 12px", fontSize:14, outline:"none", fontFamily:"inherit" }}/>
-                    <button onClick={() => { setGroups5([]); setGroupsError(""); setGroupsLoading(true); findFacebookGroups(manualCity||"Nashville",5).then(r=>{setGroups5(r);setGroupsLoading(false);}).catch(()=>setGroupsLoading(false)); }} style={{ background:NAVY, color:YELLOW, border:"none", borderRadius:8, padding:"8px 16px", fontWeight:700, fontSize:13, cursor:"pointer" }}>{t.searchGroups}</button>
-                  </div>
-                </div>
-              )}
-              {groupsLoading && <div style={{ textAlign:"center", padding:32 }}><p style={{ color:GRAY600 }}>{t.findingGroups} {city}...</p></div>}
-              {groupsError && <div style={{ background:"#FEF2F2", borderRadius:10, padding:14, marginBottom:16, color:RED, fontSize:13 }}>{groupsError}</div>}
-              {!groupsLoading && groups5.length>0 && (
-                <>
-                  <div style={{ background:"#EFF6FF", borderRadius:10, padding:"10px 14px", marginBottom:14, fontSize:13, color:NAVY, lineHeight:1.6 }}>{t.groupsNote}</div>
-                  <GroupTable groups={groups5} t={t}/>
-                </>
-              )}
-              <CardNav onBack={() => setAppPhase("lane")} onNext={() => setAppPhase("getpost")} t={t}/>
-            </Card>
-          )}
-
-          {appPhase==="getpost" && <GetPost allCh3Met={allCh3Met} post={post} postEn={postEn} postLoading={postLoading} postError={postError} answers={answers} onGenerate={handleGeneratePost} onSetPost={setPost} onNext={() => setAppPhase("photo")} onBack={() => setAppPhase("groups")} onWritePost={() => setAppPhase("ch1")} lang={lang}/>}
-
-          {appPhase==="photo" && <PhotoStep answers={answers} onBack={() => setAppPhase("getpost")} onNext={() => setAppPhase("dopost")} lang={lang}/>}
-
-          {appPhase==="dopost" && (
-            <Card>
-              <SectionHeader emoji="🚀" title={t.step4Post} subtitle={t.step4Subtitle}/>
-              <div style={{ background:"#FEF2F2", border:"1.5px solid "+RED, borderRadius:12, padding:"14px 18px", marginBottom:24, display:"flex", gap:12, alignItems:"flex-start" }}>
-                <span style={{ fontSize:20, flexShrink:0 }}>⚠️</span>
-                <div>
-                  <p style={{ fontWeight:800, color:"#991B1B", fontSize:14, margin:"0 0 4px" }}>{t.personalWarning}</p>
-                  <p style={{ fontSize:13, color:"#991B1B", margin:0, lineHeight:1.6 }}>{t.personalWarningDesc}</p>
-                </div>
-              </div>
-              {t.postSteps.map((s,i) => (
-                <div key={i} style={{ display:"flex", gap:14, marginBottom:18, alignItems:"flex-start" }}>
-                  <div style={{ background:YELLOW, color:NAVY, borderRadius:99, width:36, height:36, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, fontSize:16, flexShrink:0 }}>{i+1}</div>
-                  <p style={{ margin:0, fontSize:15, color:GRAY800, paddingTop:7, lineHeight:1.6 }}>{s}</p>
-                </div>
-              ))}
-              <CardNav onBack={() => setAppPhase("photo")} onNext={() => setAppPhase("approval")} t={t}/>
-            </Card>
-          )}
+          {appPhase==="dopost" && <PostItStep onBack={() => setAppPhase("lane")} onNext={() => setAppPhase("approval")} lang={lang} post={post} postEn={postEn} postLoading={postLoading} postError={postError} answers={answers} onGenerate={handleGeneratePost} onSetPost={setPost} allCh3Met={allCh3Met} groups={groups5} groupsLoading={groupsLoading} onWritePost={() => setAppPhase("ch1")} stepIdx={postStepIdx} onStepChange={setPostStepIdx}/>}
 
           {appPhase==="approval" && (
             <Card>
@@ -1949,20 +2605,16 @@ export default function App() {
           )}
 
           {appPhase==="replicate" && (
-            <Card>
-              <SectionHeader emoji="🔁" title={t.step6CrossPost} subtitle={t.step6Subtitle}/>
-              <div style={{ background:GRAY50, borderRadius:12, padding:16, marginBottom:24 }}>
-                {t.crossPostSteps.map((s,i) => (
-                  <div key={i} style={{ display:"flex", gap:10, marginBottom:8, alignItems:"flex-start" }}>
-                    <div style={{ background:YELLOW, color:NAVY, borderRadius:99, width:22, height:22, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:800, fontSize:11, flexShrink:0, marginTop:1 }}>{i+1}</div>
-                    <p style={{ margin:0, fontSize:13, color:GRAY800, lineHeight:1.6 }}>{s}</p>
-                  </div>
-                ))}
-              </div>
-              {groupsLoading && <p style={{ color:GRAY600, fontSize:14, textAlign:"center" }}>{t.loadingGroupSuggestions}</p>}
-              {!groupsLoading && groups20.length>0 && <div style={{ marginBottom:20 }}><GroupTable groups={groups20} t={t}/></div>}
-              <CardNav onBack={() => setAppPhase("approval")} onNext={() => { setCompletedSections(p=>p.includes("grouppost")?p:[...p,"grouppost"]); saveSubmission(answers,post,lang==="es"?"10 Grupos Completados":"10 Groups Done"); setAppPhase("celebrate"); }} nextLabel={t.next} t={t}/>
-            </Card>
+            <CrossPostStep
+              onBack={() => setAppPhase("approval")}
+              onNext={() => { setCompletedSections(p=>p.includes("grouppost")?p:[...p,"grouppost"]); saveSubmission(answers,post,lang==="es"?"10 Grupos Completados":"10 Groups Done"); setAppPhase("celebrate"); }}
+              lang={lang}
+              groups={groups20}
+              groupsLoading={groupsLoading}
+              post={post}
+              postEn={postEn}
+              t={t}
+            />
           )}
 
           {appPhase==="celebrate" && <CelebrationScreen onNext={() => setAppPhase("leads")} onBack={() => setAppPhase("replicate")} lang={lang}/>}
