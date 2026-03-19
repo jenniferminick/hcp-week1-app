@@ -1108,10 +1108,12 @@ function TypeMode({ onComplete, savedAnswers, onAnswerChange, lang, onSwitchToVo
 }
 
 // ── Get Post ──────────────────────────────────────────────────────────────────
-function GetPost({ allCh3Met, post, postLoading, postError, answers, onGenerate, onSetPost, onNext, onBack, onWritePost, lang }) {
+function GetPost({ allCh3Met, post, postEn, postLoading, postError, answers, onGenerate, onSetPost, onNext, onBack, onWritePost, lang }) {
   const t = T[lang];
   const [copied, setCopied] = useState(false);
   const [everCopied, setEverCopied] = useState(false);
+  const [copiedEn, setCopiedEn] = useState(false);
+  const [showEn, setShowEn] = useState(false);
   const originalPostRef = useRef("");  // stores the AI-generated version
   const [isEdited, setIsEdited] = useState(false);
   const taRef = useRef(null);
@@ -1132,6 +1134,15 @@ function GetPost({ allCh3Met, post, postLoading, postError, answers, onGenerate,
     try { const el=document.createElement("textarea"); el.value=post; el.style.position="fixed"; el.style.opacity="0"; document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el); } catch(e) { navigator.clipboard&&navigator.clipboard.writeText(post); }
     setCopied(true); setEverCopied(true);
   };
+  const handleCopyEn = () => {
+    if (!postEn) return;
+    try { const el=document.createElement("textarea"); el.value=postEn; el.style.position="fixed"; el.style.opacity="0"; document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el); } catch(e) { navigator.clipboard&&navigator.clipboard.writeText(postEn); }
+    setCopiedEn(true); setEverCopied(true);
+    setTimeout(() => setCopiedEn(false), 2500);
+  };
+
+  // Auto-expand English section when translation arrives
+  useEffect(() => { if (postEn && lang === "es") setShowEn(true); }, [postEn]);
   const handleResetToOriginal = () => {
     onSetPost(originalPostRef.current);
     setIsEdited(false);
@@ -1159,24 +1170,66 @@ function GetPost({ allCh3Met, post, postLoading, postError, answers, onGenerate,
       {postError && !postLoading && <div style={{ background:"#FEF2F2", borderRadius:10, padding:14, marginBottom:16, color:RED, fontSize:13 }}>{t.couldNotGenerate} <button onClick={() => onGenerate(answers)} style={{ background:"none", border:"none", color:NAVY, fontWeight:700, cursor:"pointer", textDecoration:"underline", fontSize:13 }}>{t.tryAgain}</button></div>}
       {post && !postLoading && (
         <>
+          {/* Spanish post label */}
+          {lang === "es" && (
+            <p style={{ fontSize:12, fontWeight:700, color:GRAY400, textTransform:"uppercase", letterSpacing:"0.06em", margin:"0 0 6px" }}>
+              🇪🇸 Publicación en español — revisa y edita si necesitas
+            </p>
+          )}
           <textarea ref={taRef} value={post} onChange={e => {
             onSetPost(e.target.value);
             setCopied(false);
-            setEverCopied(false);
+            if (lang !== "es") setEverCopied(false);
             setIsEdited(e.target.value !== originalPostRef.current);
             e.target.style.height="auto";
             e.target.style.height=e.target.scrollHeight+"px";
           }}
             style={{ width:"100%", boxSizing:"border-box", border:"2px solid "+NAVY, borderRadius:12, padding:16, fontSize:14, lineHeight:1.8, color:GRAY800, fontFamily:"inherit", resize:"none", background:GRAY50, outline:"none", marginBottom:14, overflow:"hidden", display:"block" }}/>
           <div style={{ display:"flex", gap:10, flexWrap:"wrap", alignItems:"center", marginBottom:20 }}>
-            <Btn onClick={handleCopy} variant={copied?"success":"primary"}>{copied?t.copied:t.copyPost}</Btn>
+            {lang !== "es" && (
+              <Btn onClick={handleCopy} variant={copied?"success":"primary"}>{copied?t.copied:t.copyPost}</Btn>
+            )}
             <button onClick={() => { setCopied(false); setEverCopied(false); setIsEdited(false); onGenerate(answers); }} disabled={postLoading} style={{ background:"none", border:"none", fontSize:13, fontWeight:700, color:GRAY600, cursor:"pointer", textDecoration:"underline", padding:0, fontFamily:"inherit" }}>{t.regenerate}</button>
             {isEdited && (
               <button onClick={handleResetToOriginal} style={{ background:"none", border:"none", fontSize:13, color:GRAY400, cursor:"pointer", textDecoration:"underline", padding:0, fontFamily:"inherit" }}>
-                {lang==="es"?"↩ Volver al original":"↩ Reset to original"}
+                ↩ Volver al original
               </button>
             )}
           </div>
+
+          {/* English translation — only shown in Spanish mode */}
+          {lang === "es" && (
+            <div style={{ borderTop:"2px solid "+GRAY200, paddingTop:20, marginTop:4 }}>
+              <button onClick={() => setShowEn(v=>!v)}
+                style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", background:"none", border:"none", cursor:"pointer", padding:0, textAlign:"left" }}>
+                <div>
+                  <span style={{ fontSize:13, fontWeight:800, color:NAVY }}>🇺🇸 English Translation</span>
+                  <span style={{ fontSize:12, color:GRAY400, marginLeft:8 }}>
+                    {postEn ? "Copy this to post" : "Generating..."}
+                  </span>
+                </div>
+                <span style={{ color:GRAY400, fontSize:13 }}>{showEn ? "▲" : "▼"}</span>
+              </button>
+              {showEn && (
+                <div style={{ marginTop:14 }}>
+                  {!postEn ? (
+                    <div style={{ padding:"20px 0", textAlign:"center", color:GRAY400, fontSize:13 }}>
+                      ⏳ Translating your post...
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ background:GRAY50, border:"1.5px solid "+GRAY200, borderRadius:12, padding:16, fontSize:14, lineHeight:1.8, color:GRAY800, whiteSpace:"pre-wrap", marginBottom:12 }}>
+                        {postEn}
+                      </div>
+                      <Btn onClick={handleCopyEn} variant={copiedEn?"success":"primary"}>
+                        {copiedEn ? "✓ Copied!" : "📋 Copy Post"}
+                      </Btn>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
       <CardNav onBack={onBack} onNext={everCopied?onNext:undefined} nextDisabled={!everCopied} nextLabel={t.next} t={t}/>
@@ -1274,7 +1327,7 @@ function PhotoStep({ answers, onBack, onNext, lang }) {
 }
 
 // ── Lead Engagement ───────────────────────────────────────────────────────────
-function LeadEngagement({ onBack, onAmplify, lang }) {
+function LeadEngagement({ onBack, onAmplify, lang, leadsLog, setLeadsLog, totalJobs, setTotalJobs, onMarkStarted }) {
   const t = T[lang];
   const LEAD_TYPES = getLEAD_TYPES(lang);
   const [watched, setWatched] = useState(() => {
@@ -1283,20 +1336,22 @@ function LeadEngagement({ onBack, onAmplify, lang }) {
   const [active, setActive]   = useState(null);
   const [subtype, setSubtype] = useState(null);
   const [copiedIdx, setCopiedIdx] = useState(null);
-  const [log, setLog]         = useState([]);
   const [jobsInput, setJobsInput] = useState("");
-  const [totalJobs, setTotalJobs] = useState(0);
   const [likeCount, setLikeCount] = useState(1);
+  const log = leadsLog;
   const activeLead    = LEAD_TYPES.find(l=>l.id===active);
   const activeSubtype = activeLead && subtype ? (activeLead.subtypes||[]).find(s=>s.id===subtype) : null;
   const sessionCounts = LEAD_TYPES.reduce((acc,lt) => { acc[lt.id]=log.filter(l=>l.type===lt.id).length; return acc; }, {});
   const sessionTotal  = log.length;
 
+  // Mark leads section as started the first time they land here
+  useEffect(() => { if (onMarkStarted) onMarkStarted(); }, []);
+
   function copyText(text, idx) {
     try { const el=document.createElement("textarea"); el.value=text; el.style.position="fixed"; el.style.opacity="0"; document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el); } catch(e) { navigator.clipboard&&navigator.clipboard.writeText(text); }
     setCopiedIdx(idx); setTimeout(() => setCopiedIdx(null), 2000);
   }
-  function logLead(tid, n) { const num=n||1; setLog(p=>[...p,...Array.from({length:num},()=>({type:tid,timestamp:Date.now()}))]); }
+  function logLead(tid, n) { const num=n||1; setLeadsLog(p=>[...p,...Array.from({length:num},()=>({type:tid,timestamp:Date.now()}))]); }
   function reset() { setActive(null); setSubtype(null); setLikeCount(1); }
 
   function ScriptBox({ text, idx }) {
@@ -1339,8 +1394,7 @@ function LeadEngagement({ onBack, onAmplify, lang }) {
         <div style={{ marginTop:14, padding:"14px 16px", background:"rgba(255,255,255,0.08)", borderRadius:10, display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
           <span style={{ color:WHITE, fontSize:13, fontWeight:600 }}>{t.logBookedJob}</span>
           <input type="number" min="1" value={jobsInput} onChange={e=>setJobsInput(e.target.value)} placeholder={t.numJobs} style={{ width:90, border:"2px solid rgba(255,255,255,0.3)", borderRadius:8, padding:"7px 10px", fontSize:15, fontWeight:800, color:NAVY, outline:"none", textAlign:"center", background:WHITE }}/>
-          <Btn onClick={() => { const n=parseInt(jobsInput); if(n>0){setTotalJobs(j=>j+n);setJobsInput("");} }} disabled={!jobsInput||parseInt(jobsInput)<1} style={{ fontSize:13 }}>{t.addJobs}</Btn>
-        </div>
+          <Btn onClick={() => { const n=parseInt(jobsInput); if(n>0){setTotalJobs(j=>j+n);setJobsInput("");} }} disabled={!jobsInput||parseInt(jobsInput)<1} style={{ fontSize:13 }}>{t.addJobs}</Btn>        </div>
         <div style={{ marginTop:14, padding:"12px 16px", background:"rgba(255,255,255,0.06)", borderRadius:10 }}><p style={{ color:WHITE, fontSize:13, margin:0 }}>{t.timeKillsDeals}</p></div>
       </Card>
       {!active && (
@@ -1470,12 +1524,15 @@ function LeadEngagement({ onBack, onAmplify, lang }) {
 }
 
 // ── Amplify ───────────────────────────────────────────────────────────────────
-function AmplifyScreen({ onBack, city, lang }) {
+function AmplifyScreen({ onBack, city, lang, onMarkStarted }) {
   const t = T[lang];
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [extra, setExtra] = useState(0);
-  useEffect(() => { findFacebookGroups(city||"Your City",10).then(r=>{setGroups(r);setLoading(false);}).catch(()=>setLoading(false)); }, [city]);
+  useEffect(() => {
+    if (onMarkStarted) onMarkStarted();
+    findFacebookGroups(city||"Your City",10).then(r=>{setGroups(r);setLoading(false);}).catch(()=>setLoading(false));
+  }, [city]);
   return (
     <>
       <Card style={{ background:NAVY }}>
@@ -1590,6 +1647,7 @@ export default function App() {
   const [appPhase, setAppPhase]           = useState(persisted?.appPhase || "lane");
   const [answers, setAnswers]             = useState(persisted?.answers || {});
   const [post, setPost]                   = useState(persisted?.post || "");
+  const [postEn, setPostEn]               = useState(persisted?.postEn || "");
   const [postLoading, setPostLoading]     = useState(false);
   const [postError, setPostError]         = useState("");
   const [groups5, setGroups5]             = useState([]);
@@ -1602,6 +1660,8 @@ export default function App() {
   const [passcodeInput, setPasscodeInput]   = useState("");
   const [passcodeError, setPasscodeError]   = useState(false);
   const [completedSections, setCompletedSections] = useState(persisted?.completedSections || []);
+  const [leadsLog, setLeadsLog]                   = useState(persisted?.leadsLog || []);
+  const [totalJobs, setTotalJobs]                 = useState(persisted?.totalJobs || 0);
   const [saveFlash, setSaveFlash]           = useState(false);
   const [saveToast, setSaveToast]           = useState(false);
   const topRef = useRef(null);
@@ -1611,8 +1671,8 @@ export default function App() {
 
   // Auto-save to localStorage whenever key state changes
   useEffect(() => {
-    saveToStorage({ lang, appPhase, answers, post, manualCity, completedSections });
-  }, [lang, appPhase, answers, post, manualCity, completedSections]);
+    saveToStorage({ lang, appPhase, answers, post, postEn, manualCity, completedSections, leadsLog, totalJobs });
+  }, [lang, appPhase, answers, post, postEn, manualCity, completedSections, leadsLog, totalJobs]);
 
   useEffect(() => { if (topRef.current) topRef.current.scrollIntoView({ behavior:"smooth" }); }, [appPhase]);
 
@@ -1643,6 +1703,7 @@ export default function App() {
   async function handleGeneratePost(ans) {
     const a = ans||answers;
     setPostLoading(true); setPostError("");
+    setPostEn("");
     try {
       const g = await generateAIPost(a, lang);
       const c = g.replace(/\u2014/g,",").replace(/--/g,",").trim();
@@ -1650,12 +1711,18 @@ export default function App() {
       setPost(c);
       setCompletedSections(p => p.includes("write")?p:[...p,"write"]);
       await saveSubmission(a, c, t.postGenerated);
+      // If Spanish, silently generate English translation in the background
+      if (lang === "es") {
+        callClaude([{ role:"user", content:"Translate the following Facebook post from Spanish to English. Keep the same tone, structure, and line breaks. Output only the translated post, no labels or explanation.\n\n"+c }])
+          .then(translated => { if (translated && translated.length > 50) setPostEn(translated.trim()); })
+          .catch(() => {});
+      }
     } catch(e) { setPostError(t.couldNotGenerate); }
     setPostLoading(false);
   }
 
   function handleSaveExit() {
-    saveToStorage({ lang, appPhase, answers, post, manualCity, completedSections });
+    saveToStorage({ lang, appPhase, answers, post, postEn, manualCity, completedSections, leadsLog, totalJobs });
     setSaveFlash(true);
     setSaveToast(true);
     setTimeout(() => setSaveFlash(false), 2000);
@@ -1749,10 +1816,46 @@ export default function App() {
               <h3 style={{ color:NAVY, fontSize:15, fontWeight:800, margin:"0 0 12px" }}>{t.week1Checklist}</h3>
               <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:24 }}>
                 {[
-                  { phase:"ch1",         icon:"✍️", bg:NAVY,       title:t.writePost,     desc:t.writePostDesc, time:t.writePostTime,  progress:t.answersOf(answeredN, ALL_QUESTIONS.length), status:answeredN===0?{l:t.notStarted,bg:GRAY100,fg:GRAY400}:answeredN<ALL_QUESTIONS.length?{l:t.inProgress,bg:"#FEF9EC",fg:"#92400E"}:{l:t.done,bg:"#D1FAE5",fg:"#065F46"} },
-                  { phase:"groups",      icon:"📣", bg:NAVY_LIGHT,  title:t.postInGroups, desc:t.postInGroupsDesc, time:t.postInGroupsTime, progress:lang==="es"?"10 publicaciones en grupos":"10 group posts", status:{l:t.notStarted,bg:GRAY100,fg:GRAY400} },
-                  { phase:"leads",       icon:"🔥", bg:"#065F46",   title:t.workLeads,     desc:t.workLeadsDesc, time:t.workLeadsTime, progress:lang==="es"?"Guiones para cada tipo":"Scripts for every type", status:{l:t.notStarted,bg:GRAY100,fg:GRAY400} },
-                  { phase:"amplify",     icon:"📡", bg:"#4F46E5",   title:t.amplify,        desc:t.amplifyDesc, time:t.amplifyTime,     progress:lang==="es"?"Llega más lejos":"Cast a wider net",            status:{l:t.notStarted,bg:GRAY100,fg:GRAY400} },
+                  {
+                    phase:"ch1", icon:"✍️", bg:NAVY,
+                    title:t.writePost, desc:t.writePostDesc, time:t.writePostTime,
+                    progress:t.answersOf(answeredN, ALL_QUESTIONS.length),
+                    status: answeredN===0
+                      ? {l:t.notStarted, bg:GRAY100, fg:GRAY400}
+                      : answeredN < ALL_QUESTIONS.length
+                        ? {l:t.inProgress, bg:"#FEF9EC", fg:"#92400E"}
+                        : {l:t.done, bg:"#D1FAE5", fg:"#065F46"},
+                  },
+                  {
+                    phase:"groups", icon:"📣", bg:NAVY_LIGHT,
+                    title:t.postInGroups, desc:t.postInGroupsDesc, time:t.postInGroupsTime,
+                    progress: lang==="es"?"10 publicaciones en grupos":"10 group posts",
+                    status: completedSections.includes("grouppost")
+                      ? {l:t.done, bg:"#D1FAE5", fg:"#065F46"}
+                      : post
+                        ? {l:t.inProgress, bg:"#FEF9EC", fg:"#92400E"}
+                        : {l:t.notStarted, bg:GRAY100, fg:GRAY400},
+                  },
+                  {
+                    phase:"leads", icon:"🔥", bg:"#065F46",
+                    title:t.workLeads, desc:t.workLeadsDesc, time:t.workLeadsTime,
+                    progress: leadsLog.length > 0
+                      ? (lang==="es" ? leadsLog.length+" prospectos trabajados" : leadsLog.length+" leads worked")
+                      : (lang==="es"?"Guiones para cada tipo":"Scripts for every type"),
+                    status: totalJobs > 0
+                      ? {l:t.done, bg:"#D1FAE5", fg:"#065F46"}
+                      : completedSections.includes("leads")
+                        ? {l:t.inProgress, bg:"#FEF9EC", fg:"#92400E"}
+                        : {l:t.notStarted, bg:GRAY100, fg:GRAY400},
+                  },
+                  {
+                    phase:"amplify", icon:"📡", bg:"#4F46E5",
+                    title:t.amplify, desc:t.amplifyDesc, time:t.amplifyTime,
+                    progress: lang==="es"?"Llega más lejos":"Cast a wider net",
+                    status: completedSections.includes("amplify")
+                      ? {l:t.done, bg:"#D1FAE5", fg:"#065F46"}
+                      : {l:t.notStarted, bg:GRAY100, fg:GRAY400},
+                  },
                 ].map(item => (
                   <div key={item.phase} onClick={() => setAppPhase(item.phase)} style={{ background:WHITE, borderRadius:16, boxShadow:"0 2px 12px rgba(0,41,66,0.06)", overflow:"hidden", cursor:"pointer", display:"flex" }}>
                     <div style={{ background:item.bg, width:56, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:22 }}>{item.icon}</div>
@@ -1772,23 +1875,6 @@ export default function App() {
               </div>
               {isDev && <DevShortcuts setAnswers={setAnswers} setPost={setPost} setAppPhase={setAppPhase} t={t}/>}
             </div>
-          )}
-
-          {appPhase==="writechoice" && (
-            <Card>
-              <SectionHeader emoji="✍️" title={t.writePostTitle} subtitle={t.writePostSubtitle}/>
-              <div style={{ display:"flex", flexDirection:"column", gap:12, marginTop:8 }}>
-                <button onClick={() => setAppPhase("ch1")} style={{ background:WHITE, border:"2px solid "+NAVY, borderRadius:14, padding:20, cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:16 }}>
-                  <div style={{ fontSize:32, flexShrink:0 }}>⌨️</div>
-                  <div><div style={{ fontWeight:800, color:NAVY, fontSize:15, marginBottom:4 }}>{t.typeAnswers}</div><div style={{ fontSize:13, color:GRAY600, lineHeight:1.5 }}>{t.typeAnswersDesc}</div></div>
-                </button>
-                <button onClick={() => setAppPhase("voice")} style={{ background:NAVY, border:"2px solid "+NAVY, borderRadius:14, padding:20, cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:16 }}>
-                  <div style={{ fontSize:32, flexShrink:0 }}>🎤</div>
-                  <div><div style={{ fontWeight:800, color:YELLOW, fontSize:15, marginBottom:4 }}>{t.talkThrough}</div><div style={{ fontSize:13, color:GRAY400, lineHeight:1.5 }}>{t.talkThroughDesc}</div></div>
-                </button>
-              </div>
-              <CardNav onBack={() => setAppPhase("lane")} t={t}/>
-            </Card>
           )}
 
           {appPhase==="voice" && <VoiceMode onComplete={va => { setAnswers(va); setAppPhase("groups"); handleGeneratePost(va); }} lang={lang}/>}
@@ -1821,7 +1907,7 @@ export default function App() {
             </Card>
           )}
 
-          {appPhase==="getpost" && <GetPost allCh3Met={allCh3Met} post={post} postLoading={postLoading} postError={postError} answers={answers} onGenerate={handleGeneratePost} onSetPost={setPost} onNext={() => setAppPhase("photo")} onBack={() => setAppPhase("groups")} onWritePost={() => setAppPhase("writechoice")} lang={lang}/>}
+          {appPhase==="getpost" && <GetPost allCh3Met={allCh3Met} post={post} postEn={postEn} postLoading={postLoading} postError={postError} answers={answers} onGenerate={handleGeneratePost} onSetPost={setPost} onNext={() => setAppPhase("photo")} onBack={() => setAppPhase("groups")} onWritePost={() => setAppPhase("ch1")} lang={lang}/>}
 
           {appPhase==="photo" && <PhotoStep answers={answers} onBack={() => setAppPhase("getpost")} onNext={() => setAppPhase("dopost")} lang={lang}/>}
 
@@ -1880,8 +1966,8 @@ export default function App() {
           )}
 
           {appPhase==="celebrate" && <CelebrationScreen onNext={() => setAppPhase("leads")} onBack={() => setAppPhase("replicate")} lang={lang}/>}
-          {appPhase==="leads"     && <LeadEngagement onBack={() => setAppPhase("celebrate")} onAmplify={() => setAppPhase("amplify")} lang={lang}/>}
-          {appPhase==="amplify"   && <AmplifyScreen onBack={() => setAppPhase("leads")} city={city} lang={lang}/>}
+          {appPhase==="leads"     && <LeadEngagement onBack={() => setAppPhase("celebrate")} onAmplify={() => setAppPhase("amplify")} lang={lang} leadsLog={leadsLog} setLeadsLog={setLeadsLog} totalJobs={totalJobs} setTotalJobs={setTotalJobs} onMarkStarted={() => setCompletedSections(p=>p.includes("leads")?p:[...p,"leads"])}/>}
+          {appPhase==="amplify"   && <AmplifyScreen onBack={() => setAppPhase("leads")} city={city} lang={lang} onMarkStarted={() => setCompletedSections(p=>p.includes("amplify")?p:[...p,"amplify"])}/>}
 
         </div>
       </div>
