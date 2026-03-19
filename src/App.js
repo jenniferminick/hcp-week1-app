@@ -2338,7 +2338,7 @@ function PostItStep({ onBack, onNext, lang, post, postEn, postLoading, postError
 
 
 // ── Main App ──────────────────────────────────────────────────────────────────
-export default function App() {
+export default function Week1({ onGoHome }) {
   const isDev = typeof window !== "undefined" && window.location.search.indexOf("dev=true") !== -1;
 
   // Load persisted state on mount
@@ -2483,7 +2483,8 @@ export default function App() {
               {saveFlash ? <>✓ {t.saved}</> : t.saveExit}
             </button>
           )}
-          {appPhase==="lane" && <button onClick={() => setShowCoachLogin(true)} style={{ background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:8, padding:"6px 14px", color:WHITE, fontSize:12, fontWeight:600, cursor:"pointer" }}>{t.coachDashboard}</button>}
+          {appPhase==="lane" && onGoHome && <button onClick={onGoHome} style={{ background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:8, padding:"6px 14px", color:WHITE, fontSize:12, fontWeight:600, cursor:"pointer" }}>← All Modules</button>}
+{appPhase==="lane" && <button onClick={() => setShowCoachLogin(true)} style={{ background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:8, padding:"6px 14px", color:WHITE, fontSize:12, fontWeight:600, cursor:"pointer" }}>{t.coachDashboard}</button>}style={{ background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", borderRadius:8, padding:"6px 14px", color:WHITE, fontSize:12, fontWeight:600, cursor:"pointer" }}>{t.coachDashboard}</button>}
           {appPhase!=="lane" && <button onClick={() => { saveToStorage({ lang, appPhase, answers, post, manualCity, completedSections }); setAppPhase("lane"); }} style={{ background:YELLOW, border:"none", borderRadius:8, padding:"7px 16px", color:NAVY, fontSize:12, fontWeight:800, cursor:"pointer" }}>{t.home}</button>}
         </div>
       </div>
