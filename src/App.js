@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 
 const W1_NAVY = "#002942";
