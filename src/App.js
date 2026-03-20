@@ -2845,8 +2845,7 @@ const REPLY_PROMPT="You are helping a home service professional write a high-con
 async function callClaude(messages, system) {
   const body = { model:"claude-sonnet-4-20250514", max_tokens:2000, messages };
   if (system) body.system = system;
-  const isVercel = typeof window !== "undefined" && !window.location.hostname.includes("claude.ai") && window.location.hostname !== "localhost";
-  const url = isVercel ? "/api/claude" : "https://api.anthropic.com/v1/messages";
+  const url = "/api/claude";
   const r = await fetch(url, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
   if (!r.ok) throw new Error("API error " + r.status);
   const d = await r.json();
