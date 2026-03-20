@@ -1,5 +1,6 @@
-export default async function handler(req, res) {
-  // Only allow POST
+const https = require("https");
+
+module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -9,20 +10,40 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "API key not configured" });
   }
 
-  try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify(req.body),
+  const body = JSON.stringify(req.body);
+
+  const options = {
+    hostname: "api.anthropic.com",
+    path: "/v1/messages",
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Content-Length": Buffer.byteLength(body),
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+  };
+
+  return new Promise((resolve) => {
+    const proxyReq = https.request(options, (proxyRes) => {
+      let data = "";
+      proxyRes.on("data", (chunk) => { data += chunk; });
+      proxyRes.on("end", () => {
+        try {
+          res.status(proxyRes.statusCode).json(JSON.parse(data));
+        } catch (e) {
+          res.status(500).json({ error: "Failed to parse response", raw: data });
+        }
+        resolve();
+      });
     });
 
-    const data = await response.json();
-    return res.status(response.status).json(data);
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-}
+    proxyReq.on("error", (err) => {
+      res.status(500).json({ error: err.message });
+      resolve();
+    });
+
+    proxyReq.write(body);
+    proxyReq.end();
+  });
+};
