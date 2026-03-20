@@ -573,7 +573,7 @@ const BAD_PHOTOS  = ["https://i.imgur.com/l8KAdix.png","https://i.imgur.com/vCVl
 async function W1_callClaude(messages, system) {
   const body = { model:"claude-sonnet-4-20250514", max_tokens:2000, messages };
   if (system) body.system = system;
-  const r = await fetch("https://api.anthropic.com/v1/messages", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+  const r = await fetch("/api/claude", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
   if (!r.ok) throw new Error("API error " + r.status);
   const d = await r.json();
   if (d.error) throw new Error(d.error.message || "API error");
@@ -2844,7 +2844,7 @@ const REPLY_PROMPT="You are helping a home service professional write a high-con
 async function callClaude(messages,system){
   const body={model:"claude-sonnet-4-20250514",max_tokens:2500,messages};
   if(system)body.system=system;
-  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const r=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
   const d=await r.json();
   return(d.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("")||"";
 }
